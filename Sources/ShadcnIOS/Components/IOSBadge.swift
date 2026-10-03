@@ -5,7 +5,7 @@ public enum IOSBadgeVariant: CaseIterable {
 }
 
 public struct IOSBadge: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     public let title: String
     public let symbol: String?
@@ -18,22 +18,22 @@ public struct IOSBadge: View {
     }
 
     public var body: some View {
-        let colors = theme.palette(for: scheme)
-        HStack(spacing: theme.spacing.xxs) {
+        let colors = tokens.palette(for: scheme)
+        HStack(spacing: tokens.spacing.xxs) {
             if let symbol {
                 Image(systemName: symbol).accessibilityHidden(true)
             }
             Text(title)
         }
-        .font(.caption.weight(.semibold))
+        .font(tokens.typography.badge)
         .foregroundStyle(foreground(colors))
-        .padding(.horizontal, theme.spacing.xs)
-        .padding(.vertical, theme.spacing.xxs)
-        .background(background(colors), in: RoundedRectangle(cornerRadius: theme.radii.badge))
+        .padding(.horizontal, tokens.spacing.xs)
+        .padding(.vertical, tokens.spacing.xxs)
+        .background(background(colors), in: RoundedRectangle(cornerRadius: tokens.radii.badge))
         .accessibilityElement(children: .combine)
     }
 
-    private func foreground(_ colors: IOSPalette) -> Color {
+    private func foreground(_ colors: IOSColorTokens) -> Color {
         switch variant {
         case .neutral: colors.primaryForeground
         case .secondary: colors.secondaryForeground
@@ -42,7 +42,7 @@ public struct IOSBadge: View {
         }
     }
 
-    private func background(_ colors: IOSPalette) -> Color {
+    private func background(_ colors: IOSColorTokens) -> Color {
         switch variant {
         case .neutral: colors.primary
         case .secondary: colors.secondary

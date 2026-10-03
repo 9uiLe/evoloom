@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct IOSCard<Content: View>: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     private let content: Content
 
@@ -11,18 +11,18 @@ public struct IOSCard<Content: View>: View {
 
     public var body: some View {
         content
-            .padding(theme.spacing.md)
+            .padding(tokens.spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.palette(for: scheme).card, in: RoundedRectangle(cornerRadius: theme.radii.card))
+            .background(tokens.palette(for: scheme).card, in: RoundedRectangle(cornerRadius: tokens.radii.card))
             .overlay {
-                RoundedRectangle(cornerRadius: theme.radii.card)
-                    .strokeBorder(theme.palette(for: scheme).border)
+                RoundedRectangle(cornerRadius: tokens.radii.card)
+                    .strokeBorder(tokens.palette(for: scheme).border, lineWidth: tokens.controls.borderWidth)
             }
     }
 }
 
 public struct IOSCardHeader: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     public let title: String
     public let detail: String?
@@ -33,12 +33,12 @@ public struct IOSCardHeader: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: theme.spacing.xxs) {
-            Text(title).font(.headline)
+        VStack(alignment: .leading, spacing: tokens.spacing.xxs) {
+            Text(title).font(tokens.typography.cardTitle)
             if let detail {
                 Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(theme.palette(for: scheme).mutedForeground)
+                    .font(tokens.typography.cardDetail)
+                    .foregroundStyle(tokens.palette(for: scheme).mutedForeground)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

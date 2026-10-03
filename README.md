@@ -1,7 +1,7 @@
 # ShadcnIOS
 
 An independent SwiftUI component foundation for iOS 26+. It supplies a calm
-neutral theme and source-owned components, while leaving navigation and system
+neutral design tokens and source-owned components, while leaving navigation and system
 interactions to SwiftUI. It is not an official shadcn/ui or Apple project.
 
 ## Requirements
@@ -40,9 +40,13 @@ import SwiftUI
 struct Example: View {
     @State private var name = ""
     var body: some View {
-        IOSCard {
+        var tokens = IOSDesignTokens.neutral
+        tokens.light.primary = .indigo
+        tokens.light.primaryForeground = .white
+        return IOSCard {
             IOSInput("Name", text: $name, hint: "Shown to your team")
         }
+        .iosDesignTokens(tokens)
     }
 }
 ```
@@ -68,10 +72,10 @@ protected unless `--overwrite` is explicit. See [distribution](docs/DISTRIBUTION
 
 Open `Package.swift` in Xcode, select the iPhone 18 Pro destination and
 `Sources/ShadcnIOS/Preview/ComponentCatalog.swift`. Its `#Preview` entries
-show light, dark, adjusted theme, and a native navigation/list/search/sheet
+show light, dark, adjusted design tokens, and a native navigation/list/search/sheet
 example. The fixture views are internal to the library target. The package
 compilation verifies the preview source. The Xcode 27.0 canvas rendered the
-light, dark, Collection and adjusted theme previews in the stated Simulator.
+light, dark, Collection and adjusted token previews in the stated Simulator.
 Image tests provide visual verification when the canvas is unavailable.
 
 ## Documents
@@ -82,8 +86,8 @@ Image tests provide visual verification when the canvas is unavailable.
 · [Validation record](docs/VALIDATION.md)
 
 The working directory name is `shadcn-ios-native` because `shadcn-ios` was
-already an unrelated Git checkout on the development host. This repository
-has its own Git history and no remote.
+already an unrelated Git checkout on the development host. The GitHub
+repository is independent of that checkout.
 
 Known limits: the Nix shell does not install Xcode or Simulator. The test
 harness supports the fixed Apple Silicon environment above. Source copies

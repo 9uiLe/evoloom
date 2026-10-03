@@ -26,6 +26,7 @@ SNAPSHOT_NAMES = {
     "collection-light",
     "collection-dark",
     "collection-compact-accessibility",
+    "customized-tokens",
 }
 
 
@@ -266,7 +267,7 @@ let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
     test = destination / "Tests/CopyCheckTests/CopyCheckTests.swift"
     test.parent.mkdir(parents=True)
     test.write_text(
-        "import ShadcnIOSCopied\nimport XCTest\nfinal class CopyCheckTests: XCTestCase { func testTheme() { XCTAssertEqual(IOSTheme.neutral.spacing.md, 16) } }\n"
+        "import ShadcnIOSCopied\nimport XCTest\nfinal class CopyCheckTests: XCTestCase { func testTokens() { XCTAssertEqual(IOSDesignTokens.neutral.spacing.md, 16) } }\n"
     )
     xcode(
         "test",

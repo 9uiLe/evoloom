@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct IOSEmptyState<Action: View>: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     public let title: String
     public let message: String
@@ -19,25 +19,25 @@ public struct IOSEmptyState<Action: View>: View {
     }
 
     public var body: some View {
-        let colors = theme.palette(for: scheme)
-        VStack(spacing: theme.spacing.sm) {
+        let colors = tokens.palette(for: scheme)
+        VStack(spacing: tokens.spacing.sm) {
             Image(systemName: symbol)
-                .font(.largeTitle)
+                .font(tokens.typography.emptyIcon)
                 .foregroundStyle(colors.mutedForeground)
                 .accessibilityHidden(true)
             Text(title)
-                .font(.headline)
+                .font(tokens.typography.emptyTitle)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             Text(message)
-                .font(.subheadline)
+                .font(tokens.typography.emptyMessage)
                 .foregroundStyle(colors.mutedForeground)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            action.padding(.top, theme.spacing.xxs)
+            action.padding(.top, tokens.spacing.xxs)
         }
         .frame(maxWidth: .infinity)
-        .padding(theme.spacing.lg)
+        .padding(tokens.spacing.lg)
     }
 }
 

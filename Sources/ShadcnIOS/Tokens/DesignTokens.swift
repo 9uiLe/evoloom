@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Semantic colors are paired so callers do not need to invent contrast relationships.
-public struct IOSPalette: Sendable {
+public struct IOSColorTokens: Sendable {
     public var background: Color
     public var foreground: Color
     public var card: Color
@@ -47,7 +47,7 @@ public struct IOSPalette: Sendable {
     }
 }
 
-public struct IOSSpacing: Sendable {
+public struct IOSSpacingTokens: Sendable {
     public var xxs: CGFloat = 4
     public var xs: CGFloat = 8
     public var sm: CGFloat = 12
@@ -58,7 +58,7 @@ public struct IOSSpacing: Sendable {
     public init() {}
 }
 
-public struct IOSRadii: Sendable {
+public struct IOSRadiusTokens: Sendable {
     public var control: CGFloat = 10
     public var card: CGFloat = 14
     public var badge: CGFloat = 6
@@ -66,21 +66,62 @@ public struct IOSRadii: Sendable {
     public init() {}
 }
 
-public struct IOSTheme: Sendable {
-    public var light: IOSPalette
-    public var dark: IOSPalette
-    public var spacing: IOSSpacing
-    public var radii: IOSRadii
+/// System text styles retain Dynamic Type behavior when applied to a view.
+public struct IOSTypographyTokens: Sendable {
+    public var button: Font = .body.weight(.semibold)
+    public var fieldLabel: Font = .subheadline.weight(.medium)
+    public var supporting: Font = .footnote
+    public var badge: Font = .caption.weight(.semibold)
+    public var cardTitle: Font = .headline
+    public var cardDetail: Font = .subheadline
+    public var alertTitle: Font = .subheadline.weight(.semibold)
+    public var alertMessage: Font = .subheadline
+    public var emptyTitle: Font = .headline
+    public var emptyMessage: Font = .subheadline
+    public var emptyIcon: Font = .largeTitle
 
-    public init(light: IOSPalette, dark: IOSPalette, spacing: IOSSpacing = .init(), radii: IOSRadii = .init()) {
+    public init() {}
+}
+
+/// Repeated component dimensions. Callers can scale the text area height with Dynamic Type.
+public struct IOSControlTokens: Sendable {
+    public static let defaultTextAreaHeight: CGFloat = 110
+
+    public var minimumHeight: CGFloat = 44
+    public var textAreaHeight: CGFloat = Self.defaultTextAreaHeight
+    public var skeletonHeight: CGFloat = 20
+    public var separatorThickness: CGFloat = 1
+    public var borderWidth: CGFloat = 1
+    public var emphasizedBorderWidth: CGFloat = 2
+    public var pressedOpacity: Double = 0.75
+
+    public init() {}
+}
+
+/// The complete set of visual decisions shared by the components.
+public struct IOSDesignTokens: Sendable {
+    public var light: IOSColorTokens
+    public var dark: IOSColorTokens
+    public var spacing: IOSSpacingTokens
+    public var radii: IOSRadiusTokens
+    public var typography: IOSTypographyTokens
+    public var controls: IOSControlTokens
+
+    public init(
+        light: IOSColorTokens, dark: IOSColorTokens,
+        spacing: IOSSpacingTokens = .init(), radii: IOSRadiusTokens = .init(),
+        typography: IOSTypographyTokens = .init(), controls: IOSControlTokens = .init()
+    ) {
         self.light = light
         self.dark = dark
         self.spacing = spacing
         self.radii = radii
+        self.typography = typography
+        self.controls = controls
     }
 
-    public static let neutral = IOSTheme(
-        light: IOSPalette(
+    public static let neutral = IOSDesignTokens(
+        light: IOSColorTokens(
             background: Color(red: 1, green: 1, blue: 1), foreground: Color(red: 0.09, green: 0.09, blue: 0.11),
             card: .white, cardForeground: Color(red: 0.09, green: 0.09, blue: 0.11),
             primary: Color(red: 0.09, green: 0.09, blue: 0.11), primaryForeground: .white,
@@ -91,7 +132,7 @@ public struct IOSTheme: Sendable {
             destructiveText: Color(red: 0.65, green: 0.08, blue: 0.10),
             success: Color(red: 0.80, green: 0.94, blue: 0.83), successForeground: Color(red: 0.05, green: 0.38, blue: 0.22)
         ),
-        dark: IOSPalette(
+        dark: IOSColorTokens(
             background: Color(red: 0.06, green: 0.06, blue: 0.07), foreground: Color(red: 0.98, green: 0.98, blue: 0.98),
             card: Color(red: 0.10, green: 0.10, blue: 0.12), cardForeground: Color(red: 0.98, green: 0.98, blue: 0.98),
             primary: Color(red: 0.98, green: 0.98, blue: 0.98), primaryForeground: Color(red: 0.09, green: 0.09, blue: 0.11),
@@ -106,17 +147,31 @@ public struct IOSTheme: Sendable {
 }
 
 public extension EnvironmentValues {
-    @Entry var iosTheme: IOSTheme = .neutral
-}
+    @Entry var iosDesignTokens: IOSDesignTokens = .neutral
 
-public extension View {
-    func iosTheme(_ theme: IOSTheme) -> some View {
-        environment(\.iosTheme, theme)
+    var iosTheme: IOSTheme {
+        get { iosDesignTokens }
+        set { iosDesignTokens = newValue }
     }
 }
 
-extension IOSTheme {
-    func palette(for scheme: ColorScheme) -> IOSPalette {
+public extension View {
+    func iosDesignTokens(_ tokens: IOSDesignTokens) -> some View {
+        environment(\.iosDesignTokens, tokens)
+    }
+
+    func iosTheme(_ theme: IOSTheme) -> some View {
+        iosDesignTokens(theme)
+    }
+}
+
+public typealias IOSPalette = IOSColorTokens
+public typealias IOSSpacing = IOSSpacingTokens
+public typealias IOSRadii = IOSRadiusTokens
+public typealias IOSTheme = IOSDesignTokens
+
+extension IOSDesignTokens {
+    func palette(for scheme: ColorScheme) -> IOSColorTokens {
         scheme == .dark ? dark : light
     }
 }

@@ -72,11 +72,17 @@ def plan(root, names, initialize=False, overwrite=False):
         and not safe_destination(root, Path(".shadcn-ios.json")).is_file()
     ):
         raise InstallError("Destination is not initialized; run init first")
+    legacy_theme = safe_destination(root, COPY_ROOT / "Theme/Theme.swift")
+    if legacy_theme.exists():
+        raise InstallError(
+            "Legacy Theme/Theme.swift detected; migrate it to Tokens/DesignTokens.swift "
+            "and remove the old file before adding components"
+        )
     files = {}
-    for name in resolve(["theme", *names] if initialize else names):
+    for name in resolve(["tokens", *names] if initialize else names):
         source = source_for(name)
         relative = (
-            COPY_ROOT / ("Theme" if name == "theme" else "Components") / source.name
+            COPY_ROOT / ("Tokens" if name == "tokens" else "Components") / source.name
         )
         if (
             not initialize

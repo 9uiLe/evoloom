@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct IOSInput: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     @Environment(\.isEnabled) private var isEnabled
     @FocusState private var focused: Bool
@@ -30,9 +30,9 @@ public struct IOSInput: View {
     }
 
     public var body: some View {
-        let colors = theme.palette(for: scheme)
-        VStack(alignment: .leading, spacing: theme.spacing.xs) {
-            Text(label).font(.subheadline.weight(.medium))
+        let colors = tokens.palette(for: scheme)
+        VStack(alignment: .leading, spacing: tokens.spacing.xs) {
+            Text(label).font(tokens.typography.fieldLabel)
             Group {
                 if secure {
                     SecureField(placeholder, text: $text)
@@ -44,21 +44,24 @@ public struct IOSInput: View {
             .textContentType(contentType)
             .focused($focused)
             .foregroundStyle(isEnabled ? colors.foreground : colors.mutedForeground)
-            .padding(theme.spacing.sm)
-            .frame(minHeight: 44)
-            .background(isEnabled ? colors.background : colors.muted, in: RoundedRectangle(cornerRadius: theme.radii.control))
+            .padding(tokens.spacing.sm)
+            .frame(minHeight: tokens.controls.minimumHeight)
+            .background(isEnabled ? colors.background : colors.muted, in: RoundedRectangle(cornerRadius: tokens.radii.control))
             .overlay {
-                RoundedRectangle(cornerRadius: theme.radii.control)
-                    .strokeBorder(error == nil ? (focused ? colors.primary : colors.input) : colors.destructiveText, lineWidth: focused || error != nil ? 2 : 1)
+                RoundedRectangle(cornerRadius: tokens.radii.control)
+                    .strokeBorder(
+                        error == nil ? (focused ? colors.primary : colors.input) : colors.destructiveText,
+                        lineWidth: focused || error != nil ? tokens.controls.emphasizedBorderWidth : tokens.controls.borderWidth
+                    )
             }
             .accessibilityLabel(label)
             .accessibilityHint(error ?? hint ?? "")
             if let error {
                 Label(error, systemImage: "exclamationmark.circle")
-                    .font(.footnote)
+                    .font(tokens.typography.supporting)
                     .foregroundStyle(colors.destructiveText)
             } else if let hint {
-                Text(hint).font(.footnote).foregroundStyle(colors.mutedForeground)
+                Text(hint).font(tokens.typography.supporting).foregroundStyle(colors.mutedForeground)
             }
         }
     }

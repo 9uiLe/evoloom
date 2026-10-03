@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct IOSSwitch: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     @Binding var isOn: Bool
     public let title: String
@@ -15,15 +15,15 @@ public struct IOSSwitch: View {
 
     public var body: some View {
         Toggle(isOn: $isOn) {
-            VStack(alignment: .leading, spacing: theme.spacing.xxs) {
+            VStack(alignment: .leading, spacing: tokens.spacing.xxs) {
                 Text(title)
                 if let detail {
                     Text(detail)
-                        .font(.footnote)
-                        .foregroundStyle(theme.palette(for: scheme).mutedForeground)
+                        .font(tokens.typography.supporting)
+                        .foregroundStyle(tokens.palette(for: scheme).mutedForeground)
                 }
             }
         }
-        .tint(theme.palette(for: scheme).primary)
+        .tint(tokens.palette(for: scheme).primary)
     }
 }

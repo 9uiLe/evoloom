@@ -8,7 +8,7 @@ is only for visual tests.
 Use `tools/shadcn_ios.py list`, `dry-run --destination DIR --init button`,
 `init --destination DIR button`, or `add --destination DIR input`. Run the CLI
 with `nix develop -c python3 ...` so Python comes from the fixed Nix shell.
-`init` creates the common theme, config, license, notice and design rules. `add`
+`init` creates the common design tokens, config, license, notice and design rules. `add`
 requires that initialization marker and resolves dependencies from
 `tools/registry.json`. Copied Swift files import
 only SwiftUI; they do not import `ShadcnIOS`.
@@ -20,7 +20,14 @@ and removes newly written files if a replacement fails. Empty directories may
 remain after an interrupted install and can be removed manually. An OS crash
 between replacements can leave a partial install; inspect the printed plan,
 compare with the registry and retry only with explicit `--overwrite` after
-review. The CLI never silently updates a customized theme or component.
+review. The CLI never silently updates customized tokens or components.
+Copies made before the token refactor contain `Theme/Theme.swift`. The CLI
+detects that file and stops. Back up your custom values, copy
+`Sources/ShadcnIOS/Tokens/DesignTokens.swift` from this repository into the
+copied target's `Tokens` directory, then apply your values there. Remove the
+old file from Target Membership and disk before adding components. Compiling
+both files together would duplicate public names. Compare the neutral values
+before deleting the old file.
 
 For an app project, add the copied Swift files to the app target with Xcode's
 Target Membership inspector. The CLI does not edit `.xcodeproj` files. When

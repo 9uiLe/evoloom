@@ -1,70 +1,70 @@
 {
-  "theme": {
+  "tokens": {
     "description": "Semantic tokens and environment injection",
-    "source": "Sources/ShadcnIOS/Theme/Theme.swift",
+    "source": "Sources/ShadcnIOS/Tokens/DesignTokens.swift",
     "dependencies": []
   },
   "button": {
     "description": "Action styles, loading and disabled state",
     "source": "Sources/ShadcnIOS/Components/IOSButton.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "card": {
     "description": "Composable content container",
     "source": "Sources/ShadcnIOS/Components/IOSCard.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "badge": {
     "description": "Non-interactive status label",
     "source": "Sources/ShadcnIOS/Components/IOSBadge.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "input": {
     "description": "Labeled text and secure input",
     "source": "Sources/ShadcnIOS/Components/IOSInput.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "textarea": {
     "description": "Labeled multiline input",
     "source": "Sources/ShadcnIOS/Components/IOSTextArea.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "separator": {
     "description": "Decorative divider",
     "source": "Sources/ShadcnIOS/Components/IOSSeparator.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "switch": {
     "description": "Native Toggle with detail",
     "source": "Sources/ShadcnIOS/Components/IOSSwitch.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "alert": {
     "description": "Inline information or error",
     "source": "Sources/ShadcnIOS/Components/IOSInlineAlert.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   },
   "empty": {
     "description": "Empty state with optional action",
     "source": "Sources/ShadcnIOS/Components/IOSEmptyState.swift",
     "dependencies": [
-      "theme",
+      "tokens",
       "button"
     ]
   },
@@ -72,7 +72,7 @@
     "description": "Stable loading placeholder",
     "source": "Sources/ShadcnIOS/Components/IOSSkeleton.swift",
     "dependencies": [
-      "theme"
+      "tokens"
     ]
   }
 }

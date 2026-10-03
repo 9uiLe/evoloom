@@ -1,10 +1,10 @@
 import SwiftUI
 
 public struct IOSTextArea: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     @Environment(\.isEnabled) private var isEnabled
-    @ScaledMetric(relativeTo: .body) private var editorHeight: CGFloat = 110
+    @ScaledMetric(relativeTo: .body) private var scaledReferenceHeight: CGFloat = IOSControlTokens.defaultTextAreaHeight
     @FocusState private var focused: Bool
     @Binding var text: String
     public let label: String
@@ -19,28 +19,28 @@ public struct IOSTextArea: View {
     }
 
     public var body: some View {
-        let colors = theme.palette(for: scheme)
+        let colors = tokens.palette(for: scheme)
         let outline = error == nil ? (focused ? colors.primary : colors.input) : colors.destructiveText
-        VStack(alignment: .leading, spacing: theme.spacing.xs) {
-            Text(label).font(.subheadline.weight(.medium))
+        VStack(alignment: .leading, spacing: tokens.spacing.xs) {
+            Text(label).font(tokens.typography.fieldLabel)
             TextEditor(text: $text)
                 .focused($focused)
                 .foregroundStyle(isEnabled ? colors.foreground : colors.mutedForeground)
-                .frame(height: editorHeight)
-                .padding(theme.spacing.xxs)
+                .frame(height: scaledReferenceHeight * (tokens.controls.textAreaHeight / IOSControlTokens.defaultTextAreaHeight))
+                .padding(tokens.spacing.xxs)
                 .scrollContentBackground(.hidden)
-                .background(isEnabled ? colors.background : colors.muted, in: RoundedRectangle(cornerRadius: theme.radii.control))
+                .background(isEnabled ? colors.background : colors.muted, in: RoundedRectangle(cornerRadius: tokens.radii.control))
                 .overlay {
-                    RoundedRectangle(cornerRadius: theme.radii.control)
-                        .strokeBorder(outline, lineWidth: focused || error != nil ? 2 : 1)
+                    RoundedRectangle(cornerRadius: tokens.radii.control)
+                        .strokeBorder(outline, lineWidth: focused || error != nil ? tokens.controls.emphasizedBorderWidth : tokens.controls.borderWidth)
                 }
                 .accessibilityLabel(label)
                 .accessibilityHint(error ?? hint ?? "")
             if let error {
                 Label(error, systemImage: "exclamationmark.circle")
-                    .font(.footnote).foregroundStyle(colors.destructiveText)
+                    .font(tokens.typography.supporting).foregroundStyle(colors.destructiveText)
             } else if let hint {
-                Text(hint).font(.footnote).foregroundStyle(colors.mutedForeground)
+                Text(hint).font(tokens.typography.supporting).foregroundStyle(colors.mutedForeground)
             }
         }
     }

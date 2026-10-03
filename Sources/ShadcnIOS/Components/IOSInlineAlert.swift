@@ -5,7 +5,7 @@ public enum IOSAlertVariant {
 }
 
 public struct IOSInlineAlert: View {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     public let title: String
     public let message: String
@@ -18,19 +18,19 @@ public struct IOSInlineAlert: View {
     }
 
     public var body: some View {
-        let colors = theme.palette(for: scheme)
-        HStack(alignment: .top, spacing: theme.spacing.sm) {
+        let colors = tokens.palette(for: scheme)
+        HStack(alignment: .top, spacing: tokens.spacing.sm) {
             Image(systemName: variant == .error ? "exclamationmark.triangle" : "info.circle")
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: theme.spacing.xxs) {
-                Text(title).font(.subheadline.weight(.semibold))
-                Text(message).font(.subheadline)
+            VStack(alignment: .leading, spacing: tokens.spacing.xxs) {
+                Text(title).font(tokens.typography.alertTitle)
+                Text(message).font(tokens.typography.alertMessage)
             }
             Spacer(minLength: 0)
         }
         .foregroundStyle(variant == .error ? colors.destructiveText : colors.foreground)
-        .padding(theme.spacing.md)
-        .background(colors.muted, in: RoundedRectangle(cornerRadius: theme.radii.control))
+        .padding(tokens.spacing.md)
+        .background(colors.muted, in: RoundedRectangle(cornerRadius: tokens.radii.control))
         .accessibilityElement(children: .combine)
     }
 }

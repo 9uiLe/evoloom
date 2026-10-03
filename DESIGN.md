@@ -6,12 +6,17 @@ menus, sheets, alerts and toggles for navigation and system interaction.
 The custom components cover repeated visual decisions that those controls do
 not express together: semantic color pairs, labeled fields, status, and loading.
 
-Use `IOSTheme` colors by meaning. Choose foreground and background as a pair;
-check contrast after any theme edit. Light and dark palettes are explicit.
-Spacing tokens are 4, 8, 12, 16, 24 and 32 pt. Do not replace native List or
-Form internal spacing. Radii are control, card and badge tokens. Text uses
-system text styles and grows with Dynamic Type. Primary actions keep a 44 pt
-minimum height and grow with text. Avoid wrapping every section in a card.
+`IOSDesignTokens` is the source of truth for repeated visual choices. Its
+`light` and `dark` `IOSColorTokens` are semantic colors: choose foreground and
+background as a pair and check contrast after edits. `IOSSpacingTokens` are
+4, 8, 12, 16, 24 and 32 pt; do not replace native List or Form internal
+spacing. `IOSRadiusTokens` define control, card and badge corners.
+`IOSTypographyTokens` use system text styles so Dynamic Type can grow them.
+`IOSControlTokens` define the 44 pt minimum operation height, editor and
+skeleton heights, separator and border thickness, and press opacity. Inject
+the complete value through `.iosDesignTokens(tokens)` so nested components
+use one decision set. Keep screen-specific layout choices in the screen.
+Avoid wrapping every section in a card.
 
 State must be legible without color: error text should say what to fix,
 loading should explain progress to assistive technology, and badges should

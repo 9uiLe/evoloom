@@ -16,6 +16,22 @@ final class ComponentSnapshots: XCTestCase {
         snapshot(catalog(), name: "catalog-dark", height: 1500, scheme: .dark)
     }
 
+    func testCustomizedDesignTokens() {
+        var tokens = IOSDesignTokens.neutral
+        tokens.light.primary = .indigo
+        tokens.light.primaryForeground = .white
+        tokens.spacing.md = 20
+        tokens.radii.control = 16
+        tokens.controls.minimumHeight = 48
+        let view = VStack(alignment: .leading, spacing: tokens.spacing.md) {
+            IOSButton("Save changes") {}
+            IOSCard { IOSCardHeader("Project", detail: "Shared tokens apply to every component.") }
+            IOSInput("Name", text: .constant("Alex"), hint: "Visible to collaborators.")
+            IOSBadge("Ready", symbol: "checkmark", variant: .neutral)
+        }
+        snapshot(view, name: "customized-tokens", height: 360, scheme: .light, tokens: tokens)
+    }
+
     func testInputs() {
         let longNotes = "Several lines of text about the project.\n" +
             "More notes that continue across the available width and onto another line."
@@ -124,14 +140,16 @@ final class ComponentSnapshots: XCTestCase {
     private func snapshot(
         _ content: some View, name: String, width: CGFloat? = nil, height: CGFloat,
         scheme: ColorScheme, category: ContentSizeCategory = .medium,
-        contrast: ColorSchemeContrast = .standard, locale: String = "en_US", inset: Bool = true
+        contrast: ColorSchemeContrast = .standard, locale: String = "en_US", inset: Bool = true,
+        tokens: IOSDesignTokens = .neutral
     ) {
         let size = CGSize(width: width ?? self.width, height: height)
-        let palette = IOSTheme.neutral.paletteForSnapshot(scheme)
+        let palette = tokens.paletteForSnapshot(scheme)
         let view = content
             .padding(inset ? 16 : 0)
             .frame(width: size.width, height: size.height, alignment: .topLeading)
             .background(palette)
+            .iosDesignTokens(tokens)
             .environment(\.locale, Locale(identifier: locale))
             .environment(\.timeZone, TimeZone(secondsFromGMT: 0) ?? .current)
             .environment(\.sizeCategory, category)
@@ -231,7 +249,7 @@ private func difference(old: PixelImage, new: PixelImage) -> UIImage? {
     return UIImage(cgImage: image)
 }
 
-private extension IOSTheme {
+private extension IOSDesignTokens {
     func paletteForSnapshot(_ scheme: ColorScheme) -> Color {
         scheme == .dark ? dark.background : light.background
     }

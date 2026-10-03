@@ -7,18 +7,18 @@ public enum IOSButtonVariant: CaseIterable {
 public enum IOSButtonSize {
     case compact, regular, large
 
-    var horizontalPadding: CGFloat {
+    func horizontalPadding(_ spacing: IOSSpacingTokens) -> CGFloat {
         switch self {
-        case .compact: 12
-        case .regular: 16
-        case .large: 24
+        case .compact: spacing.sm
+        case .regular: spacing.md
+        case .large: spacing.lg
         }
     }
 }
 
 /// A reusable style for native Button, including Button(role: .destructive).
 public struct IOSButtonStyle: ButtonStyle {
-    @Environment(\.iosTheme) private var theme
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.isEnabled) private var isEnabled
@@ -32,24 +32,27 @@ public struct IOSButtonStyle: ButtonStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        let colors = theme.palette(for: scheme)
+        let colors = tokens.palette(for: scheme)
         let effective = configuration.role == .destructive ? IOSButtonVariant.destructive : variant
         configuration.label
-            .font(.body.weight(.semibold))
+            .font(tokens.typography.button)
             .foregroundStyle(isEnabled ? foreground(effective, colors: colors) : colors.mutedForeground)
-            .padding(.vertical, theme.spacing.xs)
-            .frame(minHeight: 44)
-            .padding(.horizontal, size.horizontalPadding)
-            .background(isEnabled ? background(effective, colors: colors) : colors.muted, in: RoundedRectangle(cornerRadius: theme.radii.control))
+            .padding(.vertical, tokens.spacing.xs)
+            .frame(minHeight: tokens.controls.minimumHeight)
+            .padding(.horizontal, size.horizontalPadding(tokens.spacing))
+            .background(isEnabled ? background(effective, colors: colors) : colors.muted, in: RoundedRectangle(cornerRadius: tokens.radii.control))
             .overlay {
-                RoundedRectangle(cornerRadius: theme.radii.control)
-                    .strokeBorder(effective == .outline ? colors.border : .clear, lineWidth: contrast == .increased ? 2 : 1)
+                RoundedRectangle(cornerRadius: tokens.radii.control)
+                    .strokeBorder(
+                        effective == .outline ? colors.border : .clear,
+                        lineWidth: contrast == .increased ? tokens.controls.emphasizedBorderWidth : tokens.controls.borderWidth
+                    )
             }
-            .opacity(configuration.isPressed ? 0.75 : 1)
+            .opacity(configuration.isPressed ? tokens.controls.pressedOpacity : 1)
             .contentShape(Rectangle())
     }
 
-    private func foreground(_ variant: IOSButtonVariant, colors: IOSPalette) -> Color {
+    private func foreground(_ variant: IOSButtonVariant, colors: IOSColorTokens) -> Color {
         switch variant {
         case .primary: colors.primaryForeground
         case .secondary: colors.secondaryForeground
@@ -58,7 +61,7 @@ public struct IOSButtonStyle: ButtonStyle {
         }
     }
 
-    private func background(_ variant: IOSButtonVariant, colors: IOSPalette) -> Color {
+    private func background(_ variant: IOSButtonVariant, colors: IOSColorTokens) -> Color {
         switch variant {
         case .primary: colors.primary
         case .secondary: colors.secondary
@@ -69,6 +72,7 @@ public struct IOSButtonStyle: ButtonStyle {
 }
 
 public struct IOSButton<Label: View>: View {
+    @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.isEnabled) private var isEnabled
     private let variant: IOSButtonVariant
     private let size: IOSButtonSize
@@ -92,7 +96,7 @@ public struct IOSButton<Label: View>: View {
 
     public var body: some View {
         Button(action: { trigger(isEnabled: isEnabled) }, label: {
-            HStack(spacing: 8) {
+            HStack(spacing: tokens.spacing.xs) {
                 if isLoading {
                     Image(systemName: "hourglass")
                         .accessibilityHidden(true)

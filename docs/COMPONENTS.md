@@ -1,8 +1,14 @@
 # Components
 
-All public types are prefixed `IOS`. `IOSTheme.neutral` is injected with
-`.iosTheme(theme)`. A screen can customize either palette and shared spacing
-or radii before injection. Do not scatter new colors through screens.
+All public types are prefixed `IOS`. Start from `IOSDesignTokens.neutral`,
+modify the semantic light/dark colors, spacing, radii, typography or control
+dimensions, then inject it with `.iosDesignTokens(tokens)`. Components read the
+same environment value. The old `IOSTheme`, `IOSPalette`, `IOSSpacing`,
+`IOSRadii`, and `.iosTheme(_:)` names remain as source-compatible aliases.
+Keep each foreground/background pair legible; do not scatter new colors or
+component measurements through screens. The token source is
+`Sources/ShadcnIOS/Tokens/DesignTokens.swift`; copying a component includes
+this file automatically.
 
 | Component | API | State and responsibility |
 | --- | --- | --- |

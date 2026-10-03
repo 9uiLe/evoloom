@@ -2,13 +2,14 @@ import SwiftUI
 
 /// Internal preview fixtures compile with the library and are not public API.
 struct ComponentCatalog: View {
+    @Environment(\.iosDesignTokens) private var tokens
     @State private var name = ""
     @State private var note = ""
     @State private var enabled = true
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: tokens.spacing.lg) {
                 Text("Components").font(.largeTitle.bold())
                 ForEach(IOSButtonVariant.allCases, id: \.self) { variant in
                     IOSButton("Continue", variant: variant) {}
@@ -16,7 +17,7 @@ struct ComponentCatalog: View {
                 IOSButton("Saving", isLoading: true) {}
                 IOSButton("Unavailable") {}.disabled(true)
                 IOSCard {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: tokens.spacing.md) {
                         IOSCardHeader("Project", detail: "A reusable content container")
                         IOSSeparator()
                         IOSBadge("Ready", symbol: "checkmark", variant: .success)
@@ -31,7 +32,7 @@ struct ComponentCatalog: View {
                 }
                 IOSSkeleton()
             }
-            .padding(16)
+            .padding(tokens.spacing.md)
         }
     }
 }
@@ -111,9 +112,11 @@ struct ExampleCollectionView: View {
     ExampleCollectionView()
 }
 
-#Preview("Adjusted theme") {
-    var theme = IOSTheme.neutral
-    theme.light.primary = .indigo
-    theme.light.primaryForeground = .white
-    return ComponentCatalog().iosTheme(theme)
+#Preview("Adjusted design tokens") {
+    var tokens = IOSDesignTokens.neutral
+    tokens.light.primary = .indigo
+    tokens.light.primaryForeground = .white
+    tokens.radii.control = 16
+    tokens.spacing.lg = 28
+    return ComponentCatalog().iosDesignTokens(tokens)
 }

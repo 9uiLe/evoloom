@@ -35,7 +35,41 @@ failed `doctor`; a one-point card radius change failed image comparison and
 produced expected/actual/diff PNGs plus an xcresult failure. The restored
 source and normal comparison passed afterward.
 
-The GitHub Actions workflow is defined and validated by actionlint. No remote
-is configured, and the workflow has not run on a CI host. Manual VoiceOver,
+The GitHub Actions workflow is defined and validated by actionlint. Its
+self-hosted runner execution has not been verified. Manual VoiceOver,
 keyboard traversal and actual network-backed app behavior are outside the
 Package-only validation.
+
+## Design token refactor, 2026-10-04
+
+The neutral values moved to `Sources/ShadcnIOS/Tokens/DesignTokens.swift`.
+Components now read `iosDesignTokens` and share color, spacing, radius,
+typography and control dimensions. Legacy Swift API names remain aliases.
+The copy registry includes `tokens`, and the CLI refuses an old copied
+`Theme/Theme.swift` until the user migrates it explicitly.
+
+`nix develop -c just build-package`, `just format-check`, `just lint`,
+`just test-unit`, `just verify-copy-install`, and `just check` passed with
+Xcode 27.0 (27A266a) and the fixed iPhone 18 Pro iOS 27.0 Simulator. The
+result bundles report 6 unit tests and 7 visual test methods passed; 7 CLI
+tests passed. Two consecutive `just format` runs produced the same file
+hashes, and format-check and lint reported no violations.
+`just record-snapshots` produced 11 real PNGs, and the 10
+existing reference images remained byte-identical after correcting the
+TextArea scaling formula. The new `components.customized-tokens.png` was
+opened at full size, along with the existing dark catalog and 320 pt
+accessibility image. The custom primary, spacing and input radius were visible;
+labels and supporting text remained legible.
+
+A separate clean `master` clone ran `nix develop -c just prepare-deps` and
+`nix develop -c just check` successfully. Its tracked working tree stayed
+clean. SnapshotTesting itself emitted iOS deprecation warnings on that first
+build; the Package and visual tests still passed.
+
+A temporary one-point radius change in the customized fixture made
+`testCustomizedDesignTokens` fail with Xcode exit code 65. Its expected,
+actual and diff PNGs showed the changed Button and Input corners. The change
+was reverted. The normal comparison passed afterward. The Preview source
+compiled as part of the library build; the Xcode canvas was not reopened for
+this refactor. The workflow remains configured for `master` pushes, but a
+successful remote CI run has not been observed.
