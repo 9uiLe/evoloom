@@ -67,6 +67,11 @@ def plan(root, names, initialize=False, overwrite=False):
         raise InstallError("Destination symlink rejected")
     if not root.is_dir():
         raise InstallError(f"Destination directory missing: {root}")
+    if (
+        not initialize
+        and not safe_destination(root, Path(".shadcn-ios.json")).is_file()
+    ):
+        raise InstallError("Destination is not initialized; run init first")
     files = {}
     for name in resolve(["theme", *names] if initialize else names):
         source = source_for(name)

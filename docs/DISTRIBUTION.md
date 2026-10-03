@@ -9,7 +9,8 @@ Use `tools/shadcn_ios.py list`, `dry-run --destination DIR --init button`,
 `init --destination DIR button`, or `add --destination DIR input`. Run the CLI
 with `nix develop -c python3 ...` so Python comes from the fixed Nix shell.
 `init` creates the common theme, config, license, notice and design rules. `add`
-resolves dependencies from `tools/registry.json`. Copied Swift files import
+requires that initialization marker and resolves dependencies from
+`tools/registry.json`. Copied Swift files import
 only SwiftUI; they do not import `ShadcnIOS`.
 
 The CLI refuses unknown components, dependency cycles, existing files, unsafe

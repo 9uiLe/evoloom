@@ -37,6 +37,12 @@ class DistributionTests(unittest.TestCase):
                 plan(root, ["button"])
             self.assertEqual(theme.read_text(), "custom theme")
 
+    def test_add_requires_init(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with self.assertRaisesRegex(InstallError, "run init first"):
+                plan(root, ["button"])
+
     def test_add_reuses_custom_theme(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -53,6 +59,7 @@ class DistributionTests(unittest.TestCase):
             root = Path(temporary)
             with self.assertRaisesRegex(InstallError, "Unsafe"):
                 safe_destination(root, Path("../outside.swift"))
+            (root / ".shadcn-ios.json").write_text("{}")
             outside = root.parent / "outside-target"
             (root / "Sources").symlink_to(outside)
             with self.assertRaisesRegex(InstallError, "Symlink"):
