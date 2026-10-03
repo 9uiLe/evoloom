@@ -233,40 +233,6 @@ def snapshots(record=False):
         )
         print(f"Recorded {len(after)} PNGs. Review visually before committing.")
     if completed.returncode:
-        if record and after:
-            report = json.loads(
-                output(
-                    "xcrun",
-                    "xcresulttool",
-                    "get",
-                    "test-results",
-                    "tests",
-                    "--path",
-                    str(result),
-                    "--format",
-                    "json",
-                )
-            )
-            messages = []
-
-            def failures(node):
-                if isinstance(node, dict):
-                    if node.get("nodeType") == "Failure Message":
-                        messages.append(node.get("name", ""))
-                    for value in node.values():
-                        failures(value)
-                elif isinstance(node, list):
-                    for value in node:
-                        failures(value)
-
-            failures(report)
-            if messages and all(
-                "Record mode is on." in message for message in messages
-            ):
-                print(
-                    "Recording completed; XCTest reports intentional record-mode failures."
-                )
-                return
         raise SystemExit(completed.returncode)
 
 

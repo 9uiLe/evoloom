@@ -17,13 +17,16 @@ final class ComponentSnapshots: XCTestCase {
     }
 
     func testInputs() {
+        let longNotes = "Several lines of text about the project.\n" +
+            "More notes that continue across the available width and onto another line."
         let view = VStack(alignment: .leading, spacing: 16) {
             IOSInput("Email", text: .constant("alex@example.com"), hint: "Used for receipts.", keyboardType: .emailAddress)
             IOSInput("Email", text: .constant("bad"), error: "Enter a valid email address.")
             IOSInput("Email", text: .constant("A very long address that must wrap or scroll@example.com"))
             IOSInput("Email", text: .constant("Disabled"), hint: "Unavailable now.").disabled(true)
-            IOSTextArea("Notes", text: .constant("Several lines of text.\nMore notes."), hint: "Optional")
+            IOSTextArea("Notes", text: .constant(longNotes), hint: "Optional")
             IOSTextArea("Notes", text: .constant("Please check this value."), error: "Use fewer than 200 characters.")
+            IOSTextArea("Notes", text: .constant("Editing is unavailable."), hint: "Read only for now.").disabled(true)
         }
         snapshot(view, name: "inputs-light", height: 930, scheme: .light)
         snapshot(view, name: "inputs-dark", height: 930, scheme: .dark)
@@ -37,8 +40,13 @@ final class ComponentSnapshots: XCTestCase {
             }
             IOSInlineAlert("Please review", message: "A long explanation of the action needed before continuing.", variant: .error)
             IOSButton("Continue with the selected project") {}
+            IOSBadge("Waiting for account verification and review", symbol: "clock", variant: .secondary)
+            IOSEmptyState(
+                "No matching projects were found",
+                message: "Try a broader search or create a new project to continue with your work."
+            )
         }
-        snapshot(view, name: "compact-accessibility", width: 320, height: 650, scheme: .light, category: .accessibilityMedium, contrast: .increased)
+        snapshot(view, name: "compact-accessibility", width: 320, height: 1150, scheme: .light, category: .accessibilityMedium, contrast: .increased)
     }
 
     func testLocalized() {
@@ -143,28 +151,19 @@ final class ComponentSnapshots: XCTestCase {
         var strategy = Snapshotting<UIViewController, UIImage>.image(
             precision: 1, perceptualPrecision: 1, size: size, traits: traits
         )
-        let imageDiffing = strategy.diffing
-        strategy.diffing = Diffing<UIImage>(toData: imageDiffing.toData, fromData: imageDiffing.fromData) { expected, actual in
-            guard let old = pixels(expected), let new = pixels(actual) else {
-                return ("Image pixels could not be read", [])
-            }
-            guard old.width == new.width, old.height == new.height, old.bytes == new.bytes else {
-                let directory = root.appendingPathComponent("TestResults/SnapshotDiffs/\(name)")
-                try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-                try? expected.pngData()?.write(to: directory.appendingPathComponent("expected.png"))
-                try? actual.pngData()?.write(to: directory.appendingPathComponent("actual.png"))
-                if let image = difference(old: old, new: new) {
-                    try? image.pngData()?.write(to: directory.appendingPathComponent("diff.png"))
-                }
-                return ("Pixel difference for \(name). Inspect expected, actual and diff in \(directory.path)", [])
-            }
-            return nil
+        strategy.diffing = exactImageDiffing(strategy.diffing, root: root, name: name)
+        if isRecording {
+            let message = verifySnapshot(
+                of: host, as: strategy, named: name, record: true,
+                testName: "components"
+            )
+            XCTAssertTrue(message?.contains("Record mode is on.") == true, message ?? "Snapshot recording failed")
+        } else {
+            assertSnapshot(
+                of: host, as: strategy, named: name, record: false,
+                testName: "components"
+            )
         }
-        assertSnapshot(
-            of: host, as: strategy,
-            named: name, record: isRecording,
-            testName: "components"
-        )
     }
 }
 
@@ -172,6 +171,25 @@ private struct PixelImage {
     let width: Int
     let height: Int
     let bytes: [UInt8]
+}
+
+private func exactImageDiffing(_ imageDiffing: Diffing<UIImage>, root: URL, name: String) -> Diffing<UIImage> {
+    Diffing<UIImage>(toData: imageDiffing.toData, fromData: imageDiffing.fromData) { expected, actual in
+        guard let old = pixels(expected), let new = pixels(actual) else {
+            return ("Image pixels could not be read", [])
+        }
+        guard old.width == new.width, old.height == new.height, old.bytes == new.bytes else {
+            let directory = root.appendingPathComponent("TestResults/SnapshotDiffs/\(name)")
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try? expected.pngData()?.write(to: directory.appendingPathComponent("expected.png"))
+            try? actual.pngData()?.write(to: directory.appendingPathComponent("actual.png"))
+            if let image = difference(old: old, new: new) {
+                try? image.pngData()?.write(to: directory.appendingPathComponent("diff.png"))
+            }
+            return ("Pixel difference for \(name). Inspect expected, actual and diff in \(directory.path)", [])
+        }
+        return nil
+    }
 }
 
 private func pixels(_ image: UIImage) -> PixelImage? {

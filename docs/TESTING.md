@@ -22,16 +22,16 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | Image test | Risk covered |
 | --- | --- |
 | `catalog-light`, `catalog-dark` | Standard appearance for every initial component; all button variants, disabled/loading/destructive role, Card, Badge variants, Switch, Alert, Empty, Separator, Skeleton. |
-| `inputs-light`, `inputs-dark` | Normal, error, disabled and long input; multiline normal/error. Native focus border is implemented but not captured because keyboard and focus timing would add instability. |
-| `compact-accessibility` | 320 pt width, accessibility medium text, Increased Contrast, long copy. |
+| `inputs-light`, `inputs-dark` | Normal, error, disabled and long Input and TextArea content. Native focus border is implemented but not captured because keyboard and focus timing would add instability. |
+| `compact-accessibility` | 320 pt width, accessibility medium text, Increased Contrast, long Card, Alert, Button, Badge and Empty copy. |
 | `collection-light`, `collection-dark`, `collection-compact-accessibility` | A representative native List composition in regular, dark and narrow accessibility configurations. Navigation, search and sheet interaction are covered by Preview, not by a static image. |
 | `locale-ja`, `locale-en` | Japanese and English content. |
 
 To record, run `nix develop -c just record-snapshots`. This is a deliberate
 write operation; it places a short-lived marker under `.prepared` so the
-Simulator test process enters record mode, then removes it. XCTest reports
-intentional record-mode failures, which the command accepts only when all ten
-expected PNGs were written and every failure is a record-mode message. Open
+Simulator test process enters record mode, then removes it. The recorder checks
+that SnapshotTesting acknowledged each intentional write and that all ten
+expected PNGs exist. Open
 every baseline PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and commit the PNGs and

@@ -20,6 +20,9 @@ Contrast and accessibility text examples, Japanese/English content, and List
 composition were opened and visually checked for clipping, hierarchy, text
 contrast and action sizing. The Xcode canvas was also inspected in all four
 Preview variants. See the image paths in `tools/snapshots.json`.
+The long-copy review exposed truncated Empty State text; the component now
+lets its title and description grow vertically. The final record command
+passed with 10 real PNGs, and the subsequent normal comparison passed.
 
 Negative checks performed and then reverted: a SwiftLint force unwrap made
 `just lint` fail; a formatting violation made `just format-check` fail; a
