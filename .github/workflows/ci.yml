@@ -1,0 +1,25 @@
+name: Verify
+on:
+  push:
+  pull_request:
+jobs:
+  ios:
+    runs-on: [self-hosted, macOS, ARM64, xcode-27-0]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Check exact Nix and Apple environment
+        run: |
+          nix --version
+          nix develop -c just doctor
+      - name: Prepare locked test dependency
+        run: nix develop -c just prepare-deps
+      - name: Verify source, copy install, iOS tests and pixels
+        run: nix develop -c just check
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ios-test-evidence
+          path: |
+            TestResults/
+            Testing/Tests/ShadcnIOSSnapshotTests/__Snapshots__/

@@ -1,0 +1,78 @@
+{
+  "theme": {
+    "description": "Semantic tokens and environment injection",
+    "source": "Sources/ShadcnIOS/Theme/Theme.swift",
+    "dependencies": []
+  },
+  "button": {
+    "description": "Action styles, loading and disabled state",
+    "source": "Sources/ShadcnIOS/Components/IOSButton.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "card": {
+    "description": "Composable content container",
+    "source": "Sources/ShadcnIOS/Components/IOSCard.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "badge": {
+    "description": "Non-interactive status label",
+    "source": "Sources/ShadcnIOS/Components/IOSBadge.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "input": {
+    "description": "Labeled text and secure input",
+    "source": "Sources/ShadcnIOS/Components/IOSInput.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "textarea": {
+    "description": "Labeled multiline input",
+    "source": "Sources/ShadcnIOS/Components/IOSTextArea.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "separator": {
+    "description": "Decorative divider",
+    "source": "Sources/ShadcnIOS/Components/IOSSeparator.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "switch": {
+    "description": "Native Toggle with detail",
+    "source": "Sources/ShadcnIOS/Components/IOSSwitch.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "alert": {
+    "description": "Inline information or error",
+    "source": "Sources/ShadcnIOS/Components/IOSInlineAlert.swift",
+    "dependencies": [
+      "theme"
+    ]
+  },
+  "empty": {
+    "description": "Empty state with optional action",
+    "source": "Sources/ShadcnIOS/Components/IOSEmptyState.swift",
+    "dependencies": [
+      "theme",
+      "button"
+    ]
+  },
+  "skeleton": {
+    "description": "Stable loading placeholder",
+    "source": "Sources/ShadcnIOS/Components/IOSSkeleton.swift",
+    "dependencies": [
+      "theme"
+    ]
+  }
+}

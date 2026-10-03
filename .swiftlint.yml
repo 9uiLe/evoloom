@@ -1,0 +1,28 @@
+included:
+  - Package.swift
+  - Sources
+  - Tests
+  - Testing/Package.swift
+  - Testing/Tests
+excluded:
+  - .build
+  - .prepared
+  - DerivedData
+  - TestResults
+opt_in_rules:
+  - empty_count
+  - fatal_error_message
+  - force_unwrapping
+  - modifier_order
+  - sorted_imports
+trailing_comma:
+  mandatory_comma: true
+identifier_name:
+  min_length: 2
+line_length:
+  warning: 160
+  error: 220
+type_body_length:
+  warning: 350
+file_length:
+  warning: 600

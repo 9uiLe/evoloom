@@ -1,0 +1,11 @@
+.build/
+.swiftpm/
+.prepared/
+DerivedData/
+DerivedDataVisual/
+TestResults/
+*.xcresult
+snapshot-build.log
+__pycache__/
+*.pyc
+.DS_Store
