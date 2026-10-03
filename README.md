@@ -52,9 +52,9 @@ struct Example: View {
 }
 ```
 
-The root Package manifest pins `swift-app-macros` to an exact commit for normal
-SwiftPM consumers. Xcode may request approval to run the package's macro
-plugin on first use; review the pinned source and approve it in Xcode. In the
+The root Package manifest pins `swift-app-macros` 0.4.0 to its release commit
+for normal SwiftPM consumers. Xcode may request approval to run the package's
+macro plugin on first use; review the pinned source and approve it in Xcode. In the
 Nix development shell the manifest uses the locally prepared,
 Nix-fixed source instead. Run `just prepare-deps` before opening the Package
 in Xcode from that shell. The snapshot test harness is a separate Package

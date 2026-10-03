@@ -98,7 +98,8 @@ checks passed before merge. The merged-commit
 [CI run](https://github.com/9uiLe/swift-app-macros/actions/runs/37145972806)
 also completed successfully.
 
-This Package pins that merged commit and swift-syntax 603.0.2 in `flake.lock`.
+At integration time, this Package pinned that merged commit and swift-syntax
+603.0.2 in `flake.lock`.
 The Nix preparation creates local SwiftPM sources; Xcode builds and tests use
 `-disableAutomaticPackageResolution`. A separate clean temporary consumer
 resolved the public Package manifest to the pinned merged commit and exact
@@ -125,3 +126,21 @@ Bindings, actions or arbitrary child Views receive the ordinary body fallback;
 the macro is attached consistently, but no unsupported performance claim is
 made for those components. The Preview source compiled with the library; the
 Xcode canvas was not reopened in this integration.
+
+## AppMacros 0.4.0 update, 2026-10-04
+
+The [0.4.0 release](https://github.com/9uiLe/swift-app-macros/releases/tag/0.4.0)
+points to commit `4146637f4d9cf59e5051840311063ddd45a1b316` and pins
+swift-syntax 604.0.0. This Package now pins those sources in its public
+manifest and Nix lock. `nix flake update appMacros swiftSyntax` produced the
+new NAR hashes; `nix develop -c just prepare-deps` materialized both fixed
+sources. With the local dependency mode disabled, `swift package resolve`
+selected the release commit and swift-syntax 604.0.0, and an iOS Simulator
+Package build succeeded with `-disableAutomaticPackageResolution`.
+
+`nix develop -c just check` passed on Xcode 27.0 (27A266a), iPhone 18 Pro
+arm64, iOS Simulator 27.0 (24A434). It covered format and lint, 7 CLI tests,
+the library and Preview source build, 7 unit tests, copied Package build and
+1 test, and 8 image test methods comparing the existing 12 PNGs. Unit, copy
+and image `.xcresult` summaries reported zero failures. No component source
+or image baseline changed. This update did not reopen the Xcode Preview canvas.

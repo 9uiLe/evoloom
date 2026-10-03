@@ -10,7 +10,7 @@ let useLocalDependencies = ProcessInfo.processInfo.environment["SHADCN_IOS_LOCAL
 let macroDependency: Package.Dependency = if useLocalDependencies {
     .package(name: "swift-app-macros", path: ".prepared/AppMacros")
 } else {
-    .package(url: "https://github.com/9uiLe/swift-app-macros.git", revision: "c87f52673499ab71bac7e841290a5fa4261a8a0a")
+    .package(url: "https://github.com/9uiLe/swift-app-macros.git", revision: "4146637f4d9cf59e5051840311063ddd45a1b316")
 }
 
 let package = Package(

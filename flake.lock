@@ -3,17 +3,17 @@
     "appMacros": {
       "flake": false,
       "locked": {
-        "lastModified": 1791053679,
-        "narHash": "sha256-j9dqF8KA8QYdjDf+ZItIMMIPXnv90mNHKDviab0K/Jw=",
+        "lastModified": 1791057264,
+        "narHash": "sha256-OVell1XLeVVngi8ay4m6JzIVHPVAaLfSx+5s+uhpYiw=",
         "owner": "9uiLe",
         "repo": "swift-app-macros",
-        "rev": "c87f52673499ab71bac7e841290a5fa4261a8a0a",
+        "rev": "4146637f4d9cf59e5051840311063ddd45a1b316",
         "type": "github"
       },
       "original": {
         "owner": "9uiLe",
         "repo": "swift-app-macros",
-        "rev": "c87f52673499ab71bac7e841290a5fa4261a8a0a",
+        "rev": "4146637f4d9cf59e5051840311063ddd45a1b316",
         "type": "github"
       }
     },
@@ -61,16 +61,16 @@
     "swiftSyntax": {
       "flake": false,
       "locked": {
-        "lastModified": 1780679060,
-        "narHash": "sha256-zr+2MlGncEu1bEQwUUxlySDx4XOyK+LnX1SRbtm9ERc=",
+        "lastModified": 1781637876,
+        "narHash": "sha256-qRs7x0c8RSIC7yXjUDnF6HaEhkWsXPeAoLa9Tc538cI=",
         "owner": "swiftlang",
         "repo": "swift-syntax",
-        "rev": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+        "rev": "050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf",
         "type": "github"
       },
       "original": {
         "owner": "swiftlang",
-        "ref": "603.0.2",
+        "ref": "604.0.0",
         "repo": "swift-syntax",
         "type": "github"
       }

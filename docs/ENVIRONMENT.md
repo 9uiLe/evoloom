@@ -5,8 +5,8 @@
 | Source | Fixed version / revision | Use |
 | --- | --- | --- |
 | nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12 |
-| swift-app-macros | `c87f52673499ab71bac7e841290a5fa4261a8a0a` | `AppMacros` and `@AutoEquatableView` |
-| swift-syntax | `603.0.2`, revision `79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1` | Macro compiler plugin and its local Swift module graph |
+| swift-app-macros | `0.4.0`, revision `4146637f4d9cf59e5051840311063ddd45a1b316` | `AppMacros` and `@AutoEquatableView` |
+| swift-syntax | `604.0.0`, revision `050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf` | Macro compiler plugin and its local Swift module graph |
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
 
 Run `nix develop`, then `just prepare-deps`. That preparation copies the

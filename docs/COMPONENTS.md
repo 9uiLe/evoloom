@@ -20,7 +20,7 @@ store an action, arbitrary child View, or Binding. This protects changed
 callbacks, child content and bound values. `IOSButtonStyle` is a `ButtonStyle`,
 not a View, so the macro does not apply to it. A macro attachment alone is not
 a guarantee of fewer updates; profile the composed screen before relying on a
-performance claim. See the [macro contract](https://github.com/9uiLe/swift-app-macros/blob/c87f52673499ab71bac7e841290a5fa4261a8a0a/docs/auto-equatable-view.md).
+performance claim. See the [macro contract](https://github.com/9uiLe/swift-app-macros/blob/0.4.0/docs/auto-equatable-view.md).
 
 | Component | API | State and responsibility |
 | --- | --- | --- |

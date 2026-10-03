@@ -7,11 +7,11 @@
       flake = false;
     };
     appMacros = {
-      url = "github:9uiLe/swift-app-macros/c87f52673499ab71bac7e841290a5fa4261a8a0a";
+      url = "github:9uiLe/swift-app-macros/4146637f4d9cf59e5051840311063ddd45a1b316";
       flake = false;
     };
     swiftSyntax = {
-      url = "github:swiftlang/swift-syntax/603.0.2";
+      url = "github:swiftlang/swift-syntax/604.0.0";
       flake = false;
     };
   };
