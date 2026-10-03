@@ -10,10 +10,13 @@
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
 
 Run `nix develop`, then `just prepare-deps`. That preparation copies the
-Nix-fixed sources to ignored `.prepared/` local Swift packages. The AppMacros
-manifest is reduced to the product and compiler plugin and points to the
-prepared swift-syntax source. The swift-syntax package has no remote SwiftPM
-package dependencies in this pinned revision. SnapshotTesting is reduced to
+Nix-fixed sources to ignored `.prepared/` local Swift packages and records the
+selected Nix store paths in `.prepared/sources.json` after copying finishes.
+Build and test commands reject missing or stale preparation, including files
+left from an earlier `flake.lock`; rerun `just prepare-deps` after updating the
+lock. The AppMacros manifest contains only its product and compiler plugin and
+points to the prepared swift-syntax source. The pinned swift-syntax package has
+no remote SwiftPM dependencies. SnapshotTesting is reduced to
 its image comparison module, excluding its optional sibling products and their
 transitive dependencies. Its prepared manifest uses Swift 5 language mode,
 matching the upstream manifest on this Xcode. The root product uses Swift
@@ -45,8 +48,8 @@ iOS 27.0; the iOS 26.5 run is separate.
 
 Preparation and execution are separate. `just prepare-deps` is the only step
 that materializes external Swift source. Development and CI Xcode commands use
-`-disableAutomaticPackageResolution` and local package paths. Missing prepared
-sources fail with a preparation instruction. They use Xcode's
+`-disableAutomaticPackageResolution` and local package paths. Missing or stale
+prepared sources fail with a preparation instruction. They use Xcode's
 `-skipMacroValidation` because CI cannot accept an interactive macro approval;
 the macro source is pinned by Nix's NAR hash and reviewed before the check.
 Xcode's local help documents that this flag bypasses macro validation. To

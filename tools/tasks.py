@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from prepared_sources import nix_sources, verify_prepared_sources
+
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_XCODE = "Xcode 27.0\nBuild version 27A266a"
 EXPECTED_SDK = "27.0"
@@ -71,11 +73,9 @@ def doctor():
         "actionlint",
     ]
     missing = [tool for tool in required if shutil.which(tool) is None]
-    sources = ("SNAPSHOT_SOURCE", "APP_MACROS_SOURCE", "SWIFT_SYNTAX_SOURCE")
-    if missing or any(not os.environ.get(name) for name in sources):
-        raise RuntimeError(
-            f"Nix shell missing tools/source: {missing}; run nix develop"
-        )
+    if missing:
+        raise RuntimeError(f"Nix shell missing tools: {missing}; run nix develop")
+    sources = nix_sources()
     if output("xcodebuild", "-version") != EXPECTED_XCODE:
         raise RuntimeError(
             f"Expected {EXPECTED_XCODE!r}, got {output('xcodebuild', '-version')!r}"
@@ -119,26 +119,19 @@ def doctor():
     )
     print(f"Simulator UDID: {matches[0]['udid']}")
     print(f"Swift: {output('xcrun', 'swift', '--version').splitlines()[0]}")
-    print(f"Nix snapshot source: {os.environ['SNAPSHOT_SOURCE']}")
-    print(f"Nix macro source: {os.environ['APP_MACROS_SOURCE']}")
-    print(f"Nix syntax source: {os.environ['SWIFT_SYNTAX_SOURCE']}")
+    print(f"Nix snapshot source: {sources['SNAPSHOT_SOURCE']}")
+    print(f"Nix macro source: {sources['APP_MACROS_SOURCE']}")
+    print(f"Nix syntax source: {sources['SWIFT_SYNTAX_SOURCE']}")
     return matches[0]["udid"]
 
 
 def prepared_dependencies():
-    expected = (
-        ".prepared/SnapshotTesting/Package.swift",
-        ".prepared/AppMacros/Package.swift",
-        ".prepared/swift-syntax/Package.swift",
-    )
-    missing = [name for name in expected if not (ROOT / name).is_file()]
-    if missing:
-        raise RuntimeError(
-            f"Prepared dependencies missing: {missing}; run just prepare-deps inside nix develop"
-        )
+    verify_prepared_sources(ROOT / ".prepared")
 
 
-def xcode(action, cwd=ROOT, scheme="ShadcnIOS", result=None):
+def xcode(
+    action, cwd=ROOT, scheme="ShadcnIOS", result=None, derived_data=None, check=True
+):
     prepared_dependencies()
     device = doctor()
     command = [
@@ -150,7 +143,7 @@ def xcode(action, cwd=ROOT, scheme="ShadcnIOS", result=None):
         "-destination",
         f"platform=iOS Simulator,id={device}",
         "-derivedDataPath",
-        str(ROOT / "DerivedData" / scheme),
+        str(ROOT / "DerivedData" / (derived_data or scheme)),
         "-disableAutomaticPackageResolution",
         "-skipMacroValidation",
         "CODE_SIGNING_ALLOWED=NO",
@@ -163,7 +156,7 @@ def xcode(action, cwd=ROOT, scheme="ShadcnIOS", result=None):
             shutil.rmtree(result)
         command.extend(["-resultBundlePath", str(result)])
     print(" ".join(command), flush=True)
-    subprocess.run(command, cwd=cwd, env=apple_env(), check=True, timeout=240)
+    return subprocess.run(command, cwd=cwd, env=apple_env(), check=check, timeout=240)
 
 
 def snapshot_hashes():
@@ -194,7 +187,6 @@ def snapshots(record=False):
     differences = ROOT / "TestResults/SnapshotDiffs"
     if differences.exists():
         shutil.rmtree(differences)
-    env = apple_env()
     marker = ROOT / ".prepared/record-snapshots"
     if record:
         marker.write_text("Record mode enabled by just record-snapshots\n")
@@ -202,37 +194,17 @@ def snapshots(record=False):
         raise RuntimeError(
             "Record marker is present; remove .prepared/record-snapshots before comparison"
         )
-    device = doctor()
     result = (
         ROOT / "TestResults" / ("record.xcresult" if record else "snapshot.xcresult")
     )
-    if result.exists():
-        shutil.rmtree(result)
-    result.parent.mkdir(parents=True, exist_ok=True)
-    command = [
-        "xcodebuild",
-        "test",
-        "-quiet",
-        "-parallel-testing-enabled",
-        "NO",
-        "-enableCodeCoverage",
-        "NO",
-        "-scheme",
-        "ShadcnIOSVisualTests-Package",
-        "-destination",
-        f"platform=iOS Simulator,id={device}",
-        "-derivedDataPath",
-        str(ROOT / "DerivedData/Visual"),
-        "-disableAutomaticPackageResolution",
-        "-skipMacroValidation",
-        "-resultBundlePath",
-        str(result),
-        "CODE_SIGNING_ALLOWED=NO",
-    ]
-    print(" ".join(command), flush=True)
     try:
-        completed = subprocess.run(
-            command, cwd=ROOT / "Testing", env=env, check=False, timeout=240
+        completed = xcode(
+            "test",
+            cwd=ROOT / "Testing",
+            scheme="ShadcnIOSVisualTests-Package",
+            result=result,
+            derived_data="Visual",
+            check=False,
         )
     finally:
         if record:

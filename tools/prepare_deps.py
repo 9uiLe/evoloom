@@ -1,8 +1,9 @@
 """Materialize Nix-fixed Swift package sources before any Xcode build."""
 
-import os
 import shutil
 from pathlib import Path
+
+from prepared_sources import STAMP, nix_sources, record_prepared_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 PREPARED = ROOT / ".prepared"
@@ -21,17 +22,12 @@ def replace_tree(source, target):
     shutil.copytree(source, target, copy_function=shutil.copyfile)
 
 
-def source(name, witness):
-    value = os.environ.get(name)
-    if not value or not (Path(value) / witness).exists():
-        raise SystemExit(f"Nix source {name} is missing; run nix develop first")
-    return Path(value)
-
-
-snapshot = source("SNAPSHOT_SOURCE", "Sources/SnapshotTesting")
-macros = source("APP_MACROS_SOURCE", "Sources/AppMacros")
-syntax = source("SWIFT_SYNTAX_SOURCE", "Sources/SwiftSyntax")
+sources = nix_sources()
+snapshot = Path(sources["SNAPSHOT_SOURCE"])
+macros = Path(sources["APP_MACROS_SOURCE"])
+syntax = Path(sources["SWIFT_SYNTAX_SOURCE"])
 PREPARED.mkdir(exist_ok=True)
+(PREPARED / STAMP).unlink(missing_ok=True)
 
 snapshot_target = PREPARED / "SnapshotTesting"
 remove_tree(snapshot_target)
@@ -89,6 +85,7 @@ let package = Package(
 )
 """
 )
+record_prepared_sources(PREPARED, sources)
 print(f"Prepared SnapshotTesting from {snapshot}")
 print(f"Prepared AppMacros from {macros}")
 print(f"Prepared swift-syntax from {syntax}")
