@@ -1,6 +1,6 @@
 # Contributing
 
-Read `DESIGN.md`, `docs/ENVIRONMENT.md` and `docs/TESTING.md`. Keep iOS 17
+Read `DESIGN.md`, `docs/ENVIRONMENT.md` and `docs/TESTING.md`. Keep iOS 26
 compatibility, native control semantics, copyable sources, and the root
 Package's dependency-free manifest. Update `tools/registry.json` when adding
 a component. Include a Preview example, unit/CLI checks where behavior can

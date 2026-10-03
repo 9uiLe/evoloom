@@ -255,9 +255,9 @@ def verify_copy():
         check=True,
     )
     (destination / "Package.swift").write_text(
-        """// swift-tools-version: 6.0
+        """// swift-tools-version: 6.2
 import PackageDescription
-let package = Package(name: "CopyCheck", platforms: [.iOS(.v17)],
+let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
     products: [.library(name: "ShadcnIOSCopied", targets: ["ShadcnIOSCopied"])],
     targets: [.target(name: "ShadcnIOSCopied"),
               .testTarget(name: "CopyCheckTests", dependencies: ["ShadcnIOSCopied"])])

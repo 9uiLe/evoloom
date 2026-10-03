@@ -1,6 +1,6 @@
 # ShadcnIOS
 
-An independent SwiftUI component foundation for iOS 17+. It supplies a calm
+An independent SwiftUI component foundation for iOS 26+. It supplies a calm
 neutral theme and source-owned components, while leaving navigation and system
 interactions to SwiftUI. It is not an official shadcn/ui or Apple project.
 
@@ -30,7 +30,7 @@ missing baselines or changed baseline files. See [testing](docs/TESTING.md).
 
 ## Use as a library
 
-Add this package to an iOS 17+ Xcode project, choose its `ShadcnIOS` library
+Add this package to an iOS 26+ Xcode project, choose its `ShadcnIOS` library
 product, then:
 
 ```swift

@@ -4,6 +4,8 @@ Environment checked on 2026-10-03: Apple Silicon, Xcode 27.0 (27A266a),
 Apple Swift 6.4, iPhoneSimulator SDK 27.0 (24A430), iOS 27.0 Simulator runtime
 (24A434), iPhone 18 Pro (arm64). `nix develop -c just doctor` checked the exact
 versions and available device. `flake.lock` pins nixpkgs and SnapshotTesting.
+The product now targets iOS 26 and uses Swift tools 6.2; Xcode reported that
+`.iOS(.v26)` is unavailable with the former 6.0 manifest.
 
 | Command or check | Result |
 | --- | --- |
@@ -13,6 +15,7 @@ versions and available device. `flake.lock` pins nixpkgs and SnapshotTesting.
 | Xcode Preview canvas | Pass with iPhone 18 Pro; light, dark, Collection and adjusted theme rendered. |
 | Swift Package result bundles | Unit: 5 passed; copied Package: 1 passed; visual target: 6 tests passed, comparing 10 PNGs. |
 | Distribution tests | 6 passed, including a guard against `add` before license/config initialization. |
+| iOS 26.5 runtime | Root Package tests: 5 passed on iPhone 17 Pro, runtime build 23F77, using Xcode 27.0. This was a separate run; image baselines remain fixed to iOS 27.0. |
 | Clean checkout | Pass; cloned the committed repository into a separate directory, then ran `nix develop -c just doctor`, `nix develop -c just prepare-deps` and `nix develop -c just check`. No tracked files changed. |
 
 The 10 committed reference PNGs came from `just record-snapshots` on the

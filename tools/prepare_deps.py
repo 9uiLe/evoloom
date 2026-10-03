@@ -24,11 +24,11 @@ shutil.copytree(
 )
 shutil.copyfile(SOURCE / "LICENSE", TARGET / "LICENSE")
 (TARGET / "Package.swift").write_text(
-    """// swift-tools-version: 6.0
+    """// swift-tools-version: 6.2
 import PackageDescription
 let package = Package(
     name: "SnapshotTestingLocal",
-    platforms: [.iOS(.v13)],
+    platforms: [.iOS(.v26)],
     products: [.library(name: "SnapshotTesting", targets: ["SnapshotTesting"])],
     targets: [.target(name: "SnapshotTesting")],
     swiftLanguageModes: [.v5]

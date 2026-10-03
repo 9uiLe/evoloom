@@ -13,7 +13,10 @@ source imports from the upstream package's `InlineSnapshotTesting` or
 `SnapshotTestingCustomDump` modules; those products and their transitive
 `swift-syntax` and `swift-custom-dump` dependencies are excluded. The
 generated manifest uses Swift 5 language mode, matching the upstream manifest
-on this Xcode. The root product manifest has no external dependency.
+on this Xcode. The root product manifest has no external dependency. The
+product, visual-test and prepared dependency manifests use Swift tools 6.2
+because Xcode reports that `PackageDescription` exposes `.iOS(.v26)` starting
+with that version.
 
 Apple prerequisites remain outside Nix: macOS on arm64; Xcode 27.0 build
 27A266a at `/Applications/Xcode-27.0.0.app/Contents/Developer`; Apple Swift
@@ -24,6 +27,11 @@ Xcode selection. The Nix shell sets `DEVELOPER_DIR` and clears `SDKROOT` so
 `xcrun` uses the chosen Apple toolchain and SDK; Nix's Swift build support is
 not used for iOS. These Apple artifacts, Simulator pixels and Xcode license
 are not reproducible from `flake.lock`.
+
+The product's deployment target is iOS 26. The root Package unit tests also
+ran on the installed iOS 26.5 runtime (build 23F77) with an iPhone 17 Pro.
+The pinned image baselines and `just check` continue to use iOS 27.0; the
+iOS 26.5 run is separate from that image comparison.
 
 Preparation and test execution are separate. `just prepare-deps` is the only
 step that materializes external Swift source. The test harness depends on
