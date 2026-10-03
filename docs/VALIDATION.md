@@ -73,3 +73,15 @@ was reverted. The normal comparison passed afterward. The Preview source
 compiled as part of the library build; the Xcode canvas was not reopened for
 this refactor. The workflow remains configured for `master` pushes, but a
 successful remote CI run has not been observed.
+
+## Dark Toggle track, 2026-10-04
+
+The dark `toggleOnBackground` semantic token now supplies a medium gray
+on-state track to the native `IOSSwitch`; the light palette keeps its existing
+primary track. `just record-snapshots` recorded 12 real PNGs. Only the existing
+dark catalog image changed, and `switch-states-dark` was added to show on and
+off together. Both images were opened at full size: the white thumb, gray on
+track and darker native off track were distinguishable, with no clipped labels.
+`nix develop -c just check` passed: format, lint, 7 CLI tests, 6 unit tests,
+copied Package compilation and tests, and 8 visual test methods comparing 12
+PNGs. Xcode 27.0 (27A266a), iOS Simulator 27.0 (24A434), iPhone 18 Pro arm64.

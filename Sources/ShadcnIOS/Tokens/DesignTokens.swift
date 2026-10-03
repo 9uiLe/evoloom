@@ -14,6 +14,8 @@ public struct IOSColorTokens: Sendable {
     public var mutedForeground: Color
     public var border: Color
     public var input: Color
+    /// The native Toggle track color while its value is on.
+    public var toggleOnBackground: Color
     public var destructive: Color
     public var destructiveForeground: Color
     public var destructiveText: Color
@@ -25,7 +27,8 @@ public struct IOSColorTokens: Sendable {
         primary: Color, primaryForeground: Color, secondary: Color,
         secondaryForeground: Color, muted: Color, mutedForeground: Color,
         border: Color, input: Color, destructive: Color, destructiveForeground: Color,
-        destructiveText: Color, success: Color, successForeground: Color
+        destructiveText: Color, success: Color, successForeground: Color,
+        toggleOnBackground: Color? = nil
     ) {
         self.background = background
         self.foreground = foreground
@@ -39,6 +42,7 @@ public struct IOSColorTokens: Sendable {
         self.mutedForeground = mutedForeground
         self.border = border
         self.input = input
+        self.toggleOnBackground = toggleOnBackground ?? primary
         self.destructive = destructive
         self.destructiveForeground = destructiveForeground
         self.destructiveText = destructiveText
@@ -141,7 +145,8 @@ public struct IOSDesignTokens: Sendable {
             border: Color(red: 0.29, green: 0.29, blue: 0.32), input: Color(red: 0.54, green: 0.54, blue: 0.56),
             destructive: Color(red: 0.65, green: 0.16, blue: 0.16), destructiveForeground: .white,
             destructiveText: Color(red: 1, green: 0.70, blue: 0.70),
-            success: Color(red: 0.08, green: 0.24, blue: 0.17), successForeground: Color(red: 0.68, green: 0.95, blue: 0.76)
+            success: Color(red: 0.08, green: 0.24, blue: 0.17), successForeground: Color(red: 0.68, green: 0.95, blue: 0.76),
+            toggleOnBackground: Color(red: 0.54, green: 0.54, blue: 0.56)
         )
     )
 }

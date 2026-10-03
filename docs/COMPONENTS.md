@@ -18,7 +18,7 @@ this file automatically.
 | `IOSInput` | `IOSInput("Email", text: $email, placeholder: "name@example.com", error: error, keyboardType: .emailAddress, contentType: .emailAddress)` | A persistent label stays visible. Supports secure mode, hint, error and native focus behavior. Provide actionable error copy. `.disabled(true)` uses SwiftUI. |
 | `IOSTextArea` | `IOSTextArea("Notes", text: $notes, hint: "Optional")` | Multiline native TextEditor with persistent label and error. |
 | `IOSSeparator` | `IOSSeparator()` | Decorative and hidden from accessibility. |
-| `IOSSwitch` | `IOSSwitch("Updates", isOn: $updates, detail: "On this device")` | Native Toggle owns interaction and VoiceOver state. |
+| `IOSSwitch` | `IOSSwitch("Updates", isOn: $updates, detail: "On this device")` | Native Toggle owns interaction and VoiceOver state. Its on-track background uses `toggleOnBackground`; the neutral dark token is gray. |
 | `IOSInlineAlert` | `IOSInlineAlert("Unavailable", message: "Try again.", variant: .error)` | Persistent inline message. Use SwiftUI `.alert` for an interrupting decision. |
 | `IOSEmptyState` | `IOSEmptyState("No items", message: "Create one.") { IOSButton("Create") {} }` | Optional action; explain what can happen next. |
 | `IOSSkeleton` | `IOSSkeleton(height: 20)` | Static placeholder; put a spoken loading label on its parent. |

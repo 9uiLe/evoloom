@@ -24,6 +24,6 @@ public struct IOSSwitch: View {
                 }
             }
         }
-        .tint(tokens.palette(for: scheme).primary)
+        .tint(tokens.palette(for: scheme).toggleOnBackground)
     }
 }

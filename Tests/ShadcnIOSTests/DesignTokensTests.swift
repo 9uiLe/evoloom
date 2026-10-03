@@ -39,6 +39,9 @@ final class DesignTokensTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(contrast(palette.success, palette.successForeground), 4.5)
             XCTAssertGreaterThanOrEqual(contrast(palette.background, palette.input), 3)
         }
+        let dark = IOSDesignTokens.neutral.dark
+        XCTAssertGreaterThanOrEqual(contrast(dark.toggleOnBackground, .white), 3)
+        XCTAssertGreaterThanOrEqual(contrast(dark.toggleOnBackground, dark.background), 3)
     }
 
     @MainActor

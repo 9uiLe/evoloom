@@ -16,6 +16,15 @@ final class ComponentSnapshots: XCTestCase {
         snapshot(catalog(), name: "catalog-dark", height: 1500, scheme: .dark)
     }
 
+    func testSwitchStatesDark() {
+        let view = VStack(alignment: .leading, spacing: 16) {
+            IOSSwitch("Notifications on", isOn: .constant(true), detail: "The selected track uses the gray token.")
+            IOSSeparator()
+            IOSSwitch("Notifications off", isOn: .constant(false), detail: "The native off appearance remains visible.")
+        }
+        snapshot(view, name: "switch-states-dark", height: 180, scheme: .dark)
+    }
+
     func testCustomizedDesignTokens() {
         var tokens = IOSDesignTokens.neutral
         tokens.light.primary = .indigo

@@ -12,6 +12,8 @@ background as a pair and check contrast after edits. `IOSSpacingTokens` are
 4, 8, 12, 16, 24 and 32 pt; do not replace native List or Form internal
 spacing. `IOSRadiusTokens` define control, card and badge corners.
 `IOSTypographyTokens` use system text styles so Dynamic Type can grow them.
+`toggleOnBackground` colors the native Toggle track when it is on; the neutral
+dark value is gray so the white thumb and track remain distinguishable.
 `IOSControlTokens` define the 44 pt minimum operation height, editor and
 skeleton heights, separator and border thickness, and press opacity. Inject
 the complete value through `.iosDesignTokens(tokens)` so nested components
