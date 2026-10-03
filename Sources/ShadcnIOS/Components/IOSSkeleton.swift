@@ -1,6 +1,8 @@
+import AppMacros
 import SwiftUI
 
 /// Static by design, so screenshots and Reduce Motion are stable.
+@AutoEquatableView
 public struct IOSSkeleton: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -10,7 +12,7 @@ public struct IOSSkeleton: View {
         self.height = height
     }
 
-    public var body: some View {
+    public var equatableBody: some View {
         RoundedRectangle(cornerRadius: tokens.radii.badge)
             .fill(tokens.palette(for: scheme).muted)
             .frame(height: height ?? tokens.controls.skeletonHeight)

@@ -11,7 +11,7 @@ jobs:
         run: |
           nix --version
           nix develop -c just doctor
-      - name: Prepare locked test dependency
+      - name: Prepare locked Swift dependencies
         run: nix develop -c just prepare-deps
       - name: Verify source, copy install, iOS tests and pixels
         run: nix develop -c just check

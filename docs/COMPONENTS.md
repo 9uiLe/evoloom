@@ -10,6 +10,18 @@ component measurements through screens. The token source is
 `Sources/ShadcnIOS/Tokens/DesignTokens.swift`; copying a component includes
 this file automatically.
 
+All component View types use `@AutoEquatableView`. `IOSBadge`,
+`IOSCardHeader`, `IOSInlineAlert`, `IOSSeparator` and `IOSSkeleton` have only
+comparable parent inputs and get an equality boundary. Parent updates with
+equal inputs can skip their content evaluation; SwiftUI environment changes
+still invalidate their content. `IOSButton`, `IOSCard`, `IOSEmptyState`,
+`IOSInput`, `IOSTextArea` and `IOSSwitch` retain a normal `body` because they
+store an action, arbitrary child View, or Binding. This protects changed
+callbacks, child content and bound values. `IOSButtonStyle` is a `ButtonStyle`,
+not a View, so the macro does not apply to it. A macro attachment alone is not
+a guarantee of fewer updates; profile the composed screen before relying on a
+performance claim. See the [macro contract](https://github.com/9uiLe/swift-app-macros/blob/c87f52673499ab71bac7e841290a5fa4261a8a0a/docs/auto-equatable-view.md).
+
 | Component | API | State and responsibility |
 | --- | --- | --- |
 | `IOSButton` | `IOSButton("Save", variant: .primary, size: .regular, isLoading: saving) { save() }` | Variants: primary, secondary, outline, ghost, destructive. The loading button disables itself. The caller must prevent concurrent work outside this view. For native destructive role use `Button("Delete", role: .destructive) { ... }.buttonStyle(IOSButtonStyle())`. |

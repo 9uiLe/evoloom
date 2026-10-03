@@ -3,8 +3,8 @@
 Environment checked on 2026-10-03: Apple Silicon, Xcode 27.0 (27A266a),
 Apple Swift 6.4, iPhoneSimulator SDK 27.0 (24A430), iOS 27.0 Simulator runtime
 (24A434), iPhone 18 Pro (arm64). `nix develop -c just doctor` checked the exact
-versions and available device. `flake.lock` pins nixpkgs and SnapshotTesting.
-The product now targets iOS 26 and uses Swift tools 6.2; Xcode reported that
+versions and available device. At that baseline, `flake.lock` pinned nixpkgs
+and SnapshotTesting. The product targeted iOS 26 with Swift tools 6.2; Xcode reported that
 `.iOS(.v26)` is unavailable with the former 6.0 manifest.
 
 | Command or check | Result |
@@ -85,3 +85,43 @@ track and darker native off track were distinguishable, with no clipped labels.
 `nix develop -c just check` passed: format, lint, 7 CLI tests, 6 unit tests,
 copied Package compilation and tests, and 8 visual test methods comparing 12
 PNGs. Xcode 27.0 (27A266a), iOS Simulator 27.0 (24A434), iPhone 18 Pro arm64.
+
+## AppMacros integration, 2026-10-04
+
+`swift-app-macros` PR [#10](https://github.com/9uiLe/swift-app-macros/pull/10)
+was merged to `master` as `c87f52673499ab71bac7e841290a5fa4261a8a0a`.
+Its new `@AutoEquatableView` generates a comparison boundary for comparable
+parent inputs and an ordinary body for actions, Bindings and arbitrary child
+Views. Upstream `swift test --disable-automatic-resolution` passed 75 tests;
+the iOS Simulator package build and 28 release-tool tests passed. Required PR
+checks passed before merge. The merged-commit
+[CI run](https://github.com/9uiLe/swift-app-macros/actions/runs/37145972806)
+also completed successfully.
+
+This Package pins that merged commit and swift-syntax 603.0.2 in `flake.lock`.
+The Nix preparation creates local SwiftPM sources; Xcode builds and tests use
+`-disableAutomaticPackageResolution`. A separate clean temporary consumer
+resolved the public Package manifest to the pinned merged commit and exact
+swift-syntax version. Its iOS Simulator Package build passed after adding
+Xcode's `-skipMacroValidation` to the noninteractive verification command.
+Without that flag, Xcode blocked a first-time external macro pending approval;
+the failure was an approval gate, not a Swift compilation error. Manifest
+checks also showed that an unprepared consumer
+inside the Nix shell selects the public pin, while the prepared development
+checkout selects the local Nix source.
+
+`nix develop -c just check` passed on Xcode 27.0 (27A266a), iPhone 18 Pro
+arm64, iOS Simulator 27.0 (24A434): format, lint, 7 CLI tests, iOS Package
+build, 7 unit tests, copied Package build and 1 test, and 8 visual test methods
+comparing 12 PNGs. The second formatter run changed no files, and a temporary
+unused Python import made `just lint` fail with Ruff F401; it was reverted.
+The existing PNG baselines stayed unchanged. The dark component catalog and
+narrow accessibility Collection baseline were opened for visual review; labels
+and operations were not clipped. SnapshotTesting 1.18.9 emitted deprecation
+warnings when its prepared source rebuilt; the test result was Passed.
+
+Static display components receive the equality boundary. Components with
+Bindings, actions or arbitrary child Views receive the ordinary body fallback;
+the macro is attached consistently, but no unsupported performance claim is
+made for those components. The Preview source compiled with the library; the
+Xcode canvas was not reopened in this integration.

@@ -11,7 +11,8 @@ interactions to SwiftUI. It is not an official shadcn/ui or Apple project.
 - iOS Simulator SDK 27.0 build 24A430, runtime 27.0 build 24A434, and an
   available iPhone 18 Pro simulator. The commands verify these exact values.
 - Nix with flakes enabled. Nix supplies the development tools and fixed
-  SnapshotTesting source; Apple supplies Xcode, the SDK and Simulator.
+  SnapshotTesting, AppMacros and swift-syntax sources; Apple supplies Xcode,
+  the SDK and Simulator.
 
 ## Start
 
@@ -51,8 +52,13 @@ struct Example: View {
 }
 ```
 
-The root Package manifest has no external dependencies or generated local
-paths. The snapshot test harness is a separate Package under `Testing/`.
+The root Package manifest pins `swift-app-macros` to an exact commit for normal
+SwiftPM consumers. Xcode may request approval to run the package's macro
+plugin on first use; review the pinned source and approve it in Xcode. In the
+Nix development shell the manifest uses the locally prepared,
+Nix-fixed source instead. Run `just prepare-deps` before opening the Package
+in Xcode from that shell. The snapshot test harness is a separate Package
+under `Testing/`.
 
 ## Own the source
 
@@ -65,7 +71,8 @@ nix develop -c python3 tools/shadcn_ios.py init --destination /tmp/my-ios-packag
 
 Copied files live under `Sources/ShadcnIOSCopied`; use `ShadcnIOSCopied` as
 the target name in a Swift Package, or add the files to your app target in
-Xcode. No library import is needed in copied source. Existing files are
+Xcode. Copied source imports `AppMacros`, but not `ShadcnIOS`; add the pinned
+`AppMacros` product to the target. Existing files are
 protected unless `--overwrite` is explicit. See [distribution](docs/DISTRIBUTION.md).
 
 ## Preview

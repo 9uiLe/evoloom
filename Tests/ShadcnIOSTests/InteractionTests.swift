@@ -4,6 +4,14 @@ import XCTest
 
 @MainActor
 final class InteractionTests: XCTestCase {
+    func testDisplayOnlyComponentsCompareParentInputs() {
+        XCTAssertEqual(IOSBadge("Ready", variant: .success), IOSBadge("Ready", variant: .success))
+        XCTAssertNotEqual(IOSBadge("Ready", variant: .success), IOSBadge("Failed", variant: .destructive))
+        XCTAssertEqual(IOSCardHeader("Account", detail: "Active"), IOSCardHeader("Account", detail: "Active"))
+        XCTAssertNotEqual(IOSSkeleton(height: 20), IOSSkeleton(height: 24))
+        XCTAssertEqual(IOSSeparator(), IOSSeparator())
+    }
+
     func testButtonActionGate() {
         var calls = 0
         let ready = IOSButton("Send") { calls += 1 }

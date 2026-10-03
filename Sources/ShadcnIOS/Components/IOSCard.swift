@@ -1,15 +1,17 @@
+import AppMacros
 import SwiftUI
 
+@AutoEquatableView
 public struct IOSCard<Content: View>: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
-    private let content: Content
+    @SkipEquatable private let content: Content
 
     public init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
-    public var body: some View {
+    public var equatableBody: some View {
         content
             .padding(tokens.spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -21,6 +23,7 @@ public struct IOSCard<Content: View>: View {
     }
 }
 
+@AutoEquatableView
 public struct IOSCardHeader: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -32,7 +35,7 @@ public struct IOSCardHeader: View {
         self.detail = detail
     }
 
-    public var body: some View {
+    public var equatableBody: some View {
         VStack(alignment: .leading, spacing: tokens.spacing.xxs) {
             Text(title).font(tokens.typography.cardTitle)
             if let detail {

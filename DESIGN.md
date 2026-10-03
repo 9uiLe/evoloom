@@ -20,6 +20,14 @@ the complete value through `.iosDesignTokens(tokens)` so nested components
 use one decision set. Keep screen-specific layout choices in the screen.
 Avoid wrapping every section in a card.
 
+`@AutoEquatableView` is an implementation rule for component Views. Comparable
+display inputs may skip repeat parent updates. Bindings, actions and arbitrary
+child Views must keep updating, so those components use the macro's ordinary
+body fallback. Do not sacrifice current values or actions to obtain an
+equality boundary. SwiftUI environment values remain under SwiftUI's
+invalidation mechanism. Confirm any claimed performance gain with a measured
+screen, while preserving the visual and accessibility checks below.
+
 State must be legible without color: error text should say what to fix,
 loading should explain progress to assistive technology, and badges should
 include words. Skeleton is static and decorative; announce loading on its

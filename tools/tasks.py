@@ -71,7 +71,8 @@ def doctor():
         "actionlint",
     ]
     missing = [tool for tool in required if shutil.which(tool) is None]
-    if missing or not os.environ.get("SNAPSHOT_SOURCE"):
+    sources = ("SNAPSHOT_SOURCE", "APP_MACROS_SOURCE", "SWIFT_SYNTAX_SOURCE")
+    if missing or any(not os.environ.get(name) for name in sources):
         raise RuntimeError(
             f"Nix shell missing tools/source: {missing}; run nix develop"
         )
@@ -119,10 +120,26 @@ def doctor():
     print(f"Simulator UDID: {matches[0]['udid']}")
     print(f"Swift: {output('xcrun', 'swift', '--version').splitlines()[0]}")
     print(f"Nix snapshot source: {os.environ['SNAPSHOT_SOURCE']}")
+    print(f"Nix macro source: {os.environ['APP_MACROS_SOURCE']}")
+    print(f"Nix syntax source: {os.environ['SWIFT_SYNTAX_SOURCE']}")
     return matches[0]["udid"]
 
 
+def prepared_dependencies():
+    expected = (
+        ".prepared/SnapshotTesting/Package.swift",
+        ".prepared/AppMacros/Package.swift",
+        ".prepared/swift-syntax/Package.swift",
+    )
+    missing = [name for name in expected if not (ROOT / name).is_file()]
+    if missing:
+        raise RuntimeError(
+            f"Prepared dependencies missing: {missing}; run just prepare-deps inside nix develop"
+        )
+
+
 def xcode(action, cwd=ROOT, scheme="ShadcnIOS", result=None):
+    prepared_dependencies()
     device = doctor()
     command = [
         "xcodebuild",
@@ -135,6 +152,7 @@ def xcode(action, cwd=ROOT, scheme="ShadcnIOS", result=None):
         "-derivedDataPath",
         str(ROOT / "DerivedData" / scheme),
         "-disableAutomaticPackageResolution",
+        "-skipMacroValidation",
         "CODE_SIGNING_ALLOWED=NO",
     ]
     if action == "test":
@@ -157,11 +175,7 @@ def snapshot_hashes():
 
 
 def snapshots(record=False):
-    prepared = ROOT / ".prepared/SnapshotTesting/Package.swift"
-    if not prepared.exists():
-        raise RuntimeError(
-            "Test source missing; run just prepare-deps inside nix develop"
-        )
+    prepared_dependencies()
     manifest = ROOT / "tools/snapshots.json"
     if not record:
         if not manifest.exists():
@@ -210,6 +224,7 @@ def snapshots(record=False):
         "-derivedDataPath",
         str(ROOT / "DerivedData/Visual"),
         "-disableAutomaticPackageResolution",
+        "-skipMacroValidation",
         "-resultBundlePath",
         str(result),
         "CODE_SIGNING_ALLOWED=NO",
@@ -257,11 +272,12 @@ def verify_copy():
         check=True,
     )
     (destination / "Package.swift").write_text(
-        """// swift-tools-version: 6.2
+        """// swift-tools-version: 6.3
 import PackageDescription
 let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
     products: [.library(name: "ShadcnIOSCopied", targets: ["ShadcnIOSCopied"])],
-    targets: [.target(name: "ShadcnIOSCopied"),
+    dependencies: [.package(name: "swift-app-macros", path: "../AppMacros")],
+    targets: [.target(name: "ShadcnIOSCopied", dependencies: [.product(name: "AppMacros", package: "swift-app-macros")]),
               .testTarget(name: "CopyCheckTests", dependencies: ["ShadcnIOSCopied"])])
 """
     )

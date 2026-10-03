@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "appMacros": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791053679,
+        "narHash": "sha256-j9dqF8KA8QYdjDf+ZItIMMIPXnv90mNHKDviab0K/Jw=",
+        "owner": "9uiLe",
+        "repo": "swift-app-macros",
+        "rev": "c87f52673499ab71bac7e841290a5fa4261a8a0a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "9uiLe",
+        "repo": "swift-app-macros",
+        "rev": "c87f52673499ab71bac7e841290a5fa4261a8a0a",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1789921291,
@@ -18,8 +35,10 @@
     },
     "root": {
       "inputs": {
+        "appMacros": "appMacros",
         "nixpkgs": "nixpkgs",
-        "snapshot": "snapshot"
+        "snapshot": "snapshot",
+        "swiftSyntax": "swiftSyntax"
       }
     },
     "snapshot": {
@@ -36,6 +55,23 @@
         "owner": "pointfreeco",
         "ref": "1.18.9",
         "repo": "swift-snapshot-testing",
+        "type": "github"
+      }
+    },
+    "swiftSyntax": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1780679060,
+        "narHash": "sha256-zr+2MlGncEu1bEQwUUxlySDx4XOyK+LnX1SRbtm9ERc=",
+        "owner": "swiftlang",
+        "repo": "swift-syntax",
+        "rev": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "swiftlang",
+        "ref": "603.0.2",
+        "repo": "swift-syntax",
         "type": "github"
       }
     }

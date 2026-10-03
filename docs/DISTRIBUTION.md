@@ -1,7 +1,8 @@
 # Distribution
 
-The root `Package.swift` is a normal iOS library dependency. It needs no Nix
-path or generated file to load. The library includes the internal Preview
+The root `Package.swift` is a normal iOS library dependency. Outside the Nix
+development shell it fetches the pinned `swift-app-macros` commit through
+SwiftPM and needs no generated local path to load. The library includes the internal Preview
 fixtures but does not expose them as public API. The separate `Testing` package
 is only for visual tests.
 
@@ -10,8 +11,19 @@ Use `tools/shadcn_ios.py list`, `dry-run --destination DIR --init button`,
 with `nix develop -c python3 ...` so Python comes from the fixed Nix shell.
 `init` creates the common design tokens, config, license, notice and design rules. `add`
 requires that initialization marker and resolves dependencies from
-`tools/registry.json`. Copied Swift files import
-only SwiftUI; they do not import `ShadcnIOS`.
+`tools/registry.json`. Copied Swift files import SwiftUI and `AppMacros`, but
+do not import `ShadcnIOS`. Add the exact `swift-app-macros` commit recorded in
+the root `Package.swift` as a package dependency, and attach its `AppMacros`
+product to the target containing the copies. Nix development and copy
+verification use the same source through local fixed paths. Macro code is a
+compile-time dependency, while `EquatableBodyView` is a small runtime protocol
+used by display-only components. The copied files own their UI source and can
+be customized, but retain this macro dependency while using `@AutoEquatableView`.
+Xcode may ask for approval before executing the macro plugin, including after
+its source changes. Review the pinned revision and approve it in Xcode for an
+interactive project. The package build check for a clean noninteractive
+consumer used Xcode's `-skipMacroValidation` flag only after the fixed source
+and revision were reviewed; this flag bypasses Xcode's approval prompt.
 
 The CLI refuses unknown components, dependency cycles, existing files, unsafe
 relative paths, symlinks on the destination path and unwritable paths. It
