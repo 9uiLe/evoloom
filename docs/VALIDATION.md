@@ -12,6 +12,7 @@ versions and available device. `flake.lock` pins nixpkgs and SnapshotTesting.
 | `nix develop -c just check` | Pass; formatting, SwiftLint, Ruff, yamllint, actionlint, CLI tests, iOS library build, unit tests, copy install test and image comparison. |
 | Xcode Preview canvas | Pass with iPhone 18 Pro; light, dark, Collection and adjusted theme rendered. |
 | Swift Package result bundles | Unit: 5 passed; copied Package: 1 passed; visual target: 6 tests passed, comparing 10 PNGs. |
+| Clean checkout | Pass; cloned the committed repository into a separate directory, then ran `nix develop -c just doctor`, `nix develop -c just prepare-deps` and `nix develop -c just check`. No tracked files changed. |
 
 The 10 committed reference PNGs came from `just record-snapshots` on the
 specified Simulator. Their light/dark catalogs, error inputs, 320 pt Increased
