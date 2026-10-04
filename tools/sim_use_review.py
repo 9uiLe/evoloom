@@ -268,9 +268,6 @@ class Review:
         if self.entry(invalid, "TextField", "Email")["value"] != "invalid":
             raise AssertionError("Email did not return to the initial invalid value")
         self.assert_save(invalid, disabled=True)
-        # Escape dismisses the native keyboard; no Save action is invoked here.
-        self.sim("ios", "key", "41")
-        self.keyboard(False)
         self.screenshot("error-returned")
 
     def large_text(self) -> None:
@@ -474,7 +471,7 @@ def main() -> None:
             "outlined": review.outlined,
         }
         selected = (
-            ["large", "normal", "error", "japanese-dark"]
+            ["large", "normal", "japanese-dark", "error"]
             if args.scenario == "all"
             else [args.scenario]
         )

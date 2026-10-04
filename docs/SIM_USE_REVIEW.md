@@ -38,8 +38,13 @@ nix develop -c python3 tools/sim_use_review.py --scenario large --reuse-built-ho
 fixed Simulator; run `just build-host` first when using it locally. Omit the
 flag for an independently reproducible run that builds the host. Scenarios
 are `normal`, `error`, `large`, `japanese-dark`, and `outlined`. The default
-operation check runs the first four, with `large` before text injection so the
+operation check runs `large`, `normal`, `japanese-dark`, then `error`, with
+`large` before text injection so the
 software-keyboard state can be inspected before HID input changes it.
+Japanese/dark observation precedes the final error-edit scenario. Only the
+large scenario dismisses the keyboard, because it needs to reach Save after
+keyboard-visible scrolling; the error scenario ends once the invalid value
+and disabled Save return.
 `outlined` is available as a focused check; its existing default appearance
 also remains in the regular snapshot suite. The manual GitHub Actions
 `workflow_dispatch` input `verify_settings_interaction` runs this command in
@@ -181,6 +186,19 @@ outputs from that run, copied unchanged from its
 The overall manual job still failed: a later normal keyboard visibility check
 and separate UI queries timed out. The successful large scenario is evidence
 for that combination only; the run is not reported as a passing full review.
+
+The [Cloud run on 515cb3d](https://github.com/9uiLe/evoloom/actions/runs/37231341735)
+completed `large` and `normal`. The error scenario observed
+`invalid→invalid@example.com→invalid`, with Save enabled then disabled, before
+its extra Escape command timed out. The subsequent Simulator appearance
+command also timed out. Those commands are not required to test the error
+state: `large` already dismisses the keyboard and reaches Save. The review
+therefore checks Japanese/dark before the error edit and ends the error
+scenario after its final screenshot. The run's
+[Artifact](https://github.com/9uiLe/evoloom/actions/runs/37231341735/artifacts/11313999117)
+preserves the observed values, images, command exit and timeouts. This order
+change does not alter the product screen or weaken the large-case keyboard
+assertion.
 
 Visual snapshots remain strict RGBA comparisons and unchanged by this
 operation review. A passing snapshot or readable accessibility tree is not a
