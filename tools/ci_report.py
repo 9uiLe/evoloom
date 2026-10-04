@@ -130,9 +130,14 @@ def report():
             f"in {preparation['seconds']}s"
         )
     for item in metrics:
-        lines.append(
-            f"- {item['scheme']} {item['action']}: {item['seconds']}s ({item['result']})"
-        )
+        if item["phase"] == "xcode":
+            lines.append(
+                f"- {item['scheme']} {item['action']}: {item['seconds']}s ({item['result']})"
+            )
+        elif item["phase"] == "simulator-boot-request":
+            lines.append(
+                f"- Simulator boot request from {item['state_before']}: {item['seconds']}s"
+            )
     for name, result in results.items():
         if "error" in result:
             lines.append(f"- {name} xcresult unreadable: {result['error']}")

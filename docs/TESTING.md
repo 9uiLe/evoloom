@@ -14,7 +14,10 @@ library for the iOS Simulator without a separate test runner. The former copy
 test only asserted the default spacing value; that assertion remains in the
 unit tests, while the copy build covers Swift compilation of all copied files.
 It does not exercise copied controls at runtime. Each Xcode command retains
-its 600-second failure timeout.
+its 600-second failure timeout. The full check requests boot of the fixed
+Simulator before Xcode testing, reusing a booted device. The request is
+asynchronous so Xcode can build while the Simulator starts; the recorded boot
+request time does not assert that testmanagerd or the runner is ready.
 Xcode tests explicitly use `-testLanguage en -testRegion US`; the SwiftUI
 fixtures then set `en_US` or `ja_JP` for their own content. This also fixes
 native List typography and Japanese fallback fonts across a Japanese-language
@@ -41,8 +44,9 @@ The Linux static job runs independently of the macOS iOS job. The path matrix:
 | --- | --- |
 | README, design/contribution/license text, or `docs/*.md` only, with a validated ancestor | No Nix or tests; the aggregate job succeeds. |
 | `Sources/`, root `Package.swift`, Nix, `justfile`, or workflow | Formatting, lint, CLI, combined iOS unit and snapshot tests, copied Package build. |
-| Unit source under `Testing/Tests/EvoloomSnapshotTests/` | Formatting, lint and filtered unit tests. |
-| Snapshot source or PNG under `Testing/` | Snapshot comparison; Swift edits also run formatting and lint. |
+| Existing unit test source under `Testing/Tests/EvoloomSnapshotTests/` | Formatting, lint and filtered unit tests. |
+| Existing snapshot test source or PNG under `Testing/` | Snapshot comparison; Swift edits also run formatting and lint. |
+| Newly added Swift test source | Formatting, lint, unit and snapshot tests, so either kind of new test executes. |
 | `Testing/Package.swift` | Complete suite. |
 | CLI implementation or registry | Formatting, lint, CLI tests and copied Package build. |
 | CLI test source | Formatting, lint and CLI tests. |
@@ -59,7 +63,9 @@ the product alone; the combined test build already compiles it and the Preview
 fixtures in regular CI.
 The optional manual `use_xcode_cache` input measures a pinned cache without
 changing normal push checks. Cache hit or miss never skips compilation or
-tests. The CI Job Summary and `TestResults/ci-report.json` record the checkout,
+tests. Manual `build_diagnostics` prints Xcode's build timing summary and
+compile commands so an incremental source-change run can be inspected. The CI
+Job Summary and `TestResults/ci-report.json` record the checkout,
 selected scope, cache state, action time, test count and 18 baseline count.
 See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
 

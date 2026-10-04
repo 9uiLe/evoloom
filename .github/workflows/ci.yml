@@ -9,6 +9,10 @@ on:
         description: Trial the fixed Xcode build cache during a full run
         type: boolean
         default: false
+      build_diagnostics:
+        description: Show Xcode build commands and timing summary for diagnosis
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -68,6 +72,7 @@ jobs:
     timeout-minutes: 60
     env:
       EVOLOOM_XCODE_DEVELOPER_DIR: /Applications/Xcode_27.0.0.app/Contents/Developer
+      EVOLOOM_BUILD_DIAGNOSTICS: ${{ github.event_name == 'workflow_dispatch' && inputs.build_diagnostics && '1' || '0' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Compute trial cache key
@@ -113,6 +118,9 @@ jobs:
       - name: Prepare locked Swift dependency
         if: needs.detect.outputs.prepare == 'true'
         run: nix develop -c just prepare-deps
+      - name: Request fixed Simulator boot during Xcode build
+        if: needs.detect.outputs.unit == 'true' || needs.detect.outputs.snapshot == 'true'
+        run: nix develop -c just prepare-simulator
       - name: Run combined iOS tests
         if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot == 'true'
         run: nix develop -c just test-ios

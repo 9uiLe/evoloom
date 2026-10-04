@@ -153,6 +153,26 @@ def prepared_dependencies():
     verify_prepared_sources(ROOT / ".prepared")
 
 
+def prepare_simulator():
+    device = doctor()
+    devices = json.loads(output("xcrun", "simctl", "list", "devices", "-j"))["devices"]
+    state = next(
+        item["state"] for item in devices[EXPECTED_RUNTIME] if item["udid"] == device
+    )
+    started = time.monotonic()
+    if state == "Shutdown":
+        subprocess.run(["xcrun", "simctl", "boot", device], check=True, env=apple_env())
+    elif state not in {"Booted", "Booting"}:
+        raise RuntimeError(f"Cannot prepare simulator in state {state}")
+    metric(
+        "simulator-boot-request",
+        time.monotonic() - started,
+        state_before=state,
+        device=device,
+    )
+    print(f"Simulator {device}: {state}; boot requested if needed", flush=True)
+
+
 def xcode(
     action,
     cwd=ROOT,
@@ -398,6 +418,7 @@ def main():
     command = sys.argv[1] if len(sys.argv) == 2 else ""
     actions = {
         "doctor": doctor,
+        "prepare-simulator": prepare_simulator,
         "build-package": lambda: xcode("build"),
         "test-unit": unit_tests,
         "test-ios": ios_tests,

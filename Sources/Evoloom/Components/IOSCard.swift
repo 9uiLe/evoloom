@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// A token-styled surface for related content. Explicit child foreground styles remain in control.
 public struct IOSCard<Content: View>: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme

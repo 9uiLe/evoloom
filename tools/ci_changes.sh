@@ -29,6 +29,15 @@ mark_path() {
             quality=true
             unit=true
             ;;
+        Testing/Tests/EvoloomSnapshotTests/ComponentSnapshots.swift)
+            quality=true
+            snapshot=true
+            ;;
+        Testing/Tests/EvoloomSnapshotTests/*.swift)
+            quality=true
+            unit=true
+            snapshot=true
+            ;;
         Testing/*)
             snapshot=true
             case "$1" in

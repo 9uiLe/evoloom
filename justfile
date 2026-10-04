@@ -3,6 +3,9 @@ set shell := ["/bin/bash", "-eu", "-c"]
 doctor:
     python3 tools/tasks.py doctor
 
+prepare-simulator:
+    python3 tools/tasks.py prepare-simulator
+
 prepare-deps:
     python3 tools/prepare_deps.py
 
@@ -51,6 +54,7 @@ check-fast: format-check lint
     python3 -m unittest discover -s tools -p 'test_*.py'
 
 check: doctor check-fast
+    just prepare-simulator
     just test-ios
     just verify-copy-install
 

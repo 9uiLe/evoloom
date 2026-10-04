@@ -41,6 +41,14 @@ class CIChangesTests(unittest.TestCase):
                 "quality",
                 "prepare",
                 "ios",
+                "unit",
+                "snapshot",
+            },
+            "Testing/Tests/EvoloomSnapshotTests/ComponentSnapshots.swift": {
+                "run_checks",
+                "quality",
+                "prepare",
+                "ios",
                 "snapshot",
             },
             "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/example.png": {
