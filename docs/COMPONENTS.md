@@ -30,12 +30,17 @@ performance claim. See the [macro contract](https://github.com/9uiLe/swift-app-m
 | `IOSInput` | `IOSInput("Email", text: $email, placeholder: "name@example.com", error: error, keyboardType: .emailAddress, contentType: .emailAddress)` | A persistent label stays visible. Supports secure mode, hint, error and native focus behavior. Provide actionable error copy. `.disabled(true)` uses SwiftUI. |
 | `IOSTextArea` | `IOSTextArea("Notes", text: $notes, hint: "Optional")` | Multiline native TextEditor with persistent label and error. |
 | `IOSSeparator` | `IOSSeparator()` | Decorative and hidden from accessibility. |
-| `IOSSwitch` | `IOSSwitch("Updates", isOn: $updates, detail: "On this device")` | Native Toggle owns interaction and VoiceOver state. Its on-track background uses `toggleOnBackground`; the neutral dark token is gray. |
+| `IOSSwitch` | `IOSSwitch("Updates", isOn: $updates, detail: "On this device")` | Native Toggle owns interaction and VoiceOver state. The neutral dark on-track token is gray; a visible On/Off label and filled/empty circle distinguish states in dark mode. The cue also appears with Differentiate Without Color. |
 | `IOSInlineAlert` | `IOSInlineAlert("Unavailable", message: "Try again.", variant: .error)` | Persistent inline message. Use SwiftUI `.alert` for an interrupting decision. |
 | `IOSEmptyState` | `IOSEmptyState("No items", message: "Create one.") { IOSButton("Create") {} }` | Optional action; explain what can happen next. |
 | `IOSSkeleton` | `IOSSkeleton(height: 20)` | Static placeholder; put a spoken loading label on its parent. |
 
-The public APIs accept `String`. Localize dynamic values at the call site with
+`IOSSwitch` accepts optional `onStateLabel` and `offStateLabel`
+`LocalizedStringKey` values. Their defaults are "On" and "Off"; supply
+translations in the integrating app or pass localized labels, for example
+`IOSSwitch("通知", isOn: $enabled, onStateLabel: "オン", offStateLabel: "オフ")`.
+The status cue is visual; the native Toggle announces its state to VoiceOver.
+Most other public APIs accept `String`. Localize dynamic values at the call site with
 `String(localized:)` and supply a product String Catalog. Do not assume
 placeholder text is a label. Native system controls provide their own
 localization where applicable. Test both English and Japanese and add RTL

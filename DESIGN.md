@@ -16,7 +16,12 @@ background as a pair and check contrast after edits. `IOSSpacingTokens` are
 spacing. `IOSRadiusTokens` define control, card and badge corners.
 `IOSTypographyTokens` use system text styles so Dynamic Type can grow them.
 `toggleOnBackground` colors the native Toggle track when it is on; the neutral
-dark value is gray so the white thumb and track remain distinguishable.
+dark value is gray. In dark appearance, `IOSSwitch` also shows an On/Off label
+and a filled or empty circle next to the setting name. The native thumb still
+moves, while the extra cues separate similar gray tracks without requiring a
+new switch implementation. The visual status is hidden from accessibility so
+the native Toggle remains responsible for its spoken state. The same cue
+appears in light appearance when Differentiate Without Color is enabled.
 `IOSControlTokens` define the 44 pt minimum operation height, editor and
 skeleton heights, separator and border thickness, and press opacity. Inject
 the complete value through `.iosDesignTokens(tokens)` so nested components
@@ -54,3 +59,14 @@ and [Apple's 2024 accessibility session](https://developer.apple.com/videos/play
 These informed design choices; this project's behavior is verified by its own
 builds, tests and images. The linked note.com article could not be read from
 the development environment, so its claims were not used as evidence.
+
+For the dark switch adjustment, [Apple's toggle guidance](https://developer.apple.com/design/human-interface-guidelines/toggles)
+calls for a clear state difference beyond color and recommends the native iOS
+switch. [Google Material](https://m2.material.io/components/switches)
+also directs iOS implementations to use the platform switch.
+[IBM Carbon](https://www.carbondesignsystem.com/building-blocks/core/components/toggle/guidelines)
+uses state text and a checked small toggle;
+[Microsoft Fluent](https://fluent2.microsoft.design/components/web/react/core/switch/usage/)
+keeps the setting label adjacent to the switch. Evoloom uses those as design
+references, not as code sources. Its gray palette is an Evoloom choice; the
+status label and glyph address the observed dark-mode ambiguity.

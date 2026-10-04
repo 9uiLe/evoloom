@@ -100,12 +100,29 @@ struct ExampleCollectionView: View {
     }
 }
 
+private struct SwitchStatesPreview: View {
+    @State private var notifications = true
+    @State private var updates = false
+
+    var body: some View {
+        VStack(spacing: 24) {
+            IOSSwitch("Notifications", isOn: $notifications, detail: "Receive updates on this device.")
+            IOSSwitch("Updates", isOn: $updates, detail: "Receive updates on this device.")
+        }
+        .padding()
+    }
+}
+
 #Preview("Catalog - light") {
     ComponentCatalog().preferredColorScheme(.light)
 }
 
 #Preview("Catalog - dark") {
     ComponentCatalog().preferredColorScheme(.dark)
+}
+
+#Preview("Switch states - dark") {
+    SwitchStatesPreview().preferredColorScheme(.dark)
 }
 
 #Preview("Collection") {

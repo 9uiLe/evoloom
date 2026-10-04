@@ -146,7 +146,7 @@ public struct IOSDesignTokens: Sendable {
             destructive: Color(red: 0.65, green: 0.16, blue: 0.16), destructiveForeground: .white,
             destructiveText: Color(red: 1, green: 0.70, blue: 0.70),
             success: Color(red: 0.08, green: 0.24, blue: 0.17), successForeground: Color(red: 0.68, green: 0.95, blue: 0.76),
-            toggleOnBackground: Color(red: 0.54, green: 0.54, blue: 0.56)
+            toggleOnBackground: Color(red: 0.58, green: 0.58, blue: 0.60)
         )
     )
 }

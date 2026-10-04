@@ -56,7 +56,7 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | Image test | Risk covered |
 | --- | --- |
 | `catalog-light`, `catalog-dark` | Standard appearance for every initial component; all button variants, disabled/loading/destructive role, Card, Badge variants, Switch, Alert, Empty, Separator, Skeleton. |
-| `switch-states-dark` | Native Toggle on/off tracks in dark mode; the on track uses the gray semantic token. |
+| `switch-states-dark`, `switch-states-dark-increased-contrast`, `switch-states-dark-ja` | Native Toggle on/off tracks, thumb position, state text and glyph in dark mode; Increased Contrast and Japanese labels. |
 | `customized-tokens` | A single changed token set propagates to Button, Card, Input and Badge, including color, spacing, radius and operation height. |
 | `inputs-light`, `inputs-dark` | Normal, error, disabled and long Input and TextArea content. Native focus border is implemented but not captured because keyboard and focus timing would add instability. |
 | `compact-accessibility` | 320 pt width, accessibility medium text, Increased Contrast, long Card, Alert, Button, Badge and Empty copy. |
@@ -66,7 +66,7 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 To record, run `nix develop -c just record-snapshots`. This is a deliberate
 write operation; it places a short-lived marker under `.prepared` so the
 Simulator test process enters record mode, then removes it. The recorder checks
-that SnapshotTesting acknowledged each intentional write and that all twelve
+that SnapshotTesting acknowledged each intentional write and that all fourteen
 expected PNGs exist. Open every baseline PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and commit the PNGs and

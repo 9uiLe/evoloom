@@ -18,11 +18,19 @@ final class ComponentSnapshots: XCTestCase {
 
     func testSwitchStatesDark() {
         let view = VStack(alignment: .leading, spacing: 16) {
-            IOSSwitch("Notifications on", isOn: .constant(true), detail: "The selected track uses the gray token.")
+            IOSSwitch("Notifications", isOn: .constant(true), detail: "Receive updates on this device.")
             IOSSeparator()
-            IOSSwitch("Notifications off", isOn: .constant(false), detail: "The native off appearance remains visible.")
+            IOSSwitch("Notifications", isOn: .constant(false), detail: "Receive updates on this device.")
         }
-        snapshot(view, name: "switch-states-dark", height: 180, scheme: .dark)
+        snapshot(view, name: "switch-states-dark", height: 220, scheme: .dark)
+        snapshot(view, name: "switch-states-dark-increased-contrast", height: 220, scheme: .dark, contrast: .increased)
+
+        let japanese = VStack(alignment: .leading, spacing: 16) {
+            IOSSwitch("通知", isOn: .constant(true), detail: "この端末で通知を受け取ります。", onStateLabel: "オン", offStateLabel: "オフ")
+            IOSSeparator()
+            IOSSwitch("通知", isOn: .constant(false), detail: "この端末で通知を受け取ります。", onStateLabel: "オン", offStateLabel: "オフ")
+        }
+        snapshot(japanese, name: "switch-states-dark-ja", height: 220, scheme: .dark, locale: "ja_JP")
     }
 
     func testCustomizedDesignTokens() {

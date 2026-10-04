@@ -203,3 +203,25 @@ rename. Five baselines were re-recorded after setting
 actual images, and light, dark, compact accessibility and Japanese output were
 reviewed.
 The visual comparator still requires exact pixel equality.
+
+## Dark switch state clarity, 2026-10-04
+
+The native `IOSSwitch` now displays a localized On/Off status and a filled or
+empty circle beside its setting label in dark appearance. The selected gray
+track token was lightened from 0.54/0.54/0.56 to 0.58/0.58/0.60; the light
+palette stayed unchanged. The same visible status appears when Differentiate
+Without Color is enabled. The status is hidden from accessibility so the
+native Toggle remains the spoken control. Apple, Material, Carbon and Fluent
+guidance used for this design choice is linked from `DESIGN.md`.
+
+`nix develop -c just record-snapshots` generated 14 real PNGs on Xcode 27.0
+(27A266a), iPhone 18 Pro arm64, iOS Simulator 27.0 (24A434). The existing
+dark catalog and switch comparison images changed as expected; dark Increased
+Contrast and Japanese switch images were added. All four affected images were
+opened and checked for state separation, clipping and label legibility. The
+normal `nix develop -c just check` passed, including format, lint, 15 CLI
+tests, iOS library and Preview source compilation, 7 unit tests, the copied
+Package build and 1 test, and 8 visual methods comparing all 14 PNGs. The
+unit, copy and image result bundles reported zero failures. Two formatter
+runs left the second run unchanged. The Xcode Preview canvas and manual
+VoiceOver interaction were not opened for this change.

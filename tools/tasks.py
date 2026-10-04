@@ -32,6 +32,8 @@ SNAPSHOT_NAMES = {
     "collection-compact-accessibility",
     "customized-tokens",
     "switch-states-dark",
+    "switch-states-dark-increased-contrast",
+    "switch-states-dark-ja",
 }
 
 

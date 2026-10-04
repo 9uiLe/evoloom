@@ -47,7 +47,7 @@
     ]
   },
   "switch": {
-    "description": "Native Toggle with detail",
+    "description": "Native Toggle with detail and visible dark-mode state",
     "source": "Sources/Evoloom/Components/IOSSwitch.swift",
     "dependencies": [
       "tokens"
