@@ -34,15 +34,16 @@ For one scenario during adjustment, run, for example:
 nix develop -c python3 tools/sim_use_review.py --scenario large --reuse-built-host
 ```
 
-`--reuse-built-host` assumes the current source was already built and installed
-with `just run-host`; omit it for an independently reproducible run. Scenarios
+`--reuse-built-host` installs the existing `DerivedData/Host` build into the
+fixed Simulator; run `just build-host` first when using it locally. Omit the
+flag for an independently reproducible run that builds the host. Scenarios
 are `normal`, `error`, `large`, `japanese-dark`, and `outlined`. The default
 operation check runs the first four, with `large` before text injection so the
 software-keyboard state can be inspected before HID input changes it.
 `outlined` is available as a focused check; its existing default appearance
 also remains in the regular snapshot suite. The manual GitHub Actions
 `workflow_dispatch` input `verify_settings_interaction` runs this command in
-the existing iOS job after the image tests and uploads the resulting evidence
+the existing iOS job after the image tests, reuses that host build, and uploads the resulting evidence
 with the usual `ios-test-evidence` artifact. Ordinary PR CI keeps its current
 snapshot and Package checks without the extra operation session.
 
@@ -148,6 +149,16 @@ the UI. Each scenario relaunches its initial screen to avoid inheriting the
 previous keyboard and scroll state. The Cloud run's
 [Artifact](https://github.com/9uiLe/evoloom/actions/runs/37226649166/artifacts/11313410024)
 contains the image, UI JSON, command times and failure details.
+
+The [following Cloud run](https://github.com/9uiLe/evoloom/actions/runs/37228513283)
+timed out while retrieving the accessibility tree immediately after focusing
+Email at accessibility-medium size, before the explicit Form swipe could run.
+Its normal edit and Toggle checks passed; the error condition cleared and
+returned, but the software keyboard was absent in that later scenario.
+The next review observes keyboard state before requesting the full UI tree,
+allows a bounded 45 seconds for that query, and reuses the already built
+host in the manual CI job. The captured failure remains available in that
+run's [Artifact](https://github.com/9uiLe/evoloom/actions/runs/37228513283/artifacts/11312909879).
 
 Visual snapshots remain strict RGBA comparisons and unchanged by this
 operation review. A passing snapshot or readable accessibility tree is not a

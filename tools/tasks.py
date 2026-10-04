@@ -57,6 +57,9 @@ UNIT_TEST_COUNT = 6
 SNAPSHOT_TEST_COUNT = 9
 HOSTED_SNAPSHOT_TEST_COUNT = 5
 HOST_PROJECT = ROOT / "Testing/Host/EvoloomReviewHost.xcodeproj"
+HOST_APP = (
+    ROOT / "DerivedData/Host/Build/Products/Debug-iphonesimulator/EvoloomReviewHost.app"
+)
 
 
 def metric(phase, seconds, **details):
@@ -647,12 +650,10 @@ def run_host():
     subprocess.run(
         ["xcrun", "simctl", "bootstatus", device, "-b"], check=True, env=apple_env()
     )
-    app = (
-        ROOT
-        / "DerivedData/Host/Build/Products/Debug-iphonesimulator/EvoloomReviewHost.app"
-    )
     subprocess.run(
-        ["xcrun", "simctl", "install", device, str(app)], check=True, env=apple_env()
+        ["xcrun", "simctl", "install", device, str(HOST_APP)],
+        check=True,
+        env=apple_env(),
     )
     subprocess.run(
         ["xcrun", "simctl", "ui", device, "appearance", appearance],

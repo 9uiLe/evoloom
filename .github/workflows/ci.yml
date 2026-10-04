@@ -140,7 +140,7 @@ jobs:
       - name: Exercise Settings in Simulator
         id: sim_use
         if: (success() || failure()) && github.event_name == 'workflow_dispatch' && inputs.verify_settings_interaction && steps.doctor.outcome == 'success'
-        run: nix develop -c just verify-settings-interaction
+        run: nix develop -c python3 tools/sim_use_review.py --reuse-built-host
       - name: Verify copied source Package
         if: needs.detect.outputs.copy == 'true'
         run: nix develop -c just verify-copy-install

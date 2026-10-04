@@ -9,7 +9,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from tasks import ROOT, apple_env, doctor, prepare_simulator, run_host
+from tasks import HOST_APP, ROOT, apple_env, doctor, prepare_simulator, run_host
 
 APP_ID = "dev.evoloom.reviewhost"
 ERROR_EN = "Enter a valid email address before saving."
@@ -74,7 +74,14 @@ class Review:
             file.write(json.dumps(event, ensure_ascii=False) + "\n")
 
     def sim(self, *args: str) -> dict:
-        output = self.command("sim-use", *args, "--device", self.device, "--json")
+        output = self.command(
+            "sim-use",
+            *args,
+            "--device",
+            self.device,
+            "--json",
+            timeout=45 if args[0] == "ui" else 30,
+        )
         result = json.loads(output)
         if not result.get("ok"):
             raise RuntimeError(f"sim-use rejected {args}: {result}")
@@ -157,6 +164,7 @@ class Review:
             "--point",
             f"{round(frame['x'] + frame['width'] / 2)},{round(frame['y'] + frame['height'] / 2)}",
         )
+        self.sim("keyboard-state")
         return self.ui(f"focused-{label.lower().replace(' ', '-')}")
 
     def append_text(self, label: str, suffix: str) -> dict:
@@ -444,6 +452,13 @@ def main() -> None:
         if args.reuse_built_host:
             prepare_simulator()
             review.command("xcrun", "simctl", "bootstatus", device, "-b", timeout=120)
+            if not HOST_APP.is_dir():
+                raise RuntimeError(
+                    f"Built host missing at {HOST_APP}; run just build-host first"
+                )
+            review.command(
+                "xcrun", "simctl", "install", device, str(HOST_APP), timeout=120
+            )
             review.launch("settings")
         else:
             run_host()
