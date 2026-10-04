@@ -10,7 +10,7 @@ Paste the output of `nix develop -c python3 tools/pr_images.py --sha <full-commi
 
 - Capture environment: Xcode build, Simulator runtime build, device, width, scale, locale, Dynamic Type and appearance.
 - Commands and results:
-- CI run for the exact image commit:
+- CI run, PR head/image commit SHA, and actual checkout SHA (which may be a merge commit):
 - Visual review findings and remaining questions:
 
 Snapshots protect an accepted appearance from regression; image comparison does not approve design quality or verify VoiceOver behavior.

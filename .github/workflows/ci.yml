@@ -140,6 +140,7 @@ jobs:
         env:
           EVOLOOM_XCODE_CACHE: ${{ steps.cache_state.outputs.status }}
           EVOLOOM_SNAPSHOT_SELECTED: ${{ needs.detect.outputs.snapshot }}
+          EVOLOOM_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: nix develop -c python3 tools/ci_report.py
       - name: Describe image availability
         if: always()

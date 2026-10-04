@@ -19,6 +19,14 @@ class PRImageTests(unittest.TestCase):
         self.assertIn("committed baseline PNGs", body)
         self.assertIn("CI comparison: pending", body)
 
+    def test_ci_link_distinguishes_head_from_merge_checkout(self):
+        with patch.object(pr_images.Path, "is_file", return_value=True):
+            body = pr_images.markdown(
+                "a" * 40, "https://github.com/example/actions/runs/1"
+            )
+        self.assertIn("image commit as head", body)
+        self.assertIn("synthetic merge commit", body)
+
 
 if __name__ == "__main__":
     unittest.main()

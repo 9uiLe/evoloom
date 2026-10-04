@@ -75,7 +75,9 @@ The script checks all ten listed PNGs and uses raw image URLs pinned to that
 SHA. Paste it into the PR description; confirm the ten images display in the
 rendered GitHub PR. These are **committed baselines**, even when the CI for the
 same SHA passes. Add `--ci-url <successful-run-URL>` after the comparison
-finishes and verify that the run checked that exact SHA. Current-run actual
+finishes and verify that the run's **PR head SHA** matches the image commit.
+For a pull request, Actions can check out a synthetic merge commit; record
+that actual checkout SHA from `ci-report.json` separately. Current-run actual
 images live in the artifact and are not available as stable inline Markdown
 image URLs. Do not put artifact download URLs in `![](...)`.
 

@@ -128,6 +128,7 @@ def report():
                 results[name] = {"error": str(error)}
     document = {
         "checkout": os.environ.get("GITHUB_SHA", "local working tree"),
+        "head_sha": os.environ.get("EVOLOOM_HEAD_SHA", "local working tree"),
         "baseline_pngs": baseline_count,
         "rendered_pngs": len(rendered_paths),
         "capture_save_seconds": round(capture_seconds, 3),
@@ -142,7 +143,7 @@ def report():
     (RESULTS / "ci-report.json").write_text(json.dumps(document, indent=2) + "\n")
     lines = [
         "### iOS evidence",
-        f"Checkout: `{document['checkout']}`; baseline PNGs: {baseline_count}; Xcode cache: {document['xcode_cache']}",
+        f"Checkout: `{document['checkout']}`; PR head: `{document['head_sha']}`; baseline PNGs: {baseline_count}; Xcode cache: {document['xcode_cache']}",
         f"Actual rendered PNGs: {len(rendered_paths)}/{baseline_count if snapshot_selected else 'not selected'} in TestResults/Rendered/; PNG save {capture_seconds:.3f}s",
     ]
     if missing_rendered:

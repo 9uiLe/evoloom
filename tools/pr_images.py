@@ -33,7 +33,10 @@ def markdown(sha, ci_url=None):
         "iPhone 18 Pro, arm64; 390 pt width, 3× scale, en_US, UTC, standard Dynamic Type.",
     ]
     if ci_url:
-        lines.append(f"CI comparison for this SHA: {ci_url}")
+        lines.append(f"PR CI run for this image commit as head: {ci_url}")
+        lines.append(
+            "PR CI may validate a synthetic merge commit; report its checkout SHA from ci-report.json separately."
+        )
     else:
         lines.append(
             "CI comparison: pending; do not describe these baselines as verified actuals yet."
