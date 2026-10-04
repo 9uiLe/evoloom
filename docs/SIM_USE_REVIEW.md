@@ -137,8 +137,9 @@ because the iOS paste menu did not appear. The repeatable script now uses
 Toggle changes and, with a temporary en-US setting, the `error` transitions.
 Both still failed their `visible:true`
 checks. `large` failed the same keyboard check, while `japanese-dark` and
-`outlined` completed. The automated full run is **not yet passing**, and
-keyboard-visible large-text scrolling remains unverified. On this host, opening Device Hub,
+`outlined` completed. The local automated full run failed at that point;
+the Cloud verification below later completed the keyboard-visible large-text
+scroll. On this host, opening Device Hub,
 relaunching the app, restarting the target Simulator, and temporarily setting
 the legacy Simulator `ConnectHardwareKeyboard=false` preference did not
 restore it. A temporary simulator language change to English also did not
@@ -154,7 +155,7 @@ visible**, confirmed by both `keyboard-state` and a Simulator PNG. Its generic
 `gesture scroll-up` left the field at the same screen coordinate; the review
 correctly failed rather than reporting Save reachability. The next run uses a
 swipe explicitly inside the Form above the keyboard. This is a test gesture
-change, pending validation, not a product layout change. That run also showed
+change, later verified in the runs below, not a product layout change. That run also showed
 the email keyboard inserting an extra `@` during `sim-use type`; the review
 now checks the fixture's actual condition and removes the suffix observed in
 the UI. Each scenario relaunches its initial screen to avoid inheriting the
@@ -199,6 +200,22 @@ scenario after its final screenshot. The run's
 preserves the observed values, images, command exit and timeouts. This order
 change does not alter the product screen or weaken the large-case keyboard
 assertion.
+
+The [final Cloud operation run on 2b3ed8f](https://github.com/9uiLe/evoloom/actions/runs/37232909641)
+completed all four scenarios (`large`, `normal`, `japanese-dark`, `error`) and
+the full CI job succeeded. Its
+[Artifact](https://github.com/9uiLe/evoloom/actions/runs/37232909641/artifacts/11313679782)
+contains 14 current `sim-use screenshot` PNGs, 39 UI JSON observations,
+`actions.jsonl`, environment metadata and no failure marker. In that run,
+Email moved from y=421 to y=61 during the Form swipe while the software
+keyboard remained visible; after native Escape, Save was inside the actual
+402×874 pt scene. Normal field values changed independently, the Toggle
+returned to its original value after off/on, and the error fixture changed
+`invalid→invalid@example.com→invalid` with the matching Save enabled/disabled
+states. The manual sim-use step took 4m44s in this one run; the ordinary PR
+CI does not run that step. The same head also passed the Package, host,
+strict PNG comparison and copied-source checks in the
+[normal PR run](https://github.com/9uiLe/evoloom/actions/runs/37232906912).
 
 Visual snapshots remain strict RGBA comparisons and unchanged by this
 operation review. A passing snapshot or readable accessibility tree is not a
