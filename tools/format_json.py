@@ -5,7 +5,11 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = (ROOT / "tools/registry.json", ROOT / "tools/snapshots.json")
+FILES = (
+    ROOT / "tools/registry.json",
+    ROOT / "tools/snapshots.json",
+    ROOT / "Testing/Host/project.json",
+)
 
 
 def main() -> int:

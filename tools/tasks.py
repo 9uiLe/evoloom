@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -39,9 +40,21 @@ SNAPSHOT_NAMES = {
     "switch-states-dark",
     "switch-states-dark-increased-contrast",
     "switch-states-dark-ja",
+    "review-components-controls-light",
+    "review-components-controls-dark",
+    "review-components-feedback-light",
+    "review-components-feedback-dark",
+    "review-settings-light",
+    "review-settings-dark",
+    "review-settings-error",
+    "review-detail-light",
+    "review-detail-dark",
+    "review-detail-ja-long",
 }
 UNIT_TEST_COUNT = 6
-SNAPSHOT_TEST_COUNT = 8
+SNAPSHOT_TEST_COUNT = 9
+HOSTED_SNAPSHOT_TEST_COUNT = 5
+HOST_PROJECT = ROOT / "Testing/Host/EvoloomReviewHost.xcodeproj"
 
 
 def metric(phase, seconds, **details):
@@ -95,10 +108,13 @@ def doctor():
         "python3",
         "yamllint",
         "actionlint",
+        "xcodegen",
     ]
     missing = [tool for tool in required if shutil.which(tool) is None]
     if missing:
         raise RuntimeError(f"Nix shell missing tools: {missing}; run nix develop")
+    if output("xcodegen", "--version") != "Version: 2.44.1":
+        raise RuntimeError("Expected Nix-pinned XcodeGen 2.44.1")
     sources = nix_sources()
     if output("sw_vers", "-buildVersion") != EXPECTED_MACOS_BUILD:
         raise RuntimeError(f"Expected macOS build {EXPECTED_MACOS_BUILD}")
@@ -181,12 +197,14 @@ def xcode(
     derived_data=None,
     only_testing=(),
     check=True,
+    project=None,
 ):
     device = doctor()
     command = [
         "xcodebuild",
         action,
         "-quiet",
+        *(["-project", str(project)] if project else []),
         "-scheme",
         scheme,
         "-destination",
@@ -220,30 +238,62 @@ def xcode(
         command.extend(["-resultBundlePath", str(result)])
     print(" ".join(command), flush=True)
     started = time.monotonic()
+    logs = ROOT / "TestResults/Logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    log = logs / f"{result.stem if result else scheme + '-' + action}.log"
+    return_code = None
     try:
-        completed = subprocess.run(
-            command,
-            cwd=cwd,
-            env=apple_env(),
-            check=check,
-            timeout=XCODE_TIMEOUT_SECONDS,
-        )
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
+        with log.open("w") as stream:
+            process = subprocess.Popen(
+                command,
+                cwd=cwd,
+                env=apple_env(),
+                stdout=stream,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+            try:
+                return_code = process.wait(timeout=XCODE_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait()
+                raise
+    except subprocess.TimeoutExpired:
         metric(
             "xcode",
             time.monotonic() - started,
             action=action,
             scheme=scheme,
-            result=type(error).__name__,
+            result="timeout",
+            log=str(log),
         )
         raise
+    finally:
+        if log.exists():
+            lines = log.read_text(errors="replace").splitlines()
+            print(f"Xcode log: {log}; final {min(len(lines), 30)} lines:", flush=True)
+            print("\n".join(lines[-30:]), flush=True)
     metric(
         "xcode",
         time.monotonic() - started,
         action=action,
         scheme=scheme,
-        result="passed" if completed.returncode == 0 else "failed",
+        result="passed" if return_code == 0 else "failed",
+        log=str(log),
     )
+    completed = subprocess.CompletedProcess(command, return_code)
+    if check:
+        completed.check_returncode()
     return completed
 
 
@@ -272,11 +322,79 @@ def test_result_count(path, expected):
 
 
 def snapshot_hashes():
-    directory = ROOT / "Testing/Tests/EvoloomSnapshotTests/__Snapshots__"
+    directories = (
+        ROOT / "Testing/Tests/EvoloomSnapshotTests/__Snapshots__",
+        ROOT / "Testing/Host/Tests/__Snapshots__",
+    )
     return {
         str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
+        for directory in directories
         for path in directory.rglob("*.png")
     }
+
+
+def prepare_host():
+    prepared_dependencies()
+    subprocess.run(
+        [
+            "xcodegen",
+            "generate",
+            "--spec",
+            "Testing/Host/project.json",
+            "--project",
+            "Testing/Host",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+
+
+def host_xcode(action, **kwargs):
+    prepare_host()
+    return xcode(
+        action,
+        cwd=ROOT,
+        scheme="EvoloomReviewHost",
+        project=HOST_PROJECT,
+        derived_data="Host",
+        **kwargs,
+    )
+
+
+def clear_rendered_images():
+    rendered = ROOT / "TestResults/Rendered"
+    if rendered.exists():
+        shutil.rmtree(rendered)
+    differences = ROOT / "TestResults/SnapshotDiffs"
+    if differences.exists():
+        shutil.rmtree(differences)
+    (ROOT / "TestResults/host-image-comparison.json").unlink(missing_ok=True)
+
+
+def clear_test_results(*names):
+    clear_rendered_images()
+    logs = ROOT / "TestResults/Logs"
+    if logs.exists():
+        shutil.rmtree(logs)
+    for name in names:
+        path = ROOT / "TestResults" / name
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
+
+
+def rendered_preflight():
+    expected = {
+        Path(path).name
+        for path in json.loads((ROOT / "tools/snapshots.json").read_text())
+    }
+    actual = {path.name for path in (ROOT / "TestResults/Rendered").glob("*.png")}
+    if actual != expected:
+        raise RuntimeError(
+            f"Expected {len(expected)} actual render PNGs, got {len(actual)}; "
+            f"missing={sorted(expected - actual)}, extra={sorted(actual - expected)}"
+        )
 
 
 def snapshot_preflight():
@@ -293,44 +411,99 @@ def snapshot_preflight():
     missing = [name for name in expected if not (ROOT / name).is_file()]
     if missing:
         raise RuntimeError(f"Missing baseline images: {missing}")
+    unexpected = sorted(set(snapshot_hashes()) - set(expected))
+    if unexpected:
+        raise RuntimeError(f"Unexpected baseline images: {unexpected}")
     if (ROOT / ".prepared/record-snapshots").exists():
         raise RuntimeError(
             "Record marker is present; remove .prepared/record-snapshots before comparison"
         )
+    if (ROOT / ".prepared/record-host-snapshots").exists():
+        raise RuntimeError("Host record marker is present; remove it before comparison")
     return len(expected)
+
+
+def compare_host_renderings():
+    from compare_host_images import compare, manifest_cases
+
+    cases, allowed_names = manifest_cases(ROOT)
+    comparison = compare(
+        cases,
+        ROOT / "TestResults/Rendered",
+        ROOT / "TestResults/SnapshotDiffs",
+        ROOT / "TestResults/host-image-comparison.json",
+        allowed_names,
+    )
+    metric(
+        "host-image-comparison",
+        comparison["seconds"],
+        result="passed" if comparison["passed"] else "failed",
+        cases=comparison["case_count"],
+    )
+    for item in comparison["cases"]:
+        print(f"Hosted image {item['case']}: {item['status']}", flush=True)
+    return comparison["passed"]
 
 
 def snapshots(record=False):
     prepared_dependencies()
+    clear_test_results(
+        "ios.xcresult",
+        "host-ios.xcresult",
+        "unit.xcresult",
+        "record.xcresult",
+        "host-record.xcresult",
+        "snapshot.xcresult",
+        "host-snapshot.xcresult",
+        "ci-report.json",
+        "metrics.jsonl",
+    )
     if not record:
         snapshot_preflight()
     before = snapshot_hashes()
-    differences = ROOT / "TestResults/SnapshotDiffs"
-    if differences.exists():
-        shutil.rmtree(differences)
     marker = ROOT / ".prepared/record-snapshots"
     if record:
+        from compare_host_images import manifest_cases
+        from compare_host_images import record as record_host_images
+
         marker.write_text("Record mode enabled by just record-snapshots\n")
     result = (
         ROOT / "TestResults" / ("record.xcresult" if record else "snapshot.xcresult")
+    )
+    host_result = (
+        ROOT
+        / "TestResults"
+        / ("host-record.xcresult" if record else "host-snapshot.xcresult")
     )
     try:
         completed = xcode(
             "test",
             cwd=ROOT / "Testing",
-            scheme="EvoloomVisualTests-Package",
+            scheme="EvoloomVisualTests",
             result=result,
             derived_data="Visual",
             only_testing=("EvoloomSnapshotTests/ComponentSnapshots",),
             check=False,
         )
+        hosted = host_xcode(
+            "test",
+            result=host_result,
+            only_testing=("EvoloomHostedTests/HostedCollectionTests",),
+            check=False,
+        )
     finally:
         if record:
             marker.unlink(missing_ok=True)
-    after = snapshot_hashes()
-    if not record and before != after:
-        raise RuntimeError("Comparison created or changed baseline images")
+    if completed.returncode:
+        raise SystemExit(completed.returncode)
+    if hosted.returncode:
+        raise SystemExit(hosted.returncode)
+    test_result_count(result, SNAPSHOT_TEST_COUNT)
+    test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
     if record:
+        cases, _ = manifest_cases(ROOT)
+        record_host_images(cases, ROOT / "TestResults/Rendered")
+        after = snapshot_hashes()
         if {
             Path(name).stem.removeprefix("components.") for name in after
         } != SNAPSHOT_NAMES:
@@ -339,9 +512,15 @@ def snapshots(record=False):
             json.dumps(sorted(after), indent=2) + "\n"
         )
         print(f"Recorded {len(after)} PNGs. Review visually before committing.")
-    if completed.returncode:
-        raise SystemExit(completed.returncode)
-    test_result_count(result, SNAPSHOT_TEST_COUNT)
+    else:
+        images_match = compare_host_renderings()
+        if before != snapshot_hashes():
+            raise RuntimeError("Comparison created or changed baseline images")
+        rendered_preflight()
+        if not images_match:
+            raise RuntimeError(
+                "Hosted image comparison failed; see TestResults/SnapshotDiffs"
+            )
 
 
 def verify_copy():
@@ -379,12 +558,11 @@ let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
 
 
 def unit_tests():
-    prepared_dependencies()
     result = ROOT / "TestResults/unit.xcresult"
     xcode(
         "test",
         cwd=ROOT / "Testing",
-        scheme="EvoloomVisualTests-Package",
+        scheme="EvoloomVisualTests",
         result=result,
         derived_data="Visual",
         only_testing=(
@@ -397,22 +575,94 @@ def unit_tests():
 
 def ios_tests():
     prepared_dependencies()
+    clear_test_results(
+        "ios.xcresult",
+        "host-ios.xcresult",
+        "unit.xcresult",
+        "snapshot.xcresult",
+        "host-snapshot.xcresult",
+        "record.xcresult",
+        "host-record.xcresult",
+        "ci-report.json",
+        "metrics.jsonl",
+    )
     snapshot_preflight()
     before = snapshot_hashes()
     result = ROOT / "TestResults/ios.xcresult"
+    host_result = ROOT / "TestResults/host-ios.xcresult"
     completed = xcode(
         "test",
         cwd=ROOT / "Testing",
-        scheme="EvoloomVisualTests-Package",
+        scheme="EvoloomVisualTests",
         result=result,
         derived_data="Visual",
         check=False,
     )
+    hosted = host_xcode("test", result=host_result, check=False)
+    images_match = compare_host_renderings()
     if before != snapshot_hashes():
         raise RuntimeError("Comparison created or changed baseline images")
     if completed.returncode:
         raise SystemExit(completed.returncode)
+    if hosted.returncode:
+        raise SystemExit(hosted.returncode)
     test_result_count(result, UNIT_TEST_COUNT + SNAPSHOT_TEST_COUNT)
+    test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
+    rendered_preflight()
+    if not images_match:
+        raise RuntimeError(
+            "Hosted image comparison failed; see TestResults/SnapshotDiffs"
+        )
+
+
+def run_host():
+    screen = os.environ.get("EVOLOOM_SCREEN", "collection")
+    state = os.environ.get("EVOLOOM_STATE", "normal")
+    appearance = os.environ.get("EVOLOOM_APPEARANCE", "light")
+    if screen not in {
+        "collection",
+        "controls",
+        "feedback",
+        "settings",
+        "settingsError",
+        "detail",
+    }:
+        raise RuntimeError(f"Unknown review screen: {screen}")
+    if state not in {"normal", "empty", "loading", "error"}:
+        raise RuntimeError(f"Unknown collection state: {state}")
+    if appearance not in {"light", "dark"}:
+        raise RuntimeError(f"Unknown appearance: {appearance}")
+    device = doctor()
+    prepare_simulator()
+    host_xcode("build")
+    subprocess.run(
+        ["xcrun", "simctl", "bootstatus", device, "-b"], check=True, env=apple_env()
+    )
+    app = (
+        ROOT
+        / "DerivedData/Host/Build/Products/Debug-iphonesimulator/EvoloomReviewHost.app"
+    )
+    subprocess.run(
+        ["xcrun", "simctl", "install", device, str(app)], check=True, env=apple_env()
+    )
+    subprocess.run(
+        ["xcrun", "simctl", "ui", device, "appearance", appearance],
+        check=True,
+        env=apple_env(),
+    )
+    launch = [
+        "xcrun",
+        "simctl",
+        "launch",
+        "--terminate-running-process",
+        device,
+        "dev.evoloom.reviewhost",
+        f"--screen={screen}",
+        f"--state={state}",
+    ]
+    if appearance == "dark":
+        launch.append("--dark")
+    subprocess.run(launch, check=True, env=apple_env())
 
 
 def main():
@@ -421,6 +671,9 @@ def main():
         "doctor": doctor,
         "prepare-simulator": prepare_simulator,
         "build-package": lambda: xcode("build"),
+        "prepare-host": prepare_host,
+        "build-host": lambda: host_xcode("build"),
+        "run-host": run_host,
         "test-unit": unit_tests,
         "test-ios": ios_tests,
         "test-snapshot": snapshots,

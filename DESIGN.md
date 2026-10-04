@@ -85,6 +85,13 @@ component rule. Add a shared rule only after checking another applicable
 context and both light and dark appearances. Keep a single-product layout
 decision in that product.
 
+Use the development-only representative screens in `Testing/Sources/` to
+review component combinations before changing a shared token. Their first
+baseline images are discussion material, not an endorsement of the current
+design. Record the observed issue, candidate change, affected state and
+fixed capture conditions in the PR; see `docs/VISUAL_REVIEW.md`. Product
+navigation and business flow remain the integrating product's decisions.
+
 For AI screen generation: start with the user's goal, the information order,
 the single primary action, and the native iOS container. Use these tokens and
 components only where they solve a repeated visual need. Check Japanese and

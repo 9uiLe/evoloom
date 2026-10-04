@@ -1,0 +1,99 @@
+{
+  "name": "EvoloomReviewHost",
+  "options": {
+    "minimumXcodeGenVersion": "2.44.1",
+    "xcodeVersion": "2700"
+  },
+  "packages": {
+    "Evoloom": {
+      "path": "../.."
+    },
+    "EvoloomVisualTests": {
+      "path": ".."
+    },
+    "SnapshotTestingLocal": {
+      "path": "../../.prepared/SnapshotTesting"
+    }
+  },
+  "targets": {
+    "EvoloomReviewHost": {
+      "type": "application",
+      "platform": "iOS",
+      "deploymentTarget": "26.0",
+      "sources": [
+        "App"
+      ],
+      "dependencies": [
+        {
+          "package": "EvoloomVisualTests",
+          "product": "EvoloomReviewFixtures"
+        }
+      ],
+      "settings": {
+        "base": {
+          "PRODUCT_BUNDLE_IDENTIFIER": "dev.evoloom.reviewhost",
+          "PRODUCT_NAME": "EvoloomReviewHost",
+          "SWIFT_VERSION": "6.0",
+          "TARGETED_DEVICE_FAMILY": "1",
+          "GENERATE_INFOPLIST_FILE": "YES",
+          "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
+          "INFOPLIST_KEY_UILaunchScreen_Generation": "YES",
+          "CODE_SIGNING_ALLOWED": "NO"
+        }
+      }
+    },
+    "EvoloomHostedTests": {
+      "type": "bundle.unit-test",
+      "platform": "iOS",
+      "deploymentTarget": "26.0",
+      "sources": [
+        "Tests"
+      ],
+      "dependencies": [
+        {
+          "target": "EvoloomReviewHost"
+        },
+        {
+          "package": "Evoloom",
+          "product": "Evoloom"
+        },
+        {
+          "package": "EvoloomVisualTests",
+          "product": "EvoloomReviewFixtures"
+        },
+        {
+          "package": "SnapshotTestingLocal",
+          "product": "SnapshotTesting"
+        }
+      ],
+      "settings": {
+        "base": {
+          "PRODUCT_BUNDLE_IDENTIFIER": "dev.evoloom.reviewhost.tests",
+          "SWIFT_VERSION": "6.0",
+          "CODE_SIGNING_ALLOWED": "NO"
+        }
+      }
+    }
+  },
+  "schemes": {
+    "EvoloomReviewHost": {
+      "build": {
+        "targets": {
+          "EvoloomReviewHost": "all",
+          "EvoloomHostedTests": [
+            "test"
+          ]
+        }
+      },
+      "run": {
+        "executable": "EvoloomReviewHost"
+      },
+      "test": {
+        "targets": [
+          "EvoloomHostedTests"
+        ],
+        "gatherCoverageData": false
+      }
+    }
+  }
+}

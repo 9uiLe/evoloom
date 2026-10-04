@@ -4,6 +4,9 @@ included:
   - Tests
   - Testing/Package.swift
   - Testing/Tests
+  - Testing/Sources
+  - Testing/Host/App
+  - Testing/Host/Tests
 excluded:
   - .build
   - .prepared

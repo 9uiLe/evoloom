@@ -12,7 +12,9 @@ Package. Preserve ordinary SwiftUI updates for actions, Bindings, child Views
 and environment values. Measure an integrating screen before adding an update
 suppression boundary. Update `tools/registry.json` when adding
 a component. Include a Preview example, unit/CLI checks where behavior can
-regress, and a visually reviewed PNG baseline for a new visual state.
+regress, and a visually reviewed PNG baseline for a new visual state. For UI
+changes, use the representative screens and PR image procedure in
+`docs/VISUAL_REVIEW.md`; pin image links and the CI result to the same commit.
 
 Run `nix develop -c just format`, repeat it to check idempotence, then
 `nix develop -c just check`. Use `nix develop -c just check-fast` for immediate

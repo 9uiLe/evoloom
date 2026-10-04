@@ -1,6 +1,7 @@
+import Evoloom
 import SwiftUI
 
-/// Internal preview fixtures compile with the library and are not public API.
+/// Development-only Preview fixture; the Evoloom library product does not include it.
 struct ComponentCatalog: View {
     @Environment(\.iosDesignTokens) private var tokens
     @State private var name = ""
@@ -37,23 +38,29 @@ struct ComponentCatalog: View {
     }
 }
 
-enum CollectionState: String, CaseIterable, Identifiable {
+public enum CollectionState: String, CaseIterable, Identifiable {
     case normal, empty, loading, error
-    var id: String {
+    public var id: String {
         rawValue
     }
 }
 
-struct ExampleCollectionView: View {
+public struct ExampleCollectionView: View {
+    @Environment(\.iosDesignTokens) private var tokens
+    @Environment(\.colorScheme) private var scheme
     @State private var search = ""
     @State private var state: CollectionState = .normal
     @State private var showingNew = false
 
-    init(initialState: CollectionState = .normal) {
+    public init() {
+        _state = State(initialValue: .normal)
+    }
+
+    public init(initialState: CollectionState) {
         _state = State(initialValue: initialState)
     }
 
-    var body: some View {
+    public var body: some View {
         NavigationStack {
             CollectionContent(state: $state, search: search)
                 .navigationTitle("Collection")
@@ -77,14 +84,20 @@ struct ExampleCollectionView: View {
                     }
                 }
         }
+        .tint(scheme == .dark ? tokens.dark.foreground : tokens.light.foreground)
     }
 }
 
 struct CollectionContent: View {
+    @Environment(\.iosDesignTokens) private var tokens
     @Binding var state: CollectionState
     let search: String
 
-    private let items = ["Design notes", "Release checklist", "Research summary"]
+    private let items = [
+        (title: "Design notes", detail: "Research decisions and open questions", status: "Ready"),
+        (title: "Release checklist", detail: "Three tasks need review", status: "Review"),
+        (title: "Research summary", detail: "Findings from the last interview", status: "Draft"),
+    ]
 
     init(state: Binding<CollectionState>, search: String = "") {
         _state = state
@@ -93,6 +106,11 @@ struct CollectionContent: View {
 
     var body: some View {
         List {
+            Section {
+                Text("Keep project decisions and next steps together.")
+            } header: {
+                Text("Overview")
+            }
             Section("Preview state") {
                 Picker("State", selection: $state) {
                     ForEach(CollectionState.allCases) { item in
@@ -103,8 +121,14 @@ struct CollectionContent: View {
             Section("Items") {
                 switch state {
                 case .normal:
-                    ForEach(items.filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }, id: \.self) { item in
-                        NavigationLink(item, value: item)
+                    ForEach(items.filter { search.isEmpty || $0.title.localizedCaseInsensitiveContains(search) }, id: \.title) { item in
+                        NavigationLink(value: item.title) {
+                            VStack(alignment: .leading, spacing: tokens.spacing.xxs) {
+                                Text(item.title).font(.headline)
+                                Text(item.detail).font(.subheadline).foregroundStyle(.secondary)
+                                IOSBadge(item.status, variant: item.status == "Ready" ? .success : .secondary)
+                            }
+                        }
                     }
                 case .empty:
                     IOSEmptyState("No items", message: "Add your first item.")
@@ -146,8 +170,12 @@ private struct SwitchStatesPreview: View {
     SwitchStatesPreview().preferredColorScheme(.dark)
 }
 
-#Preview("Collection") {
-    ExampleCollectionView()
+#Preview("Collection - light") {
+    ExampleCollectionView().preferredColorScheme(.light)
+}
+
+#Preview("Collection - dark") {
+    ExampleCollectionView().preferredColorScheme(.dark)
 }
 
 #Preview("Collection - empty") {

@@ -267,3 +267,90 @@ fail with expected/actual/diff PNGs; after restoring the source, normal
 comparison passed. Hiding one baseline made comparison fail before Xcode and
 did not recreate the image. The Xcode Preview canvas, manual VoiceOver flow,
 keyboard operation, search and sheet interactions were not run for this change.
+
+## Development app host for visual review, 2026-10-04
+
+On the fixed local Xcode 27.0 (27A266a), SDK 27.0 (24A430), iOS 27.0 runtime
+(24A434), iPhone 18 Pro arm64 and macOS build 26A428, Nix provided XcodeGen
+2.44.1. `just prepare-host` generated an ignored project from
+`Testing/Host/project.json`; its app built and launched without signing. The
+app uses the existing fixture module and preserves the root library Package.
+The Simulator's actual light and dark Collection displays showed a legible
+plus symbol and search icon/field. Hosted `drawHierarchyInKeyWindow` images
+showed the same native chrome. The simulator screenshot includes status-bar
+glyphs; the snapshot leaves them out but retains the actual top and bottom
+safe-area layout at 1206 × 2622 px. An empty-state launch displayed the selected fixture.
+Canvas remains unverified.
+
+Five collection baselines were deliberately re-recorded in the app host. The
+other 23 PNGs retained their fixed-host paths and pixels. A one-session
+app-host experiment changed seven unrelated fixed-size cases, so the active
+matrix keeps two serial sessions. `just test-ios` passed 15 Package methods
+and five app-host methods; `just test-snapshot` passed nine and five methods;
+each comparison saved 28 actual PNGs with no baseline change. `just
+check-fast`, `just build-package`, and `just verify-copy-install` passed
+locally. A hosted baseline removed temporarily was rejected before build and
+then restored. A temporary altered baseline produced `expected.png`,
+`actual.png` and `diff.png`. Xcode 27.0 then stalled more than five minutes
+while cleaning up the failed hosted test; it was terminated, so a natural
+nonzero test exit was not observed in this local trial. The normal task has a
+600-second Xcode timeout and CI keeps the rendered diffs even when it trips.
+`just check` passed after the baseline was restored. No
+appearance token or product dependency changed.
+
+Apple documents native JSON `project.xcproj` support from Xcode 27, with 27.2
+as the new-format default. Installed Xcode 27.0 did not expose the Project
+Format control or accept `xcodebuild -convert-project xcproj`; native JSON was
+not validated. The checked-in JSON is an XcodeGen spec, not `.xcproj`.
+
+## Hosted image mismatch termination, 2026-10-04
+
+The earlier five-minute stall above remains a record of the old in-test
+failure path. A second one-case diagnostic changed fixed Collection copy and
+ran only `testCollectionLight`. On the same pinned local Apple environment,
+the actual PNG appeared 39.6 seconds after xcodebuild started, and the diff
+appeared at 42.1 seconds. The command was still running 60 seconds after the
+diff. A process sample found xcodebuild's main thread in
+`waitForBuildWithBuildLog`, while another thread was waiting inside
+`XCTHRunDestinationAllocator.collectSimulatorDiagnostics` /
+`simCtlDiagnose`. The diagnostic ended that process group at 117.1 seconds and
+restored the fixture. The interrupted xcresult lacked `Info.plist`, so the
+last XCTest case completion could not be read from it. This locates the
+observed wait after image comparison, but does not prove what held up the
+Xcode diagnostic subprocess or which component initiated it.
+
+Hosted XCTest now captures and saves the real-window image without asserting
+pixel equality. After xcodebuild exits, `tools/compare_host_images.py` decodes
+both PNGs to RGBA, compares dimensions and pixels exactly, writes
+expected/actual/diff for a mismatch, and fails the outer task. Pillow 12.3.0
+is supplied by the existing pinned nixpkgs revision. Package-only snapshots
+still use their Swift exact-pixel comparison. The 28 baselines and product
+sources did not change.
+
+In a targeted changed-copy trial, the interval from fixture change through
+host preparation and xcodebuild's exit code 0 was 19.5 seconds; the external
+comparison reported a pixel mismatch and produced the three images 0.25
+seconds later. Its CLI returned 1. A separate full
+`test-snapshot` trial changed only the light hosted case; all 14 XCTest methods
+passed, 28 actual PNGs were saved, and the outer command exited 1 with only
+`collection-light` mismatching after 47.5 seconds. After restoring that line,
+`test-snapshot` passed with all five hosted images matching and no stale diff.
+These are warm local observations under different build inputs, not a general
+performance estimate.
+
+Cloud [normal run 37209628472](https://github.com/9uiLe/evoloom/actions/runs/37209628472)
+passed for PR head `ce97a08a3722f1f04e518a16ee08b57cf3880ab7` at synthetic
+merge checkout `faf83294d3d5ca91c4b8b1002120aee86e40a661`. Its downloaded
+[evidence artifact](https://github.com/9uiLe/evoloom/actions/runs/37209628472/artifacts/11306516307)
+contains 15 Package tests, five hosted tests, 28 rendered PNGs and a report
+with all five hosted cases matching. No diff PNGs were generated. A separate
+temporary branch changed only `testCollectionLight` to render the empty state
+against the normal baseline. Its manual [failure run 37209665511](https://github.com/9uiLe/evoloom/actions/runs/37209665511)
+used checkout `39a514892d2923e9f7eb0a5233673dcc82a9b6db`. All 20 XCTest
+methods passed; the external comparator reported only `collection-light` as
+`pixel_mismatch` in 1.926 seconds. The iOS job and required validation job
+failed. The downloaded [failure artifact](https://github.com/9uiLe/evoloom/actions/runs/37209665511/artifacts/11306077250)
+contains 28 actual PNGs, `host-image-comparison.json`, both Xcode logs,
+xcresults, and the 1206 × 2622 expected/actual/diff PNGs. The diff was opened
+and shows the intended list-to-empty change. The temporary branch was deleted
+after verification; its intentional mismatch is absent from the PR branch.

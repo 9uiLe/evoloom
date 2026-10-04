@@ -35,6 +35,15 @@ lint:
 build-package:
     python3 tools/tasks.py build-package
 
+prepare-host:
+    python3 tools/tasks.py prepare-host
+
+build-host:
+    python3 tools/tasks.py build-host
+
+run-host screen="collection" state="normal" appearance="light":
+    EVOLOOM_SCREEN="{{ screen }}" EVOLOOM_STATE="{{ state }}" EVOLOOM_APPEARANCE="{{ appearance }}" python3 tools/tasks.py run-host
+
 test-unit:
     python3 tools/tasks.py test-unit
 
