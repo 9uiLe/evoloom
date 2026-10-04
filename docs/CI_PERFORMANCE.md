@@ -181,3 +181,21 @@ selected full checks from the earlier validated SHA and passed them. Its
 detector began 103 seconds after creation while the canceled run cleaned up.
 These were a fixed implementation error and an expected cancellation, not
 automatic retries accepted as success.
+
+## Scene-backed review host (local trial, 2026-10-04)
+
+The collection's native search and toolbar need an app scene for a trustworthy
+image. Five collection cases moved to a small development app test target;
+the other 23 fixed-size images and six unit tests remain in the development
+Package. A one-session alternative was compiled and run, but its app context
+changed seven old fixed-size cases, including settings, detail and the narrow
+collection layout. Preserving those baselines was preferred to an unrelated
+mass re-record. Both sessions run serially on the same pinned simulator;
+neither duplicates a collection case. The first warm local passing `test-ios`
+measured 26.902 seconds for the Package session and 20.668 seconds for the
+app-host session (47.570 seconds of Xcode actions); 15 and 5 XCTest methods
+passed, with 28 actual PNGs. This single warm local sample excludes shell and
+Nix setup and does not predict GitHub-hosted duration or a cold build. The
+trial cache now includes both derived build directories and remains manual
+opt-in; normal CI has no explicit Xcode build cache. A post-change CI run and
+transfer-inclusive comparison are still needed before any speed claim.

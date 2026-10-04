@@ -25,6 +25,16 @@ mark_path() {
         Testing/Package.swift)
             mark_full
             ;;
+        Testing/Host/project.json)
+            mark_full
+            ;;
+        Testing/Host/Tests/__Snapshots__/*)
+            snapshot=true
+            ;;
+        Testing/Host/App/* | Testing/Host/Tests/*)
+            quality=true
+            snapshot=true
+            ;;
         Tests/* | Testing/Tests/EvoloomSnapshotTests/DesignTokensTests.swift | Testing/Tests/EvoloomSnapshotTests/InteractionTests.swift)
             quality=true
             unit=true

@@ -9,7 +9,7 @@ The generator checks that the SHA is a local commit and every linked PNG is a bl
 
 ## Verification and review
 
-- Capture environment: Xcode build, Simulator runtime build, device, width, scale, locale, Dynamic Type and appearance.
+- Capture environment: Xcode build, Simulator runtime build, device, capture host (fixed Package or scene-backed app), width, safe area, scale, locale, Dynamic Type and appearance.
 - Commands and results:
 - CI run, PR head/image commit SHA, and actual checkout SHA (which may be a merge commit):
 - Visual review findings and remaining questions:

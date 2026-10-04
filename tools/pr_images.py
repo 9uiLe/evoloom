@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOTS = "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots"
+HOSTED_SNAPSHOTS = "Testing/Host/Tests/__Snapshots__/HostedCollectionTests"
 PAIRS = (
     (
         "Components · controls",
@@ -44,7 +45,7 @@ def markdown(sha, ci_url=None, root=None):
             "fetch that exact commit (including in a shallow checkout) and retry"
         )
     names = [name for _, light, dark in PAIRS for name in (light, dark)]
-    paths = [f"{SNAPSHOTS}/components.{name}.png" for name in names]
+    paths = [snapshot_path(name) for name in names]
     missing = [
         path for path in paths if _git_object_type(root, f"{sha}:{path}") != "blob"
     ]
@@ -56,7 +57,8 @@ def markdown(sha, ci_url=None, root=None):
     lines = [
         "These are **committed baseline PNGs**, not images downloaded from this CI run.",
         f"Image commit: `{sha}`. Capture: Xcode 27.0 (27A266a), iOS 27.0 Simulator (24A434),",
-        "iPhone 18 Pro, arm64; 390 pt width, 3× scale, en_US, UTC, standard Dynamic Type.",
+        "iPhone 18 Pro, arm64; component/settings/detail: 390 pt fixed host; list: 402 × 874 pt scene-backed app host;",
+        "3× scale, en_US, UTC, standard Dynamic Type.",
     ]
     if ci_url:
         lines.append(f"PR CI run for this image commit as head: {ci_url}")
@@ -73,11 +75,20 @@ def markdown(sha, ci_url=None, root=None):
     for label, light, dark in PAIRS:
         urls = []
         for name in (light, dark):
-            path = f"{SNAPSHOTS}/components.{name}.png"
+            path = snapshot_path(name)
             url = f"https://raw.githubusercontent.com/9uiLe/evoloom/{sha}/{path}"
             urls.append(f"![{label} {name}]({url})")
         lines.append(f"| {label} | {urls[0]} | {urls[1]} |")
     return "\n".join(lines) + "\n"
+
+
+def snapshot_path(name):
+    directory = (
+        HOSTED_SNAPSHOTS
+        if name in {"collection-light", "collection-dark"}
+        else SNAPSHOTS
+    )
+    return f"{directory}/components.{name}.png"
 
 
 def main():

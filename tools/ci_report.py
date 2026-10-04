@@ -114,7 +114,7 @@ def report():
     if (RESULTS / "preparation.json").exists():
         preparation = json.loads((RESULTS / "preparation.json").read_text())
     results = {}
-    for name in ("ios", "unit", "snapshot"):
+    for name in ("ios", "host-ios", "unit", "snapshot", "host-snapshot"):
         path = RESULTS / f"{name}.xcresult"
         if path.exists():
             try:

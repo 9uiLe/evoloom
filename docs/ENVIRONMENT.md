@@ -4,7 +4,7 @@
 
 | Source | Fixed version / revision | Use |
 | --- | --- | --- |
-| nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1 |
+| nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1, XcodeGen 2.44.1 (Darwin only) |
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
 
 Run `nix develop`, then `just prepare-deps` for the development test harness.
@@ -25,6 +25,13 @@ toolchain. The `just` development test tasks fail explicitly if the test-only
 SnapshotTesting source has not been prepared. Development and CI resolve that
 test source through the Nix-fixed local path, with automatic
 SwiftPM package resolution disabled.
+
+The development-only `Testing/Host/project.json` is an XcodeGen JSON spec.
+`just prepare-host` turns it into an ignored Xcode project containing the app
+and hosted tests. Its fixture product and SnapshotTesting dependency are local
+packages; it does not alter the root product. This is distinct from Apple's
+native `project.xcproj` JSON format. Pinned Xcode 27.0 could not generate or
+convert to native `.xcproj`; see [visual review](VISUAL_REVIEW.md).
 
 The flake also exposes the same static tools on `x86_64-linux`, used by the
 independent CI formatting, lint and Python job on Ubuntu 24.04. Linux does not build or render

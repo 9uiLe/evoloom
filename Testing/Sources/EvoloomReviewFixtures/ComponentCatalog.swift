@@ -38,25 +38,29 @@ struct ComponentCatalog: View {
     }
 }
 
-enum CollectionState: String, CaseIterable, Identifiable {
+public enum CollectionState: String, CaseIterable, Identifiable {
     case normal, empty, loading, error
-    var id: String {
+    public var id: String {
         rawValue
     }
 }
 
-struct ExampleCollectionView: View {
+public struct ExampleCollectionView: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     @State private var search = ""
     @State private var state: CollectionState = .normal
     @State private var showingNew = false
 
-    init(initialState: CollectionState = .normal) {
+    public init() {
+        _state = State(initialValue: .normal)
+    }
+
+    public init(initialState: CollectionState) {
         _state = State(initialValue: initialState)
     }
 
-    var body: some View {
+    public var body: some View {
         NavigationStack {
             CollectionContent(state: $state, search: search)
                 .navigationTitle("Collection")

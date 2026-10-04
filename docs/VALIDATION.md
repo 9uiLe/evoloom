@@ -267,3 +267,38 @@ fail with expected/actual/diff PNGs; after restoring the source, normal
 comparison passed. Hiding one baseline made comparison fail before Xcode and
 did not recreate the image. The Xcode Preview canvas, manual VoiceOver flow,
 keyboard operation, search and sheet interactions were not run for this change.
+
+## Development app host for visual review, 2026-10-04
+
+On the fixed local Xcode 27.0 (27A266a), SDK 27.0 (24A430), iOS 27.0 runtime
+(24A434), iPhone 18 Pro arm64 and macOS build 26A428, Nix provided XcodeGen
+2.44.1. `just prepare-host` generated an ignored project from
+`Testing/Host/project.json`; its app built and launched without signing. The
+app uses the existing fixture module and preserves the root library Package.
+The Simulator's actual light and dark Collection displays showed a legible
+plus symbol and search icon/field. Hosted `drawHierarchyInKeyWindow` images
+showed the same native chrome. The simulator screenshot includes status-bar
+glyphs; the snapshot leaves them out but retains the actual top and bottom
+safe-area layout at 1206 × 2622 px. An empty-state launch displayed the selected fixture.
+Canvas remains unverified.
+
+Five collection baselines were deliberately re-recorded in the app host. The
+other 23 PNGs retained their fixed-host paths and pixels. A one-session
+app-host experiment changed seven unrelated fixed-size cases, so the active
+matrix keeps two serial sessions. `just test-ios` passed 15 Package methods
+and five app-host methods; `just test-snapshot` passed nine and five methods;
+each comparison saved 28 actual PNGs with no baseline change. `just
+check-fast`, `just build-package`, and `just verify-copy-install` passed
+locally. A hosted baseline removed temporarily was rejected before build and
+then restored. A temporary altered baseline produced `expected.png`,
+`actual.png` and `diff.png`. Xcode 27.0 then stalled more than five minutes
+while cleaning up the failed hosted test; it was terminated, so a natural
+nonzero test exit was not observed in this local trial. The normal task has a
+600-second Xcode timeout and CI keeps the rendered diffs even when it trips.
+`just check` passed after the baseline was restored. No
+appearance token or product dependency changed.
+
+Apple documents native JSON `project.xcproj` support from Xcode 27, with 27.2
+as the new-format default. Installed Xcode 27.0 did not expose the Project
+Format control or accept `xcodebuild -convert-project xcproj`; native JSON was
+not validated. The checked-in JSON is an XcodeGen spec, not `.xcproj`.

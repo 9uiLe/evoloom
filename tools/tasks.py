@@ -52,6 +52,8 @@ SNAPSHOT_NAMES = {
 }
 UNIT_TEST_COUNT = 6
 SNAPSHOT_TEST_COUNT = 9
+HOSTED_SNAPSHOT_TEST_COUNT = 5
+HOST_PROJECT = ROOT / "Testing/Host/EvoloomReviewHost.xcodeproj"
 
 
 def metric(phase, seconds, **details):
@@ -105,10 +107,13 @@ def doctor():
         "python3",
         "yamllint",
         "actionlint",
+        "xcodegen",
     ]
     missing = [tool for tool in required if shutil.which(tool) is None]
     if missing:
         raise RuntimeError(f"Nix shell missing tools: {missing}; run nix develop")
+    if output("xcodegen", "--version") != "Version: 2.44.1":
+        raise RuntimeError("Expected Nix-pinned XcodeGen 2.44.1")
     sources = nix_sources()
     if output("sw_vers", "-buildVersion") != EXPECTED_MACOS_BUILD:
         raise RuntimeError(f"Expected macOS build {EXPECTED_MACOS_BUILD}")
@@ -191,12 +196,14 @@ def xcode(
     derived_data=None,
     only_testing=(),
     check=True,
+    project=None,
 ):
     device = doctor()
     command = [
         "xcodebuild",
         action,
         "-quiet",
+        *(["-project", str(project)] if project else []),
         "-scheme",
         scheme,
         "-destination",
@@ -282,11 +289,43 @@ def test_result_count(path, expected):
 
 
 def snapshot_hashes():
-    directory = ROOT / "Testing/Tests/EvoloomSnapshotTests/__Snapshots__"
+    directories = (
+        ROOT / "Testing/Tests/EvoloomSnapshotTests/__Snapshots__",
+        ROOT / "Testing/Host/Tests/__Snapshots__",
+    )
     return {
         str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
+        for directory in directories
         for path in directory.rglob("*.png")
     }
+
+
+def prepare_host():
+    prepared_dependencies()
+    subprocess.run(
+        [
+            "xcodegen",
+            "generate",
+            "--spec",
+            "Testing/Host/project.json",
+            "--project",
+            "Testing/Host",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+
+
+def host_xcode(action, **kwargs):
+    prepare_host()
+    return xcode(
+        action,
+        cwd=ROOT,
+        scheme="EvoloomReviewHost",
+        project=HOST_PROJECT,
+        derived_data="Host",
+        **kwargs,
+    )
 
 
 def clear_rendered_images():
@@ -322,10 +361,15 @@ def snapshot_preflight():
     missing = [name for name in expected if not (ROOT / name).is_file()]
     if missing:
         raise RuntimeError(f"Missing baseline images: {missing}")
+    unexpected = sorted(set(snapshot_hashes()) - set(expected))
+    if unexpected:
+        raise RuntimeError(f"Unexpected baseline images: {unexpected}")
     if (ROOT / ".prepared/record-snapshots").exists():
         raise RuntimeError(
             "Record marker is present; remove .prepared/record-snapshots before comparison"
         )
+    if (ROOT / ".prepared/record-host-snapshots").exists():
+        raise RuntimeError("Host record marker is present; remove it before comparison")
     return len(expected)
 
 
@@ -339,24 +383,38 @@ def snapshots(record=False):
     if differences.exists():
         shutil.rmtree(differences)
     marker = ROOT / ".prepared/record-snapshots"
+    host_marker = ROOT / ".prepared/record-host-snapshots"
     if record:
         marker.write_text("Record mode enabled by just record-snapshots\n")
+        host_marker.write_text("Record mode enabled by just record-snapshots\n")
     result = (
         ROOT / "TestResults" / ("record.xcresult" if record else "snapshot.xcresult")
+    )
+    host_result = (
+        ROOT
+        / "TestResults"
+        / ("host-record.xcresult" if record else "host-snapshot.xcresult")
     )
     try:
         completed = xcode(
             "test",
             cwd=ROOT / "Testing",
-            scheme="EvoloomVisualTests-Package",
+            scheme="EvoloomVisualTests",
             result=result,
             derived_data="Visual",
             only_testing=("EvoloomSnapshotTests/ComponentSnapshots",),
             check=False,
         )
+        hosted = host_xcode(
+            "test",
+            result=host_result,
+            only_testing=("EvoloomHostedTests/HostedCollectionTests",),
+            check=False,
+        )
     finally:
         if record:
             marker.unlink(missing_ok=True)
+            host_marker.unlink(missing_ok=True)
     after = snapshot_hashes()
     if not record and before != after:
         raise RuntimeError("Comparison created or changed baseline images")
@@ -371,7 +429,10 @@ def snapshots(record=False):
         print(f"Recorded {len(after)} PNGs. Review visually before committing.")
     if completed.returncode:
         raise SystemExit(completed.returncode)
+    if hosted.returncode:
+        raise SystemExit(hosted.returncode)
     test_result_count(result, SNAPSHOT_TEST_COUNT)
+    test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
     if not record:
         rendered_preflight()
 
@@ -411,12 +472,11 @@ let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
 
 
 def unit_tests():
-    prepared_dependencies()
     result = ROOT / "TestResults/unit.xcresult"
     xcode(
         "test",
         cwd=ROOT / "Testing",
-        scheme="EvoloomVisualTests-Package",
+        scheme="EvoloomVisualTests",
         result=result,
         derived_data="Visual",
         only_testing=(
@@ -432,21 +492,79 @@ def ios_tests():
     snapshot_preflight()
     before = snapshot_hashes()
     clear_rendered_images()
+    differences = ROOT / "TestResults/SnapshotDiffs"
+    if differences.exists():
+        shutil.rmtree(differences)
     result = ROOT / "TestResults/ios.xcresult"
+    host_result = ROOT / "TestResults/host-ios.xcresult"
     completed = xcode(
         "test",
         cwd=ROOT / "Testing",
-        scheme="EvoloomVisualTests-Package",
+        scheme="EvoloomVisualTests",
         result=result,
         derived_data="Visual",
         check=False,
     )
+    hosted = host_xcode("test", result=host_result, check=False)
     if before != snapshot_hashes():
         raise RuntimeError("Comparison created or changed baseline images")
     if completed.returncode:
         raise SystemExit(completed.returncode)
+    if hosted.returncode:
+        raise SystemExit(hosted.returncode)
     test_result_count(result, UNIT_TEST_COUNT + SNAPSHOT_TEST_COUNT)
+    test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
     rendered_preflight()
+
+
+def run_host():
+    screen = os.environ.get("EVOLOOM_SCREEN", "collection")
+    state = os.environ.get("EVOLOOM_STATE", "normal")
+    appearance = os.environ.get("EVOLOOM_APPEARANCE", "light")
+    if screen not in {
+        "collection",
+        "controls",
+        "feedback",
+        "settings",
+        "settingsError",
+        "detail",
+    }:
+        raise RuntimeError(f"Unknown review screen: {screen}")
+    if state not in {"normal", "empty", "loading", "error"}:
+        raise RuntimeError(f"Unknown collection state: {state}")
+    if appearance not in {"light", "dark"}:
+        raise RuntimeError(f"Unknown appearance: {appearance}")
+    device = doctor()
+    prepare_simulator()
+    host_xcode("build")
+    subprocess.run(
+        ["xcrun", "simctl", "bootstatus", device, "-b"], check=True, env=apple_env()
+    )
+    app = (
+        ROOT
+        / "DerivedData/Host/Build/Products/Debug-iphonesimulator/EvoloomReviewHost.app"
+    )
+    subprocess.run(
+        ["xcrun", "simctl", "install", device, str(app)], check=True, env=apple_env()
+    )
+    subprocess.run(
+        ["xcrun", "simctl", "ui", device, "appearance", appearance],
+        check=True,
+        env=apple_env(),
+    )
+    launch = [
+        "xcrun",
+        "simctl",
+        "launch",
+        "--terminate-running-process",
+        device,
+        "dev.evoloom.reviewhost",
+        f"--screen={screen}",
+        f"--state={state}",
+    ]
+    if appearance == "dark":
+        launch.append("--dark")
+    subprocess.run(launch, check=True, env=apple_env())
 
 
 def main():
@@ -455,6 +573,9 @@ def main():
         "doctor": doctor,
         "prepare-simulator": prepare_simulator,
         "build-package": lambda: xcode("build"),
+        "prepare-host": prepare_host,
+        "build-host": lambda: host_xcode("build"),
+        "run-host": run_host,
         "test-unit": unit_tests,
         "test-ios": ios_tests,
         "test-snapshot": snapshots,

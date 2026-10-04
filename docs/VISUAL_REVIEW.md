@@ -1,109 +1,50 @@
 # Reviewing representative screens
 
-The screens under `Testing/Sources/EvoloomReviewFixtures/` are fixed design
-examples. The development Package compiles them beside its tests; the root
-`Evoloom` library product contains none of them. Their purpose is to compare
-shared component decisions in context, not to provide an app or product flow.
-`ComponentCatalog.swift` keeps the older component Preview and the native
-collection example. `ReviewScreens.swift` adds two readable component pages,
-a Settings `Form`, and a detail/edit screen. Preview and image tests instantiate
-these same view types and fixed data. The collection Preview lets a reviewer
-change normal, empty, loading and error states; snapshots construct each state
-directly. Navigation, List, Form, search and sheet use SwiftUI controls. The
-static screenshots do not test their interaction, VoiceOver or keyboard flow.
+The root `Evoloom` Swift Package remains the product. `Testing/Sources/EvoloomReviewFixtures/` holds fixed Preview and review views. `Testing/Host/` is a development-only app with a real scene and key window; it imports the same fixture product and is never distributed with the library or copied components. `Testing/Host/project.json` is the checked-in XcodeGen definition. `just prepare-host` generates an ignored `.xcodeproj` with the Nix-pinned XcodeGen. No fixture source is copied into the app.
 
-## Preview and fixed capture
+The host was added because the package test process had no connected scene. A plain native `NavigationStack`/`List`/`searchable`/toolbar reproduced white search and plus glyphs on a light background; `drawHierarchy` there returned a black image. With the app scene, the glyphs and search field are visible in both the simulator display and `drawHierarchyInKeyWindow` snapshot. No component tint or token was changed to mask the capture problem. See the [SnapshotTesting host discussion](https://github.com/pointfreeco/swift-snapshot-testing/discussions/1031).
 
-Run `nix develop -c just prepare-deps`, open `Testing/Package.swift` in Xcode,
-select the fixed iPhone 18 Pro simulator and open the files above. Choose a
-named `#Preview` in the canvas. The image tests remain available if Canvas is
-unavailable. The root `Package.swift` remains the normal consumer entrypoint.
+## Display and capture
 
-Run `nix develop -c just test-snapshot` to compare and save every **actual**
-render from that test invocation in `TestResults/Rendered/components.<case>.png`.
-Run `nix develop -c just test-ios` for the same images together with the unit
-tests, in one XCTest session. `just check` also builds a copied-source Package.
-The capture uses the existing SnapshotTesting strategy and does not start a
-second Simulator session for PR images. Actual PNGs are saved from the
-comparison callback, including on a pixel mismatch. If an earlier build or
-baseline preflight fails, no render exists; read the command failure and the
-`ios.xcresult` or `snapshot.xcresult` that exists. `ci-report.json` and the CI
-Job Summary report the actual count and missing names. The CI artifact
-`ios-test-evidence` contains `TestResults/Rendered`, `SnapshotDiffs` on
-mismatch, xcresult bundles and the committed baseline PNGs. The artifact step
-runs after test success or failure. It cannot fabricate images after a build
-failure.
+```sh
+nix develop -c just prepare-deps
+nix develop -c just prepare-host
+nix develop -c just run-host collection normal light
+nix develop -c just run-host collection normal dark
+nix develop -c just run-host collection error light
+nix develop -c just run-host settings normal light
+nix develop -c just test-snapshot
+```
 
-The record command is separate: `nix develop -c just record-snapshots` writes
-baseline PNGs under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/` and
-updates `tools/snapshots.json`. Review each changed image at full size, then
-run `just test-snapshot` without record mode. Comparison checks exact RGBA
-pixels and refuses missing, added or changed baselines; no tolerance was
-increased for these screens.
+`run-host` builds, installs and launches the app on the exact simulator selected by `just doctor`. The first argument is `collection`, `controls`, `feedback`, `settings`, `settingsError` or `detail`; the second is a collection state (`normal`, `empty`, `loading`, `error`); the third is `light` or `dark`. Open Simulator to inspect the app. After its view appears, `xcrun simctl io <doctor-UDID> screenshot <path>.png` captures the entire display. An immediate screenshot after launch can capture a blank frame; wait for the view, without a fixed long sleep.
 
-The pinned host is Xcode 27.0 build 27A266a, iOS Simulator 27.0 build 24A434,
-iPhone 18 Pro on arm64. The host sets a 390 pt width (320 pt for narrow cases),
-3× scale, zero safe-area inset, system fonts, UTC and explicit `en_US` or
-`ja_JP`, appearance and Dynamic Type. XCTest uses `-testLanguage en`
-and `-testRegion US`. `just doctor` rejects a different Apple environment.
-The Preview canvas is interactive and does not claim pixel identity with a
-fixed test host.
+For Canvas, open `Testing/Package.swift`, select iPhone 18 Pro and a named `#Preview` in the fixture sources. Xcode 27.0 Canvas previously failed to resolve Evoloom on this machine. The app display and simulator tests are verified alternatives; Canvas has not been reverified after this change.
 
-| Screen | Normal captures | Focused case and reason |
+`just test-ios` executes package unit and fixed-size image tests, then five scene-backed collection images, serially on the same simulator. `just test-snapshot` runs only the two image groups. Combining all tests into the app session was tried: seven old fixed-size cases changed solely from the host context. Keeping those baselines avoids re-recording unrelated settings, detail and narrow images. The collection 320 pt large-text case remains a fixed-size layout test; its native chrome is **not** used to judge contrast.
+
+Scene-backed list cases use an iPhone 18 Pro window at 402 × 874 pt, 3× (1206 × 2622 px), real safe area, system fonts, `en_US`, UTC, standard Dynamic Type and explicit light/dark appearance. The snapshot captures app content without status bar glyphs. The fixed-size cases use a `UIHostingController`, 390 or 320 pt width, specified height, 3×, zero test safe area and explicit locale, Dynamic Type and appearance. Both modes require macOS 27.0 build 26A428, Xcode 27.0 build 27A266a, SDK 27.0 build 24A430, iOS 27.0 runtime build 24A434 and arm64. `just doctor` rejects a mismatch.
+
+| Screen | Image cases | Purpose |
 | --- | --- | --- |
-| Component pages | Controls and feedback, light/dark | Controls include input error, disabled/loading buttons and both switch values; feedback shows empty and loading presentation. Two pages avoid shrinking a long catalog. |
-| Settings Form | Light/dark | `review-settings-error` has invalid email, correction text, disabled Save and a disabled managed field. |
-| Collection List | Light/dark | Empty, loading, error and 320 pt accessibility-medium Increased Contrast cover state and density risks. |
-| Detail/edit | Light/dark | `review-detail-ja-long` uses narrow width and long Japanese notes. |
+| Components | Controls and feedback, light/dark | Labels, input states, buttons, switches and feedback at readable page size. |
+| Settings and detail | Light/dark; error and long Japanese cases | Native Form, editing, disabled state and wrapping. |
+| Collection | Scene-backed normal light/dark, empty, loading, error | Native toolbar/search and fixed state content in an app environment. |
+| Collection narrow | 320 pt, accessibility medium, Increased Contrast | Density and wrapping only; fixed-host native chrome is unreliable. |
 
-The first baselines are a **starting point for discussion**, not design
-approval. In the first review, the settings error fixture was corrected to
-show invalid input and disable Save. The collection image now captures the
-whole native NavigationStack, including toolbar and search, so its six
-existing baselines changed intentionally. **The light collection baseline is
-not reliable evidence for the native search and toolbar chrome:** its white
-glyphs sit on a light area. A temporary, component-free
-`NavigationStack`/`List`/`searchable`/toolbar rendered the same way with this
-SnapshotTesting host. Its default strategy attaches a window without an active
-scene and captures `layer.render`; the simulator XCTest process reported zero
-connected scenes, and an attempted `drawHierarchy` capture returned `false`
-and a black image. Explicit light traits, a nonzero safe area, and an extra
-layout turn did not correct the chrome. Those diagnostic changes were removed;
-the six committed collection baselines have not been re-recorded. Xcode 27.0
-Canvas was opened on the same fixture and iPhone 18 Pro destination, but its
-build failed with `Unable to resolve module dependency: 'Evoloom'`. A Canvas
-or app-window comparison therefore remains unverified. Do not infer that the
-production UI has the same contrast issue, or approve native chrome from this
-baseline. The collection content and state images remain useful for layout
-discussion; a scene-backed capture path is needed before reviewing native
-chrome from CI. No runtime component tokens or styles changed for this issue.
+Preview and capture instantiate the same fixture views and data. Static images do not exercise search input, sheet, navigation, keyboard, animations or VoiceOver.
+
+## Record and compare
+
+`nix develop -c just record-snapshots` deliberately updates both baseline groups and `tools/snapshots.json`. Review every changed PNG at full size, then run `nix develop -c just test-snapshot`. Comparison prechecks all 28 manifest paths, hashes before and after, and requires exact normalized RGBA pixels. It never accepts a missing baseline or rewrites one. Five scene-backed baselines live under `Testing/Host/Tests/__Snapshots__/HostedCollectionTests/`; the other 23 live under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/`.
+
+Successful and mismatching comparisons save actual PNGs to `TestResults/Rendered/components.<case>.png`. Mismatches also save `TestResults/SnapshotDiffs/<case>/expected.png`, `actual.png` and `diff.png`. `ios.xcresult` and `host-ios.xcresult` (or `snapshot.xcresult` and `host-snapshot.xcresult`) retain the two sessions. A pre-render build or environment failure makes no image; inspect the first failed step and CI's `image-status.txt`. The `ios-test-evidence` artifact uploads available actuals, diffs, xcresults and both baseline directories after success or failure.
 
 ## Put images in a PR
 
-For an UI change, include the observed issue, affected screen/state, before
-and after images, capture conditions, review findings and the CI run for the
-image commit. Generate the representative Markdown from the committed
-baselines with `nix develop -c python3 tools/pr_images.py --sha <full-SHA>`.
-The script checks all ten listed PNGs and uses raw image URLs pinned to that
-SHA. It reads the specified local Git commit and requires every image path to
-be a blob in that commit; the working tree is not evidence that an image was
-committed. If the SHA is absent in a shallow checkout, fetch that exact commit
-and retry. Commit new baselines before generating links. Paste the output into
-the PR description; confirm the ten images display in the
-rendered GitHub PR. These are **committed baselines**, even when the CI for the
-same SHA passes. Add `--ci-url <successful-run-URL>` after the comparison
-finishes and verify that the run's **PR head SHA** matches the image commit.
-For a pull request, Actions can check out a synthetic merge commit; record
-that actual checkout SHA from `ci-report.json` separately. Current-run actual
-images live in the artifact and are not available as stable inline Markdown
-image URLs. Do not put artifact download URLs in `![](...)`.
+State the issue, affected screen/state, change reason, capture conditions, before/after baseline images, findings and remaining questions. Generate SHA-pinned Markdown with `nix develop -c python3 tools/pr_images.py --sha <full-commit-SHA>`. It verifies image blobs in that exact commit, including hosted list paths. Paste it into the PR and confirm the images render. Add `--ci-url` after successful comparison of the same PR head SHA. An Actions PR run may test a synthetic merge checkout; report its checkout SHA from `ci-report.json` separately. Inline PNGs are **committed baselines**, never actuals from that CI run. Actuals and diffs are in the artifact; artifact download URLs are not inline image URLs.
 
-Review baseline PNG changes in **Files changed** and compare them to
-`TestResults/Rendered` from that SHA's CI artifact. If tests fail after
-rendering, inspect `SnapshotDiffs/<case>/expected.png`, `actual.png` and
-`diff.png`, as well as xcresult. If capture did not start, state “image not
-generated” and the build or environment error. Do not call an unverified
-baseline a successful current-run render. Reviewers decide whether the new
-appearance is desirable; snapshot success only means it matches the chosen
-baseline. The integrating product remains responsible for screen reading
-order, contextual labels, focus and VoiceOver testing.
+Reviewers decide whether an appearance is desirable. Snapshot success only preserves it. The integrating product owns screen reading order, contextual labels, focus and VoiceOver validation.
+
+## Xcode JSON project format
+
+The checked-in source is JSON (`Testing/Host/project.json`), formatted by repository checks, and XcodeGen 2.44.1 generates an ignored `project.pbxproj`. Apple documents a native `project.xcproj` JSON format for Xcode 27+, default in 27.2. Installed Xcode 27.0 (27A266a) has no Project Format selector, and `xcodebuild -convert-project xcproj` failed here. A native `.xcproj` was **not** generated or validated; the XcodeGen JSON spec is a different format. When the pinned Apple environment moves to 27.2+, convert the generated project with Xcode's selector, compare its build/tests, then decide whether to commit native `.xcproj` and remove XcodeGen. See [Apple's format guide](https://developer.apple.com/documentation/xcode/updating-your-xcode-project-configuration-file-format).

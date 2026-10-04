@@ -27,7 +27,7 @@ class PRImageTests(unittest.TestCase):
 
     def image_paths(self):
         return [
-            self.root / pr_images.SNAPSHOTS / f"components.{name}.png"
+            self.root / pr_images.snapshot_path(name)
             for _, light, dark in pr_images.PAIRS
             for name in (light, dark)
         ]
@@ -93,7 +93,7 @@ class PRImageTests(unittest.TestCase):
     def test_sha_must_identify_a_commit_object(self):
         sha = self.commit_images()
         blob_sha = self.git(
-            "rev-parse", f"{sha}:{pr_images.SNAPSHOTS}/components.collection-light.png"
+            "rev-parse", f"{sha}:{pr_images.snapshot_path('collection-light')}"
         )
         with self.assertRaisesRegex(ValueError, "not a commit object"):
             pr_images.markdown(blob_sha, root=self.root)

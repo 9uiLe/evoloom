@@ -6,6 +6,7 @@ DerivedData/
 DerivedDataVisual/
 TestResults/
 *.xcresult
+Testing/Host/*.xcodeproj/
 snapshot-build.log
 __pycache__/
 *.pyc

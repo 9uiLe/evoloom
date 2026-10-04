@@ -32,12 +32,13 @@ just check
 ```
 
 `just check-fast` runs formatting, lint and Python/CLI tests without Xcode.
-`just check` runs those checks plus one iOS test session containing unit and
-snapshot tests, then builds a Package from all copied components. The iOS test
-build compiles the library and the development Preview fixtures; `just build-package`
+`just check` runs those checks plus package unit/fixed-size image tests and a
+scene-backed collection image session, then builds a Package from all copied
+components. The iOS test builds compile the library, Preview fixtures and
+development-only app host; `just build-package`
 remains an independent product build command. Run `just record-snapshots` only to update
-image baselines; review every PNG in `Testing/Tests/.../__Snapshots__/` and
-the `TestResults/record.xcresult` before committing. Normal comparison refuses
+image baselines; review PNGs in both `Testing/Tests/.../__Snapshots__/` and
+`Testing/Host/Tests/__Snapshots__/` plus the two record xcresults before committing. Normal comparison refuses
 missing baselines or changed baseline files. See [testing](docs/TESTING.md).
 
 ## Use as a library
@@ -91,6 +92,11 @@ component pages, Settings Form, collection List, detail/edit screen and
 their named `#Preview` entries. These fixtures are in the development Package,
 not the consumer library. `just test-ios` compiles them and compares their
 fixed real-render images; opening Canvas is a separate manual check.
+Run `nix develop -c just run-host collection normal light` to see the same
+fixture in the development-only app with a real scene. The checked-in host
+project definition is JSON; `just prepare-host` generates its ignored Xcode
+project through Nix-pinned XcodeGen. This is separate from Xcode's native
+`project.xcproj` JSON format, which the pinned Xcode 27.0 could not generate.
 See [visual review and PR images](docs/VISUAL_REVIEW.md).
 
 ## Documents

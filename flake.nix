@@ -27,18 +27,21 @@
         in
         {
           default = pkgs.mkShell {
-            packages = with pkgs; [
-              swiftlint
-              swiftformat
-              just
-              python3
-              ruff
-              nixfmt
-              yamllint
-              actionlint
-              shellcheck
-              shfmt
-            ];
+            packages =
+              with pkgs;
+              [
+                swiftlint
+                swiftformat
+                just
+                python3
+                ruff
+                nixfmt
+                yamllint
+                actionlint
+                shellcheck
+                shfmt
+              ]
+              ++ nixpkgs.lib.optionals (system == "aarch64-darwin") [ pkgs.xcodegen ];
             SNAPSHOT_SOURCE = "${snapshot}";
             shellHook = nixpkgs.lib.optionalString (system == "aarch64-darwin") ''
               unset SDKROOT
