@@ -5,6 +5,10 @@ The root Package unit target checks token boundaries and foreground/background
 contrast. Python tests check registry closure, cycles, dry-run, conflict
 protection and unsafe paths. `verify-copy-install` creates a temporary Package
 from copied source, compiles it for the iOS Simulator and runs a test.
+Each Xcode command has a 600-second failure timeout. On the first GitHub-hosted
+run, the copied Package test reached its test case just before the former
+240-second limit; the runner's cold Simulator startup required a longer bound.
+The timeout does not delay a completed test.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` stores its
 baselines under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`.

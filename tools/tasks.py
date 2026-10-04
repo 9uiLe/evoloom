@@ -18,6 +18,7 @@ EXPECTED_SDK_BUILD = "24A430"
 EXPECTED_RUNTIME = "com.apple.CoreSimulator.SimRuntime.iOS-27-0"
 EXPECTED_RUNTIME_BUILD = "24A434"
 EXPECTED_DEVICE = "iPhone 18 Pro"
+XCODE_TIMEOUT_SECONDS = 600
 SNAPSHOT_NAMES = {
     "catalog-light",
     "catalog-dark",
@@ -159,7 +160,9 @@ def xcode(
             shutil.rmtree(result)
         command.extend(["-resultBundlePath", str(result)])
     print(" ".join(command), flush=True)
-    return subprocess.run(command, cwd=cwd, env=apple_env(), check=check, timeout=240)
+    return subprocess.run(
+        command, cwd=cwd, env=apple_env(), check=check, timeout=XCODE_TIMEOUT_SECONDS
+    )
 
 
 def snapshot_hashes():
