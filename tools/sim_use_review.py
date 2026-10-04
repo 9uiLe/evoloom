@@ -244,7 +244,6 @@ class Review:
         self.tap_field("Workspace")
         self.keyboard(False)
         self.tap_field("Email")
-        self.keyboard(True)
         self.sim("type", "@example.com")
         self.ui("error-after-type")
         self.screenshot("error-after-type")
@@ -258,7 +257,7 @@ class Review:
         if any(item.get("label") == ERROR_EN for item in corrected["entries"]):
             raise AssertionError("Error remained after valid fixture input")
         self.assert_save(corrected, disabled=False)
-        self.screenshot("error-corrected-keyboard")
+        self.screenshot("error-corrected")
         # The email keyboard may insert an extra @; remove the observed suffix.
         appended = len(self.entry(corrected, "TextField", "Email")["value"]) - len(
             "invalid"

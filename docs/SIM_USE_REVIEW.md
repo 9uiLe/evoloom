@@ -55,6 +55,10 @@ condition, not business-grade email validation. The repeatable check types a
 short suffix with sim-use, verifies the exact AX value, then removes that
 suffix with the documented Backspace keycode. It does not depend on the
 iOS paste menu, which failed to appear on the initial Cloud operation run.
+The error scenario verifies the changed field value and Save/error states;
+it does not require the software keyboard to stay visible after the normal
+scenario's HID typing. The normal and large scenarios check the software
+keyboard explicitly before typing.
 The native Toggle's accessibility frame spans its Form row, so the script
 touches the switch at the trailing edge of the observed frame and verifies
 the value transition. It does not retain `@N` aliases across screen changes.
