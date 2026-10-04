@@ -46,8 +46,10 @@ The `normal` and `error` scenarios check Display name and Email editing,
 focus movement, native Toggle value `1→0→1`, initial error and disabled Save,
 disabled Workspace, error removal for a value containing `@`, and error return
 when the value no longer contains `@`. They deliberately check the fixture's current
-condition, not business-grade email validation. Paste can show the iOS
-permission bubble or edit menu; the script checks the resulting field value.
+condition, not business-grade email validation. The repeatable check types a
+short suffix with sim-use, verifies the exact AX value, then removes that
+suffix with the documented Backspace keycode. It does not depend on the
+iOS paste menu, which failed to appear on the initial Cloud operation run.
 The native Toggle's accessibility frame spans its Form row, so the script
 touches the switch at the trailing edge of the observed frame and verifies
 the value transition. It does not retain `@N` aliases across screen changes.
@@ -111,13 +113,15 @@ The outlined detail Title accepted an edit without changing its default
 appearance.
 
 The software keyboard stopped appearing in later sessions, although taps
-still focused fields and hardware-key input changed text. A subsequent full
-script run reported `normal` and `error` failures because the iOS paste menu
-did not produce the required exact values; `large` also failed its
-`visible:true` requirement. `japanese-dark` and `outlined` completed. The
-first manual operation session above did establish the normal-size state
-transitions, but the automated full run is **not passing** and keyboard-visible
-large-text scrolling remains unverified. On this host, opening Device Hub,
+still focused fields and hardware-key input changed text. An initial Cloud
+operation run could read the UI and observe the software keyboard but failed
+because the iOS paste menu did not appear. The repeatable script now uses
+`sim-use type` and Backspace; local trials completed the `normal` value and
+Toggle changes and, with a temporary en-US setting, the `error` transitions.
+Both still failed their `visible:true`
+checks. `large` failed the same keyboard check, while `japanese-dark` and
+`outlined` completed. The automated full run is **not yet passing**, and
+keyboard-visible large-text scrolling remains unverified. On this host, opening Device Hub,
 relaunching the app, restarting the target Simulator, and temporarily setting
 the legacy Simulator `ConnectHardwareKeyboard=false` preference did not
 restore it. A temporary simulator language change to English also did not

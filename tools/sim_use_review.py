@@ -159,48 +159,17 @@ class Review:
         )
         return self.ui(f"focused-{label.lower().replace(' ', '-')}")
 
-    def replace_text(self, label: str, value: str) -> dict:
-        data = self.ui(f"before-replace-{label.lower().replace(' ', '-')}")
+    def append_text(self, label: str, suffix: str) -> dict:
+        data = self.ui(f"before-edit-{label.lower().replace(' ', '-')}")
         field = self.entry(data, "TextField", label)
-        if self.sim("keyboard-state")["visible"]:
-            frame = field["frame"]
-            # Long-press near the text. Short error values occupy only the leading edge.
-            x = round(frame["x"] + (25 if len(field.get("value", "")) < 10 else 148))
-            y = round(frame["y"] + frame["height"] / 2)
-            self.sim(
-                "paste",
-                value,
-                "--replace",
-                "--via-menu",
-                "--target-x",
-                str(x),
-                "--target-y",
-                str(y),
-            )
-            menu = self.await_ui(
-                "paste-result",
-                lambda current: any(
-                    item.get("label") == "Paste"
-                    or (
-                        item["role"] == "TextField"
-                        and item.get("label") == label
-                        and item.get("value") == value
-                    )
-                    for item in current["entries"]
-                ),
-                seconds=3,
-            )
-            if any(item.get("label") == "Paste" for item in menu["entries"]):
-                self.entry(menu, "StaticText", "Paste")
-                self.sim("tap", "--label", "Paste", "--element-type", "StaticText")
-        else:
-            self.sim("paste", value, "--replace")
+        expected = field["value"] + suffix
+        self.sim("type", suffix)
         return self.await_ui(
-            f"replaced-{label.lower().replace(' ', '-')}",
+            f"edited-{label.lower().replace(' ', '-')}",
             lambda current: any(
                 item["role"] == "TextField"
                 and item.get("label") == label
-                and item.get("value") == value
+                and item.get("value") == expected
                 for item in current["entries"]
             ),
         )
@@ -246,11 +215,13 @@ class Review:
         self.tap_field("Display name")
         self.keyboard(True)
         self.screenshot("display-name-focused-keyboard")
-        self.replace_text("Display name", "Evoloom review")
         self.tap_field("Email")
         self.keyboard(True)
         self.screenshot("email-focused-keyboard")
-        self.replace_text("Email", "new@example.com")
+        self.tap_field("Display name")
+        self.append_text("Display name", "X")
+        self.tap_field("Email")
+        self.append_text("Email", "x")
         self.toggle("0")
         self.toggle("1")
 
@@ -266,26 +237,23 @@ class Review:
         self.keyboard(False)
         self.tap_field("Email")
         self.keyboard(True)
-        corrected = self.replace_text("Email", "valid@example.com")
+        corrected = self.append_text("Email", "@example.com")
         if any(item.get("label") == ERROR_EN for item in corrected["entries"]):
             raise AssertionError("Error remained after valid fixture input")
-        self.screenshot("error-corrected-keyboard")
-        # Escape dismisses the native keyboard; no Save action is invoked here.
-        self.sim("ios", "key", "41")
-        self.keyboard(False)
-        corrected = self.ui("error-corrected-save")
         self.assert_save(corrected, disabled=False)
-        self.screenshot("error-corrected-save")
-
-        self.tap_field("Email")
-        self.replace_text("Email", "invalid")
+        self.screenshot("error-corrected-keyboard")
+        # The caret remains at the end after typing; remove the appended suffix.
+        self.sim("ios", "key-sequence", "--keycodes", ",".join(["42"] * 12))
         invalid = self.await_ui(
             "error-returned",
             lambda data: any(item.get("label") == ERROR_EN for item in data["entries"]),
         )
-        if "@" in self.entry(invalid, "TextField", "Email")["value"]:
-            raise AssertionError("Email did not return to an invalid value")
+        if self.entry(invalid, "TextField", "Email")["value"] != "invalid":
+            raise AssertionError("Email did not return to the initial invalid value")
         self.assert_save(invalid, disabled=True)
+        # Escape dismisses the native keyboard; no Save action is invoked here.
+        self.sim("ios", "key", "41")
+        self.keyboard(False)
         self.screenshot("error-returned")
 
     def large_text(self) -> None:
