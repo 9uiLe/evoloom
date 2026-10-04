@@ -2,13 +2,22 @@
 
 Run `nix develop -c just check-fast` for formatting, lint and Python/CLI
 tests. Run `nix develop -c just prepare-deps`, then `nix develop -c just check`
-for the complete local suite (`check-full` is an alias). The root Package
-contains only the library product, so ordinary SwiftPM use needs no prepared
-test dependency. The development Package under `Testing/` places unit and
-image tests in one test target and `just test-ios` runs all 15 methods in one
-XCTest session. Unit tests cover token contrast, Bindings and the Button action
-gate. Python tests cover registry closure, copy imports, cycles, dry-run,
-conflict protection, unsafe paths and CI selection. `verify-copy-install`
+for the complete local suite (`check-full` is an alias).
+
+The root Package contains only the library product, so ordinary SwiftPM use
+needs no prepared test dependency. The development Package under `Testing/`
+places unit and image tests in one test target and `just test-ios` runs all
+15 methods in one XCTest session. Unit tests cover token contrast, Bindings
+and the Button action gate. Python tests cover registry closure, copy imports,
+cycles, dry-run, conflict protection, unsafe paths and CI selection.
+
+An additional `nix develop -c just verify-settings-interaction` command uses
+Nix-pinned sim-use on the development host for actual taps, input, Toggle and
+Form scrolling. It is intentionally separate from the default CI matrix;
+`workflow_dispatch` with `verify_settings_interaction=true` runs it once in
+the existing iOS job and uploads PNG and UI evidence even when it fails.
+See [operation review](SIM_USE_REVIEW.md) for exact assertions and limits.
+`verify-copy-install`
 creates a temporary Package containing every copied component and builds its
 library for the iOS Simulator without a separate test runner. The former copy
 test only asserted the default spacing value; that assertion remains in the

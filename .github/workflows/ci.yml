@@ -13,6 +13,10 @@ on:
         description: Show Xcode build commands and timing summary for diagnosis
         type: boolean
         default: false
+      verify_settings_interaction:
+        description: Exercise the Settings host with sim-use and save UI evidence
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -133,6 +137,10 @@ jobs:
         id: test_snapshot
         if: needs.detect.outputs.snapshot == 'true' && needs.detect.outputs.unit != 'true'
         run: nix develop -c just test-snapshot
+      - name: Exercise Settings in Simulator
+        id: sim_use
+        if: (success() || failure()) && github.event_name == 'workflow_dispatch' && inputs.verify_settings_interaction && steps.doctor.outcome == 'success'
+        run: nix develop -c just verify-settings-interaction
       - name: Verify copied source Package
         if: needs.detect.outputs.copy == 'true'
         run: nix develop -c just verify-copy-install
@@ -165,6 +173,14 @@ jobs:
             message="Actual render images available: ${#images[@]} in TestResults/Rendered/. See ci-report.json for missing cases."
           fi
           echo "$message" | tee TestResults/image-status.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Describe Settings operation evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.verify_settings_interaction
+        env:
+          OUTCOME: ${{ steps.sim_use.outcome }}
+        run: |
+          shopt -s nullglob
+          captures=(TestResults/SimUse/*/*.png)
+          echo "sim-use Settings operation: ${OUTCOME}; screenshots: ${#captures[@]} in TestResults/SimUse/. UI JSON and command logs are in the same run directory." >> "$GITHUB_STEP_SUMMARY"
       - name: Save trial Xcode cache
         if: success() && github.event_name == 'workflow_dispatch' && inputs.use_xcode_cache && steps.visual_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25

@@ -79,6 +79,11 @@ struct ReviewSettingsView: View {
         _email = State(initialValue: showError ? "invalid" : "alex@example.com")
     }
 
+    private var emailError: String? {
+        guard showError && !email.contains("@") else { return nil }
+        return longJapanese ? "保存する前に、有効なメールアドレスを入力してください。" : "Enter a valid email address before saving."
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -91,7 +96,7 @@ struct ReviewSettingsView: View {
                     IOSInput(
                         longJapanese ? "メールアドレス" : "Email", text: $email,
                         hint: showError ? nil : (longJapanese ? "アカウントに関する通知に使用します。" : "Used for account notices."),
-                        error: showError && !email.contains("@") ? "Enter a valid email address before saving." : nil,
+                        error: emailError,
                         keyboardType: .emailAddress, appearance: .formRow
                     )
                 } header: {

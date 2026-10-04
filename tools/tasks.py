@@ -111,12 +111,17 @@ def doctor():
         "yamllint",
         "actionlint",
         "xcodegen",
+        "sim-use",
     ]
     missing = [tool for tool in required if shutil.which(tool) is None]
     if missing:
         raise RuntimeError(f"Nix shell missing tools: {missing}; run nix develop")
     if output("xcodegen", "--version") != "Version: 2.44.1":
         raise RuntimeError("Expected Nix-pinned XcodeGen 2.44.1")
+    if output("sim-use", "--version") != "0.14.0":
+        raise RuntimeError("Expected Nix-pinned sim-use 0.14.0")
+    if not (shutil.which("sim-use") or "").startswith("/nix/store/"):
+        raise RuntimeError("sim-use must come from the Nix store")
     sources = nix_sources()
     if output("sw_vers", "-buildVersion") != EXPECTED_MACOS_BUILD:
         raise RuntimeError(f"Expected macOS build {EXPECTED_MACOS_BUILD}")
@@ -627,6 +632,8 @@ def run_host():
         "feedback",
         "settings",
         "settingsError",
+        "settingsJapanese",
+        "settingsJapaneseError",
         "detail",
     }:
         raise RuntimeError(f"Unknown review screen: {screen}")

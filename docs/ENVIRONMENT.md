@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7 with Pillow 12.3.0 for hosted image comparison, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1, XcodeGen 2.44.1 (Darwin only) |
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
+| sim-use release | `v0.14.0`, archive SHA-256 `67e2ee29a7246272de8646e46664a93d9cebcace134094cfd3d07dfb82bda3e6` | Darwin-only real Simulator operation review; `nix/sim-use.nix` also fixes the upstream Apache-2.0 license file hash |
 
 Run `nix develop`, then `just prepare-deps` for the development test harness.
 Preparation copies the Nix-fixed source to ignored `.prepared/` and records
@@ -42,6 +43,16 @@ the iOS Package. The Apple shell hook and exact Xcode checks apply only to
 path. The CI change detector uses Git and Python supplied by the GitHub runner
 before Nix is installed; all development format, lint and test tools come
 from the locked shell.
+
+The Darwin shell obtains sim-use from the official v0.14.0 release tarball,
+not Homebrew or a runtime update. The checked archive contains an arm64/x86_64
+Mach-O executable signed by NAVER Japan K.K. and two adjacent resource
+bundles. The derivation preserves the executable and bundles together and
+copies the fixed upstream Apache-2.0 license into its Nix output. The binary
+links against Apple system frameworks, Swift runtime and CoreSimulator;
+these are Apple prerequisites, not Nix-managed runtime components. This tool
+is absent from the Linux static shell and from Evoloom's product dependency
+graph. Adding the local derivation required no change to `flake.lock` inputs.
 
 Apple prerequisites remain outside Nix: macOS 27.0 build 26A428 on arm64;
 Xcode 27.0 build 27A266a at the local path
