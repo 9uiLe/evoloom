@@ -21,9 +21,9 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 Step durations below come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
-uses one old, three uncached combined-configuration, one cache miss/hit pair,
-and two Simulator preboot trials on the same fixed Apple host class. It is
-evidence for these runs, not a stable percentile.
+uses one old, four uncached combined-configuration, one cache miss/hit pair,
+one source-change cache trial, and two Simulator preboot trials on the same
+fixed Apple host class. It is evidence for these runs, not a stable percentile.
 
 | Run | First static/CLI feedback after creation | Complete after creation | Aggregate runner time | Mac runner time | Queue or pending before first job |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -34,7 +34,9 @@ evidence for these runs, not a stable percentile.
 | [Exact cache hit, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184653047) | 53 s | 620 s | 643 s | 592 s | 4 s to start the detector |
 | [Cumulative code plus docs, 33c616a](https://github.com/9uiLe/evoloom/actions/runs/37185289540) | 159 s, including canceled-run wait | 724 s | 659 s | 604 s | 103 s before the detector started |
 | [Boot and test in one shell, e05b3a4](https://github.com/9uiLe/evoloom/actions/runs/37186022746) | 50 s | 726 s | 753 s | 704 s | 2 s to start the detector |
-| [Final uncached path, b3bb469](https://github.com/9uiLe/evoloom/actions/runs/37186769382) | 54 s | 639 s | 668 s | 616 s | 2 s to start the detector |
+| [Uncached path, b3bb469](https://github.com/9uiLe/evoloom/actions/runs/37186769382) | 54 s | 639 s | 668 s | 616 s | 2 s to start the detector |
+| [Uncached after diagnostic fix, d2deee6](https://github.com/9uiLe/evoloom/actions/runs/37187648221) | 51 s | 621 s | 643 s | 594 s | 4 s to start the detector |
+| [Source-change cache restore, d2deee6](https://github.com/9uiLe/evoloom/actions/runs/37188223954) | 57 s | 528 s | 557 s | 503 s | 4 s to start the detector |
 
 The ac713ec run's long pending interval is not job execution time. Its Linux
 detector took 8 seconds and its static job 47 seconds. The macOS job took 400
@@ -49,10 +51,10 @@ combined tests and 33 for the copied Package build. Its xcresult reports 14
 passing methods, 18 baselines, 163.33 seconds from action start to first case
 and 60.93 seconds summed across cases. The ac713ec run reported 193.84 and
 5.05 seconds respectively; the representative-screen case alone took 30.07
-seconds in b08f4da. CPU and cloud scheduling vary. The three uncached
-combined runs have macOS runner durations of 400, 468 and 616 seconds
-(median 468, range 216); their total runner usage is 460, 518 and 668 seconds
-(median 518, range 208).
+seconds in b08f4da. CPU and cloud scheduling vary. The four uncached
+combined runs have macOS runner durations of 400, 468, 594 and 616 seconds
+(median 531, range 216); their total runner usage is 460, 518, 643 and 668
+seconds (median 580.5, range 208).
 The sole old-configuration run used 1053 runner seconds. This sample is too
 small for a stable percentile or a typical speedup estimate.
 
@@ -137,8 +139,8 @@ so the longer hit is not proof that the cache itself caused the delay, but
 there is no observed end-to-end gain. Normal push CI therefore leaves this
 cache disabled. The 4.48 MB Cloud archive and 97 MB local compression trial
 had different host/build footprints; neither predicts another host's transfer
-cost. A source-change trial is still needed before deciding whether to retain
-the manual cache option for diagnostics.
+cost. The manual cache remains useful for diagnosis; normal CI leaves it off
+because the trials do not show a consistent net benefit.
 
 The first [source-change diagnostic attempt](https://github.com/9uiLe/evoloom/actions/runs/37187328202)
 restored the compatible cache and reused the verified Nix-prepared source,
@@ -146,7 +148,18 @@ then failed before starting a test. The optional non-quiet build flag was
 inserted between `-scheme` and its value, and Xcode rejected the command.
 The aggregate validation failed, with zero executed tests. The command builder
 now positions test flags relative to `-scheme` and has a test for quiet and
-diagnostic modes. A successful source-change cache trial is still required.
+diagnostic modes. A real local diagnostic-mode unit run then passed six tests.
+
+The [successful rerun after a small Card source change](https://github.com/9uiLe/evoloom/actions/runs/37188223954)
+restored the compatible earlier cache in about 1 second and saved the new
+commit key in about 1 second. Nix preparation reused its verified source.
+Xcode's diagnostic log shows `SwiftCompile` for `IOSCard.swift` and other
+Evoloom files; the copied Package also compiled `IOSCard.swift` and recorded
+one `Ld` task. All 14 test methods and 18 PNGs passed. This run took 528
+seconds overall versus 621 seconds for the uncached run on the same SHA, but
+it also enabled verbose build diagnostics and is one observation. Together
+with the slower exact-hit trial, it is insufficient evidence to enable the
+build cache for normal pushes.
 
 The workflow-level concurrency group cancels older push or PR runs on the same
 ref, while manual full runs use their own run ID. Push selection is cumulative
@@ -157,3 +170,14 @@ and unrelated ancestry. This guards the canceled-code / documentation-only
 case. [GitHub's concurrency semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
 allow a canceled run to take time to clean up; record that time as queueing for
 the next run, not as its runner execution.
+
+The initial [refactor run](https://github.com/9uiLe/evoloom/actions/runs/37182851785)
+failed static validation because the formatter still named a removed `Tests/`
+directory; a clean checkout exposed it. The next commit corrected that path.
+The [deliberately superseded code run](https://github.com/9uiLe/evoloom/actions/runs/37185270482)
+ended canceled and its aggregate validation failed. The following
+[documentation-only push](https://github.com/9uiLe/evoloom/actions/runs/37185289540)
+selected full checks from the earlier validated SHA and passed them. Its
+detector began 103 seconds after creation while the canceled run cleaned up.
+These were a fixed implementation error and an expected cancellation, not
+automatic retries accepted as success.
