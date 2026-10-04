@@ -44,5 +44,27 @@ class PrepareSimulatorTests(unittest.TestCase):
         record.assert_not_called()
 
 
+class XcodeCommandTests(unittest.TestCase):
+    def test_test_options_preserve_scheme_in_both_logging_modes(self):
+        for diagnostics in ("0", "1"):
+            with (
+                self.subTest(diagnostics=diagnostics),
+                patch.dict(tasks.os.environ, EVOLOOM_BUILD_DIAGNOSTICS=diagnostics),
+                patch.object(tasks, "doctor", return_value="fixed-device"),
+                patch.object(tasks, "apple_env", return_value={}),
+                patch.object(tasks, "metric"),
+                patch.object(tasks.subprocess, "run") as run,
+            ):
+                tasks.xcode("test", scheme="Fixed-Package")
+                command = run.call_args.args[0]
+                self.assertEqual(command[command.index("-scheme") + 1], "Fixed-Package")
+                self.assertEqual(
+                    command[command.index("-parallel-testing-enabled") + 1], "NO"
+                )
+                self.assertEqual(
+                    "-showBuildTimingSummary" in command, diagnostics == "1"
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

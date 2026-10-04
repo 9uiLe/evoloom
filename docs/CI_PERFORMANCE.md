@@ -21,7 +21,7 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 Step durations below come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
-uses one old, two uncached combined-configuration, one cache miss/hit pair,
+uses one old, three uncached combined-configuration, one cache miss/hit pair,
 and two Simulator preboot trials on the same fixed Apple host class. It is
 evidence for these runs, not a stable percentile.
 
@@ -34,6 +34,7 @@ evidence for these runs, not a stable percentile.
 | [Exact cache hit, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184653047) | 53 s | 620 s | 643 s | 592 s | 4 s to start the detector |
 | [Cumulative code plus docs, 33c616a](https://github.com/9uiLe/evoloom/actions/runs/37185289540) | 159 s, including canceled-run wait | 724 s | 659 s | 604 s | 103 s before the detector started |
 | [Boot and test in one shell, e05b3a4](https://github.com/9uiLe/evoloom/actions/runs/37186022746) | 50 s | 726 s | 753 s | 704 s | 2 s to start the detector |
+| [Final uncached path, b3bb469](https://github.com/9uiLe/evoloom/actions/runs/37186769382) | 54 s | 639 s | 668 s | 616 s | 2 s to start the detector |
 
 The ac713ec run's long pending interval is not job execution time. Its Linux
 detector took 8 seconds and its static job 47 seconds. The macOS job took 400
@@ -48,9 +49,10 @@ combined tests and 33 for the copied Package build. Its xcresult reports 14
 passing methods, 18 baselines, 163.33 seconds from action start to first case
 and 60.93 seconds summed across cases. The ac713ec run reported 193.84 and
 5.05 seconds respectively; the representative-screen case alone took 30.07
-seconds in b08f4da. CPU and cloud scheduling vary. The two combined
-runs have macOS runner durations of 400 and 468 seconds (median 434, range
-68); their total runner usage is 460 and 518 seconds (median 489, range 58).
+seconds in b08f4da. CPU and cloud scheduling vary. The three uncached
+combined runs have macOS runner durations of 400, 468 and 616 seconds
+(median 468, range 216); their total runner usage is 460, 518 and 668 seconds
+(median 518, range 208).
 The sole old-configuration run used 1053 runner seconds. This sample is too
 small for a stable percentile or a typical speedup estimate.
 
@@ -93,6 +95,14 @@ two Cloud trials show no overall gain from prebooting; normal CI and local
 remains available for diagnosis. The measured delay cannot be assigned to a
 specific Simulator service without lower-level tracing.
 
+The subsequent [normal run without preboot](https://github.com/9uiLe/evoloom/actions/runs/37186769382)
+passed 14 tests and all 18 baselines. Its 402-second workflow test step
+contained a 396.75-second Xcode action, with 250.96 seconds from action start
+to first case and 83.59 seconds summed across cases. The earlier 220-to-246
+second gap outside the Xcode action did not recur. The remaining variation
+is inside Xcode's build and test action; the available timestamps do not
+isolate simulator boot, testmanagerd, debugger and compilation costs further.
+
 ## Experiments and cache boundary
 
 Apple's [build-for-testing and test-without-building commands](https://developer.apple.com/library/archive/technotes/tn2339/_index.html)
@@ -129,6 +139,14 @@ cache disabled. The 4.48 MB Cloud archive and 97 MB local compression trial
 had different host/build footprints; neither predicts another host's transfer
 cost. A source-change trial is still needed before deciding whether to retain
 the manual cache option for diagnostics.
+
+The first [source-change diagnostic attempt](https://github.com/9uiLe/evoloom/actions/runs/37187328202)
+restored the compatible cache and reused the verified Nix-prepared source,
+then failed before starting a test. The optional non-quiet build flag was
+inserted between `-scheme` and its value, and Xcode rejected the command.
+The aggregate validation failed, with zero executed tests. The command builder
+now positions test flags relative to `-scheme` and has a test for quiet and
+diagnostic modes. A successful source-change cache trial is still required.
 
 The workflow-level concurrency group cancels older push or PR runs on the same
 ref, while manual full runs use their own run ID. Push selection is cumulative

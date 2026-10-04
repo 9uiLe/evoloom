@@ -200,7 +200,8 @@ def xcode(
         command.remove("-quiet")
         command.append("-showBuildTimingSummary")
     if action in {"test", "test-without-building"}:
-        command[3:3] = [
+        scheme_position = command.index("-scheme")
+        command[scheme_position:scheme_position] = [
             "-parallel-testing-enabled",
             "NO",
             "-enableCodeCoverage",
