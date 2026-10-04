@@ -14,18 +14,45 @@ jobs:
       EVOLOOM_XCODE_DEVELOPER_DIR: /Applications/Xcode_27.0.0.app/Contents/Developer
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Detect code changes
+        id: changes
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash tools/ci_changes.sh
       - name: Install fixed Nix version
+        if: steps.changes.outputs.run_checks == 'true'
         uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11
       - name: Check exact Nix and Apple environment
+        if: steps.changes.outputs.prepare == 'true'
         run: |
           nix --version
           nix develop -c just doctor
       - name: Prepare locked Swift dependencies
+        if: steps.changes.outputs.prepare == 'true'
         run: nix develop -c just prepare-deps
-      - name: Verify source, copy install, iOS tests and pixels
-        run: nix develop -c just check
+      - name: Check formatting and lint
+        if: steps.changes.outputs.quality == 'true'
+        run: nix develop -c just format-check lint
+      - name: Test CLI and dependency preparation
+        if: steps.changes.outputs.cli == 'true'
+        run: nix develop -c python3 -m unittest discover -s tools -p 'test_*.py'
+      - name: Build iOS library Package
+        if: steps.changes.outputs.build == 'true'
+        run: nix develop -c just build-package
+      - name: Run Package unit tests
+        if: steps.changes.outputs.unit == 'true'
+        run: nix develop -c just test-unit
+      - name: Verify copied source Package
+        if: steps.changes.outputs.copy == 'true'
+        run: nix develop -c just verify-copy-install
+      - name: Compare iOS snapshots
+        if: steps.changes.outputs.snapshot == 'true'
+        run: nix develop -c just test-snapshot
       - name: Save test evidence
-        if: always()
+        if: always() && steps.changes.outputs.prepare == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ios-test-evidence

@@ -153,7 +153,16 @@ def xcode(
         "CODE_SIGNING_ALLOWED=NO",
     ]
     if action == "test":
-        command[3:3] = ["-parallel-testing-enabled", "NO", "-enableCodeCoverage", "NO"]
+        command[3:3] = [
+            "-parallel-testing-enabled",
+            "NO",
+            "-enableCodeCoverage",
+            "NO",
+            "-testLanguage",
+            "en",
+            "-testRegion",
+            "US",
+        ]
     if result:
         result.parent.mkdir(parents=True, exist_ok=True)
         if result.exists():

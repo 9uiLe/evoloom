@@ -10,6 +10,7 @@ format:
     swiftformat Package.swift Sources Tests Testing --config .swiftformat
     ruff format tools
     nixfmt flake.nix
+    shfmt -i 4 -ci -w tools/ci_changes.sh
     python3 tools/format_json.py
     just --fmt
 
@@ -17,6 +18,7 @@ format-check:
     swiftformat Package.swift Sources Tests Testing --config .swiftformat --lint
     ruff format --check tools
     nixfmt --check flake.nix
+    shfmt -i 4 -ci -d tools/ci_changes.sh
     python3 tools/format_json.py --check
     just --fmt --check
 
@@ -25,6 +27,7 @@ lint:
     ruff check tools
     yamllint -c .yamllint.yml .swiftlint.yml .yamllint.yml .github/actionlint.yaml
     actionlint .github/workflows/ci.yml
+    shellcheck tools/ci_changes.sh
 
 build-package:
     python3 tools/tasks.py build-package

@@ -38,6 +38,8 @@
           nixfmt
           yamllint
           actionlint
+          shellcheck
+          shfmt
         ];
         SNAPSHOT_SOURCE = "${snapshot}";
         APP_MACROS_SOURCE = "${appMacros}";

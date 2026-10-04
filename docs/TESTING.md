@@ -9,6 +9,34 @@ Each Xcode command has a 600-second failure timeout. On the first GitHub-hosted
 run, the copied Package test reached its test case just before the former
 240-second limit; the runner's cold Simulator startup required a longer bound.
 The timeout does not delay a completed test.
+Xcode tests explicitly use `-testLanguage en -testRegion US`; the SwiftUI
+fixtures then set `en_US` or `ja_JP` for their own content. This also fixes
+native List typography and Japanese fallback fonts across a Japanese-language
+local host and the English-language GitHub runner. Five baselines changed when
+the test runner language was fixed. They were regenerated from the local iOS
+Simulator, visually reviewed, and their PNG bytes matched the corresponding
+actual images from [the failed Cloud comparison](https://github.com/9uiLe/evoloom/actions/runs/37173749612).
+
+GitHub Actions compares the changed paths for pushes and pull requests before
+installing Nix. It runs only the checks affected by those paths:
+
+| Changed path | CI checks |
+| --- | --- |
+| README, design/contribution/license text, or `docs/*.md` only | No Nix or tests; the change-detection job still succeeds. |
+| `Sources/`, root `Package.swift`, Nix, `justfile`, or workflow | Formatting, lint, CLI, iOS build, unit, copied Package and snapshots. |
+| `Tests/` | Formatting, lint and Package unit tests. |
+| `Testing/` | Snapshot comparison; Swift or manifest edits also run formatting and lint. |
+| CLI implementation or registry | Formatting, lint, CLI tests and copied Package. |
+| CLI test source | Formatting, lint and CLI tests. |
+| Formatter/linter configuration | Formatting and lint. |
+| Any unrecognized path or unavailable Git comparison | The complete suite. |
+
+Multiple paths combine their checks. `workflow_dispatch` always runs the
+complete suite. The path detector uses NUL-delimited Git output and treats
+renames as a deletion plus an addition so a source removal cannot be hidden by
+a move into a documentation path. iOS checks still require the fixed Apple
+environment and Nix-prepared dependencies. Local `nix develop -c just check`
+always runs the complete suite.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` stores its
 baselines under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`.
