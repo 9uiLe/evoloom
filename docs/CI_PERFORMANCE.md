@@ -32,6 +32,7 @@ stable percentile.
 | [Combined tests, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37183857742) | 51 s | 489 s | 518 s | 468 s | 2 s to start the detector; 15 s to start iOS |
 | [Cache miss, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184286785) | 56 s | 416 s | 445 s | 394 s | 5 s to start the detector |
 | [Exact cache hit, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184653047) | 53 s | 620 s | 643 s | 592 s | 4 s to start the detector |
+| [Cumulative code plus docs, 33c616a](https://github.com/9uiLe/evoloom/actions/runs/37185289540) | 159 s, including canceled-run wait | 724 s | 659 s | 604 s | 103 s before the detector started |
 
 The ac713ec run's long pending interval is not job execution time. Its Linux
 detector took 8 seconds and its static job 47 seconds. The macOS job took 400
@@ -74,8 +75,18 @@ request took 0.51 seconds, followed immediately by a 28.18-second test.
 The run order and host warmup can affect this one-pair comparison. CI now
 requests boot after dependency preparation and before `xcodebuild test`, so
 the Simulator can continue starting while Xcode builds. The request and
-starting state are recorded in `metrics.jsonl`; a Cloud run is needed to
-evaluate end-to-end benefit and confirm its final state.
+starting state are recorded in `metrics.jsonl`.
+
+The first Cloud preboot run, [33c616a](https://github.com/9uiLe/evoloom/actions/runs/37185289540),
+recorded `Shutdown` and a 5.51-second boot request. The Xcode action itself
+took 151.91 seconds, with 118.08 seconds to the first case and 9.59 seconds
+across cases. Yet its workflow test step took 378 seconds: the log has about
+220 seconds between step start and the first `just test-ios` output. The
+separate `nix develop` invocation for the boot step had already completed.
+Concurrent Simulator startup may have contributed, but the log does not prove
+the cause of this Nix activation delay. To avoid a second shell activation
+during boot, the boot request and Xcode test now run in one `nix develop -c
+just prepare-simulator test-ios` step. This needs a fresh Cloud measurement.
 
 ## Experiments and cache boundary
 
