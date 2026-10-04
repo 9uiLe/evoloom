@@ -7,7 +7,7 @@ prepare-deps:
     python3 tools/prepare_deps.py
 
 format:
-    swiftformat Package.swift Sources Tests Testing --config .swiftformat
+    swiftformat Package.swift Sources Testing --config .swiftformat
     ruff format tools
     nixfmt flake.nix
     shfmt -i 4 -ci -w tools/ci_changes.sh
@@ -15,7 +15,7 @@ format:
     just --fmt
 
 format-check:
-    swiftformat Package.swift Sources Tests Testing --config .swiftformat --lint
+    swiftformat Package.swift Sources Testing --config .swiftformat --lint
     ruff format --check tools
     nixfmt --check flake.nix
     shfmt -i 4 -ci -d tools/ci_changes.sh
