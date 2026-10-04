@@ -120,13 +120,13 @@ jobs:
         run: nix develop -c just prepare-deps
       - name: Run combined iOS tests
         if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot == 'true'
-        run: nix develop -c just prepare-simulator test-ios
+        run: nix develop -c just test-ios
       - name: Run unit tests
         if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot != 'true'
-        run: nix develop -c just prepare-simulator test-unit
+        run: nix develop -c just test-unit
       - name: Compare iOS snapshots
         if: needs.detect.outputs.snapshot == 'true' && needs.detect.outputs.unit != 'true'
-        run: nix develop -c just prepare-simulator test-snapshot
+        run: nix develop -c just test-snapshot
       - name: Verify copied source Package
         if: needs.detect.outputs.copy == 'true'
         run: nix develop -c just verify-copy-install

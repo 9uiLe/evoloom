@@ -21,9 +21,9 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 Step durations below come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
-uses one old, two uncached combined-configuration and one cache miss/hit pair
-on the same fixed Apple host class. It is evidence for these runs, not a
-stable percentile.
+uses one old, two uncached combined-configuration, one cache miss/hit pair,
+and two Simulator preboot trials on the same fixed Apple host class. It is
+evidence for these runs, not a stable percentile.
 
 | Run | First static/CLI feedback after creation | Complete after creation | Aggregate runner time | Mac runner time | Queue or pending before first job |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -33,6 +33,7 @@ stable percentile.
 | [Cache miss, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184286785) | 56 s | 416 s | 445 s | 394 s | 5 s to start the detector |
 | [Exact cache hit, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184653047) | 53 s | 620 s | 643 s | 592 s | 4 s to start the detector |
 | [Cumulative code plus docs, 33c616a](https://github.com/9uiLe/evoloom/actions/runs/37185289540) | 159 s, including canceled-run wait | 724 s | 659 s | 604 s | 103 s before the detector started |
+| [Boot and test in one shell, e05b3a4](https://github.com/9uiLe/evoloom/actions/runs/37186022746) | 50 s | 726 s | 753 s | 704 s | 2 s to start the detector |
 
 The ac713ec run's long pending interval is not job execution time. Its Linux
 detector took 8 seconds and its static job 47 seconds. The macOS job took 400
@@ -72,10 +73,9 @@ The fixed iPhone 18 Pro was `Shutdown` after a test that began `Shutdown`,
 while a test that began `Booted` left it `Booted`. On the local warm build,
 one test from `Shutdown` took 49.57 seconds. An explicit `simctl boot`
 request took 0.51 seconds, followed immediately by a 28.18-second test.
-The run order and host warmup can affect this one-pair comparison. CI now
-requests boot after dependency preparation and before `xcodebuild test`, so
-the Simulator can continue starting while Xcode builds. The request and
-starting state are recorded in `metrics.jsonl`.
+The run order and host warmup can affect this one-pair comparison. The
+optional `nix develop -c just prepare-simulator` command records the fixed
+device's starting state and boot request time in `metrics.jsonl`.
 
 The first Cloud preboot run, [33c616a](https://github.com/9uiLe/evoloom/actions/runs/37185289540),
 recorded `Shutdown` and a 5.51-second boot request. The Xcode action itself
@@ -84,9 +84,14 @@ across cases. Yet its workflow test step took 378 seconds: the log has about
 220 seconds between step start and the first `just test-ios` output. The
 separate `nix develop` invocation for the boot step had already completed.
 Concurrent Simulator startup may have contributed, but the log does not prove
-the cause of this Nix activation delay. To avoid a second shell activation
-during boot, the boot request and Xcode test now run in one `nix develop -c
-just prepare-simulator test-ios` step. This needs a fresh Cloud measurement.
+the cause of this delay. The [one-shell trial](https://github.com/9uiLe/evoloom/actions/runs/37186022746)
+started `just` in about 2 seconds but then took about 246 seconds between the
+boot request and the Xcode command, during the second environment check. Its
+Xcode action took 230.05 seconds and the whole test step 493 seconds. These
+two Cloud trials show no overall gain from prebooting; normal CI and local
+`check` therefore leave Simulator startup to Xcode. The optional command
+remains available for diagnosis. The measured delay cannot be assigned to a
+specific Simulator service without lower-level tracing.
 
 ## Experiments and cache boundary
 

@@ -14,10 +14,10 @@ library for the iOS Simulator without a separate test runner. The former copy
 test only asserted the default spacing value; that assertion remains in the
 unit tests, while the copy build covers Swift compilation of all copied files.
 It does not exercise copied controls at runtime. Each Xcode command retains
-its 600-second failure timeout. The full check requests boot of the fixed
-Simulator before Xcode testing, reusing a booted device. The request is
-asynchronous so Xcode can build while the Simulator starts; the recorded boot
-request time does not assert that testmanagerd or the runner is ready.
+its 600-second failure timeout. An optional `just prepare-simulator` requests
+boot of the fixed device for diagnosis. Cloud trials found no overall gain,
+so the normal full check leaves startup to Xcode. The recorded boot request
+time does not assert that testmanagerd or the runner is ready.
 Xcode tests explicitly use `-testLanguage en -testRegion US`; the SwiftUI
 fixtures then set `en_US` or `ja_JP` for their own content. This also fixes
 native List typography and Japanese fallback fonts across a Japanese-language
