@@ -130,7 +130,7 @@ def prepared_dependencies():
 
 
 def xcode(
-    action, cwd=ROOT, scheme="ShadcnIOS", result=None, derived_data=None, check=True
+    action, cwd=ROOT, scheme="Evoloom", result=None, derived_data=None, check=True
 ):
     prepared_dependencies()
     device = doctor()
@@ -160,7 +160,7 @@ def xcode(
 
 
 def snapshot_hashes():
-    directory = ROOT / "Testing/Tests/ShadcnIOSSnapshotTests/__Snapshots__"
+    directory = ROOT / "Testing/Tests/EvoloomSnapshotTests/__Snapshots__"
     return {
         str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in directory.rglob("*.png")
@@ -201,7 +201,7 @@ def snapshots(record=False):
         completed = xcode(
             "test",
             cwd=ROOT / "Testing",
-            scheme="ShadcnIOSVisualTests-Package",
+            scheme="EvoloomVisualTests-Package",
             result=result,
             derived_data="Visual",
             check=False,
@@ -235,7 +235,7 @@ def verify_copy():
     subprocess.run(
         [
             sys.executable,
-            str(ROOT / "tools/shadcn_ios.py"),
+            str(ROOT / "tools/evoloom.py"),
             "init",
             "--destination",
             str(destination),
@@ -247,16 +247,16 @@ def verify_copy():
         """// swift-tools-version: 6.3
 import PackageDescription
 let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
-    products: [.library(name: "ShadcnIOSCopied", targets: ["ShadcnIOSCopied"])],
+    products: [.library(name: "EvoloomCopied", targets: ["EvoloomCopied"])],
     dependencies: [.package(name: "swift-app-macros", path: "../AppMacros")],
-    targets: [.target(name: "ShadcnIOSCopied", dependencies: [.product(name: "AppMacros", package: "swift-app-macros")]),
-              .testTarget(name: "CopyCheckTests", dependencies: ["ShadcnIOSCopied"])])
+    targets: [.target(name: "EvoloomCopied", dependencies: [.product(name: "AppMacros", package: "swift-app-macros")]),
+              .testTarget(name: "CopyCheckTests", dependencies: ["EvoloomCopied"])])
 """
     )
     test = destination / "Tests/CopyCheckTests/CopyCheckTests.swift"
     test.parent.mkdir(parents=True)
     test.write_text(
-        "import ShadcnIOSCopied\nimport XCTest\nfinal class CopyCheckTests: XCTestCase { func testTokens() { XCTAssertEqual(IOSDesignTokens.neutral.spacing.md, 16) } }\n"
+        "import EvoloomCopied\nimport XCTest\nfinal class CopyCheckTests: XCTestCase { func testTokens() { XCTAssertEqual(IOSDesignTokens.neutral.spacing.md, 16) } }\n"
     )
     xcode(
         "test",

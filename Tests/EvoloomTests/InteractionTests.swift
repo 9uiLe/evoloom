@@ -1,4 +1,4 @@
-@testable import ShadcnIOS
+@testable import Evoloom
 import SwiftUI
 import XCTest
 

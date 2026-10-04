@@ -22,4 +22,4 @@ jobs:
           name: ios-test-evidence
           path: |
             TestResults/
-            Testing/Tests/ShadcnIOSSnapshotTests/__Snapshots__/
+            Testing/Tests/EvoloomSnapshotTests/__Snapshots__/

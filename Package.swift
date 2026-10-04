@@ -5,7 +5,7 @@ import PackageDescription
 let localMacroManifest = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .appendingPathComponent(".prepared/AppMacros/Package.swift")
-let useLocalDependencies = ProcessInfo.processInfo.environment["SHADCN_IOS_LOCAL_DEPS"] == "1"
+let useLocalDependencies = ProcessInfo.processInfo.environment["EVOLOOM_LOCAL_DEPS"] == "1"
     && FileManager.default.fileExists(atPath: localMacroManifest.path)
 let macroDependency: Package.Dependency = if useLocalDependencies {
     .package(name: "swift-app-macros", path: ".prepared/AppMacros")
@@ -14,13 +14,13 @@ let macroDependency: Package.Dependency = if useLocalDependencies {
 }
 
 let package = Package(
-    name: "ShadcnIOS",
+    name: "Evoloom",
     defaultLocalization: "en",
     platforms: [.iOS(.v26)],
-    products: [.library(name: "ShadcnIOS", targets: ["ShadcnIOS"])],
+    products: [.library(name: "Evoloom", targets: ["Evoloom"])],
     dependencies: [macroDependency],
     targets: [
-        .target(name: "ShadcnIOS", dependencies: [.product(name: "AppMacros", package: "swift-app-macros")]),
-        .testTarget(name: "ShadcnIOSTests", dependencies: ["ShadcnIOS"]),
+        .target(name: "Evoloom", dependencies: [.product(name: "AppMacros", package: "swift-app-macros")]),
+        .testTarget(name: "EvoloomTests", dependencies: ["Evoloom"]),
     ]
 )

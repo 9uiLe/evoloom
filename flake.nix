@@ -1,5 +1,5 @@
 {
-  description = "ShadcnIOS development tools and fixed test source";
+  description = "Evoloom development tools and fixed test source";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/44a91898084f46797b5fac650c7e8c9ac38c43d4";
     snapshot = {
@@ -42,7 +42,7 @@
         SNAPSHOT_SOURCE = "${snapshot}";
         APP_MACROS_SOURCE = "${appMacros}";
         SWIFT_SYNTAX_SOURCE = "${swiftSyntax}";
-        SHADCN_IOS_LOCAL_DEPS = "1";
+        EVOLOOM_LOCAL_DEPS = "1";
         shellHook = ''
           unset SDKROOT
           export DEVELOPER_DIR=/Applications/Xcode-27.0.0.app/Contents/Developer

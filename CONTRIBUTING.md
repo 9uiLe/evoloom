@@ -1,5 +1,9 @@
 # Contributing
 
+Use `Evoloom` for the Package, module and CLI. The public `IOS…` component
+names describe the platform and are not part of the brand rename. Fresh
+copies use `.evoloom.json`; never overwrite a legacy copy to migrate it.
+
 Read `DESIGN.md`, `docs/ENVIRONMENT.md` and `docs/TESTING.md`. Keep iOS 26
 compatibility, native control semantics, copyable sources, and the root
 Package's normal SwiftPM consumer path. Pin macro revisions; materialize the

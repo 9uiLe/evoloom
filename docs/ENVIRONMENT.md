@@ -22,7 +22,7 @@ transitive dependencies. Its prepared manifest uses Swift 5 language mode,
 matching the upstream manifest on this Xcode. The root product uses Swift
 tools 6.3, required by the pinned macro package; the visual test harness uses
 tools 6.2. `Package.swift` selects local AppMacros only when
-`SHADCN_IOS_LOCAL_DEPS=1` is set by the Nix shell and the prepared macro
+`EVOLOOM_LOCAL_DEPS=1` is set by the Nix shell and the prepared macro
 manifest exists beside the root manifest. For normal consumers, including a
 clone opened inside that shell without `.prepared`, it pins the upstream Git
 commit through SwiftPM and remains readable. The `just` build and test tasks

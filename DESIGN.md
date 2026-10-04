@@ -1,6 +1,9 @@
-# Design rules
+# Evoloom design rules
 
-This is a design starting point, not a claim that screenshots establish good design.
+Evoloom starts with consistent design decisions that can evolve with an
+integrating product. Source-owned components share these rules, while screen
+structure and user flows remain product decisions. Screenshots detect visual
+regressions; they do not by themselves establish good design.
 Use native `NavigationStack`, `TabView`, `List`, `Form`, `searchable`, pickers,
 menus, sheets, alerts and toggles for navigation and system interaction.
 The custom components cover repeated visual decisions that those controls do

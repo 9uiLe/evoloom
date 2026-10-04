@@ -7,7 +7,7 @@ same environment value. The old `IOSTheme`, `IOSPalette`, `IOSSpacing`,
 `IOSRadii`, and `.iosTheme(_:)` names remain as source-compatible aliases.
 Keep each foreground/background pair legible; do not scatter new colors or
 component measurements through screens. The token source is
-`Sources/ShadcnIOS/Tokens/DesignTokens.swift`; copying a component includes
+`Sources/Evoloom/Tokens/DesignTokens.swift`; copying a component includes
 this file automatically.
 
 All component View types use `@AutoEquatableView`. `IOSBadge`,

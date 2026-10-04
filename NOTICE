@@ -1,7 +1,9 @@
-ShadcnIOS is an independent SwiftUI project. It is not affiliated with
-shadcn/ui or Apple. The source ownership approach and neutral semantic token
-names were informed by https://ui.shadcn.com/docs and
-https://ui.shadcn.com/docs/theming. No shadcn/ui source was copied.
+Evoloom is an independent SwiftUI project. It is not affiliated with
+shadcn/ui or Apple. Open component code, composition, and source ownership
+were informed by https://ui.shadcn.com/docs and
+https://ui.shadcn.com/docs/theming. No shadcn/ui-derived file was identified
+in the tracked Swift sources or repository history; provenance before the
+initial commit has not been independently verified.
 
 The test-only SnapshotTesting module is copied from pointfreeco/
 swift-snapshot-testing 1.18.9 (commit bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d)

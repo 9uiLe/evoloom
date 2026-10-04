@@ -1,68 +1,68 @@
 {
   "tokens": {
     "description": "Semantic tokens and environment injection",
-    "source": "Sources/ShadcnIOS/Tokens/DesignTokens.swift",
+    "source": "Sources/Evoloom/Tokens/DesignTokens.swift",
     "dependencies": []
   },
   "button": {
     "description": "Action styles, loading and disabled state",
-    "source": "Sources/ShadcnIOS/Components/IOSButton.swift",
+    "source": "Sources/Evoloom/Components/IOSButton.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "card": {
     "description": "Composable content container",
-    "source": "Sources/ShadcnIOS/Components/IOSCard.swift",
+    "source": "Sources/Evoloom/Components/IOSCard.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "badge": {
     "description": "Non-interactive status label",
-    "source": "Sources/ShadcnIOS/Components/IOSBadge.swift",
+    "source": "Sources/Evoloom/Components/IOSBadge.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "input": {
     "description": "Labeled text and secure input",
-    "source": "Sources/ShadcnIOS/Components/IOSInput.swift",
+    "source": "Sources/Evoloom/Components/IOSInput.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "textarea": {
     "description": "Labeled multiline input",
-    "source": "Sources/ShadcnIOS/Components/IOSTextArea.swift",
+    "source": "Sources/Evoloom/Components/IOSTextArea.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "separator": {
     "description": "Decorative divider",
-    "source": "Sources/ShadcnIOS/Components/IOSSeparator.swift",
+    "source": "Sources/Evoloom/Components/IOSSeparator.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "switch": {
     "description": "Native Toggle with detail",
-    "source": "Sources/ShadcnIOS/Components/IOSSwitch.swift",
+    "source": "Sources/Evoloom/Components/IOSSwitch.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "alert": {
     "description": "Inline information or error",
-    "source": "Sources/ShadcnIOS/Components/IOSInlineAlert.swift",
+    "source": "Sources/Evoloom/Components/IOSInlineAlert.swift",
     "dependencies": [
       "tokens"
     ]
   },
   "empty": {
     "description": "Empty state with optional action",
-    "source": "Sources/ShadcnIOS/Components/IOSEmptyState.swift",
+    "source": "Sources/Evoloom/Components/IOSEmptyState.swift",
     "dependencies": [
       "tokens",
       "button"
@@ -70,7 +70,7 @@
   },
   "skeleton": {
     "description": "Stable loading placeholder",
-    "source": "Sources/ShadcnIOS/Components/IOSSkeleton.swift",
+    "source": "Sources/Evoloom/Components/IOSSkeleton.swift",
     "dependencies": [
       "tokens"
     ]

@@ -6,6 +6,8 @@ contrast. Python tests check registry closure, cycles, dry-run, conflict
 protection and unsafe paths. `verify-copy-install` creates a temporary Package
 from copied source, compiles it for the iOS Simulator and runs a test.
 
+The `EvoloomSnapshotTests` target in `Testing/Package.swift` stores its
+baselines under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`.
 Visual tests use a `UIHostingController` and SnapshotTesting's real PNG image
 strategy. They set 390 or 320 pt width, fixed height, scale 3, zero safe area,
 system fonts, light/dark appearance, explicit content size, `en_US` or

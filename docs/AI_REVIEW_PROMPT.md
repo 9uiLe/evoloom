@@ -1,6 +1,7 @@
 # Screen review prompt
 
-Review this iOS screen for a user who needs to complete the stated task.
+Review this Evoloom-based iOS screen for a user who needs to complete the
+stated task.
 Describe the information hierarchy, which items belong together, the primary
 action, and whether NavigationStack, List, Form, search, sheet or system alert
 would serve the flow. Check Dynamic Type, VoiceOver order, labels, error

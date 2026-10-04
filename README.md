@@ -1,8 +1,10 @@
-# ShadcnIOS
+# Evoloom
 
-An independent SwiftUI component foundation for iOS 26+. It supplies a calm
-neutral design tokens and source-owned components, while leaving navigation and system
-interactions to SwiftUI. It is not an official shadcn/ui or Apple project.
+Evoloom (エヴォルーム, from Evolve + Loom) is a SwiftUI component collection for
+iOS 26+. It starts with consistent design decisions and lets you own and edit
+the component source as your product grows. Compose screens with shared tokens
+and native SwiftUI navigation and controls. The public `IOS…` component names
+remain unchanged.
 
 ## Requirements
 
@@ -31,11 +33,12 @@ missing baselines or changed baseline files. See [testing](docs/TESTING.md).
 
 ## Use as a library
 
-Add this package to an iOS 26+ Xcode project, choose its `ShadcnIOS` library
-product, then:
+Add the current repository URL
+`https://github.com/9uiLe/shadcn-ios-native` to an iOS 26+ Xcode project,
+choose its `Evoloom` library product, then:
 
 ```swift
-import ShadcnIOS
+import Evoloom
 import SwiftUI
 
 struct Example: View {
@@ -63,26 +66,27 @@ under `Testing/`.
 ## Own the source
 
 ```sh
-nix develop -c python3 tools/shadcn_ios.py list
+nix develop -c python3 tools/evoloom.py list
 mkdir -p /tmp/my-ios-package
-nix develop -c python3 tools/shadcn_ios.py dry-run --init --destination /tmp/my-ios-package button input
-nix develop -c python3 tools/shadcn_ios.py init --destination /tmp/my-ios-package button input
+nix develop -c python3 tools/evoloom.py dry-run --init --destination /tmp/my-ios-package button input
+nix develop -c python3 tools/evoloom.py init --destination /tmp/my-ios-package button input
 ```
 
-Copied files live under `Sources/ShadcnIOSCopied`; use `ShadcnIOSCopied` as
+Copied files live under `Sources/EvoloomCopied`; use `EvoloomCopied` as
 the target name in a Swift Package, or add the files to your app target in
-Xcode. Copied source imports `AppMacros`, but not `ShadcnIOS`; add the pinned
+Xcode. Copied source imports `AppMacros`, but not `Evoloom`; add the pinned
 `AppMacros` product to the target. Existing files are
-protected unless `--overwrite` is explicit. See [distribution](docs/DISTRIBUTION.md).
+protected unless `--overwrite` is explicit. See [distribution and migration](docs/DISTRIBUTION.md).
 
 ## Preview
 
 Open `Package.swift` in Xcode, select the iPhone 18 Pro destination and
-`Sources/ShadcnIOS/Preview/ComponentCatalog.swift`. Its `#Preview` entries
+`Sources/Evoloom/Preview/ComponentCatalog.swift`. Its `#Preview` entries
 show light, dark, adjusted design tokens, and a native navigation/list/search/sheet
 example. The fixture views are internal to the library target. The package
-compilation verifies the preview source. The Xcode 27.0 canvas rendered the
-light, dark, Collection and adjusted token previews in the stated Simulator.
+compilation verifies the preview source. Before this rename, the Xcode 27.0
+canvas rendered the light, dark, Collection and adjusted token previews in the
+stated Simulator.
 Image tests provide visual verification when the canvas is unavailable.
 
 ## Documents
@@ -92,9 +96,19 @@ Image tests provide visual verification when the canvas is unavailable.
 [Testing](docs/TESTING.md) · [AI review prompt](docs/AI_REVIEW_PROMPT.md)
 · [Validation record](docs/VALIDATION.md)
 
-The working directory name is `shadcn-ios-native` because `shadcn-ios` was
-already an unrelated Git checkout on the development host. The GitHub
-repository is independent of that checkout.
+## Inspiration and repository status
+
+Evoloom takes inspiration from [shadcn/ui](https://ui.shadcn.com/docs): open
+component code, composition, and source ownership. It is an independent
+SwiftUI project, with no affiliation or endorsement by shadcn/ui or Apple.
+The project's current GitHub URL is the one shown above. Renaming that
+repository to `9uiLe/evoloom` is a separate, uncompleted operation; do not use
+the prospective URL for installation yet.
+
+The module rename is a breaking change: replace `import ShadcnIOS` with
+`import Evoloom` and select the `Evoloom` product. Existing copied source is
+not automatically migrated or overwritten. Follow the migration steps in the
+[distribution guide](docs/DISTRIBUTION.md).
 
 Known limits: the Nix shell does not install Xcode or Simulator. The test
 harness supports the fixed Apple Silicon environment above. Source copies

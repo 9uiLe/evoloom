@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "ShadcnIOSVisualTests",
+    name: "EvoloomVisualTests",
     platforms: [.iOS(.v26)],
     dependencies: [
-        .package(name: "ShadcnIOS", path: ".."),
+        .package(name: "Evoloom", path: ".."),
         .package(name: "SnapshotTestingLocal", path: "../.prepared/SnapshotTesting"),
     ],
     targets: [
         .testTarget(
-            name: "ShadcnIOSSnapshotTests",
+            name: "EvoloomSnapshotTests",
             dependencies: [
-                .product(name: "ShadcnIOS", package: "ShadcnIOS"),
+                .product(name: "Evoloom", package: "Evoloom"),
                 .product(name: "SnapshotTesting", package: "SnapshotTestingLocal"),
             ]
         ),

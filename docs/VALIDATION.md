@@ -1,5 +1,10 @@
 # Validation record
 
+Entries before the Evoloom rename describe results under the names and paths
+used at the time. They are historical records, not current installation
+instructions. Current commands and paths are in the README and the latest
+validation entry below.
+
 Environment checked on 2026-10-03: Apple Silicon, Xcode 27.0 (27A266a),
 Apple Swift 6.4, iPhoneSimulator SDK 27.0 (24A430), iOS 27.0 Simulator runtime
 (24A434), iPhone 18 Pro (arm64). `nix develop -c just doctor` checked the exact
@@ -144,3 +149,36 @@ the library and Preview source build, 7 unit tests, copied Package build and
 1 test, and 8 image test methods comparing the existing 12 PNGs. Unit, copy
 and image `.xcresult` summaries reported zero failures. No component source
 or image baseline changed. This update did not reopen the Xcode Preview canvas.
+
+## Evoloom rename, 2026-10-04
+
+The root Package, library product, Swift module, tests, visual test Package,
+CLI and copy output use `Evoloom`. The Swift component files and design token
+implementation moved directories without code changes. All 12 baseline PNGs
+were moved to `Testing/Tests/EvoloomSnapshotTests` without byte changes; their
+SHA-256 hashes match the former files. No image was re-recorded and no
+intentional visual difference was introduced. The public `IOS…` API remains.
+
+`nix develop -c just prepare-deps` and `nix develop -c just check` passed on
+Xcode 27.0 (27A266a), iPhone 18 Pro arm64, iOS Simulator 27.0 (24A434). The
+check covered format, lint, 10 CLI tests, the library and Preview compilation,
+7 root unit tests, the copied Package build and 1 test, and 8 visual methods
+comparing 12 PNGs. The unit, copy and visual xcresult summaries reported zero
+failures. Two consecutive `just format` runs left the second run unchanged.
+A separate temporary ordinary consumer resolved the public `swift-app-macros`
+commit and swift-syntax 604.0.0 from SwiftPM cache and built the `Evoloom`
+library for the iOS Simulator without `.prepared` or the local dependency
+environment variable. This consumer check intentionally used the regular
+SwiftPM path; Nix still fixes the development and test dependencies.
+A separate clone of the local rename commit then ran
+`nix develop -c just doctor`, `nix develop -c just prepare-deps` and
+`nix develop -c just check` successfully; its tracked working tree stayed
+clean.
+
+The old `.shadcn-ios.json` and `Sources/ShadcnIOSCopied` paths now stop the
+CLI before any install, even with `--overwrite`. Tests verify that customized
+bytes remain unchanged. `LICENSE` and its original contributor notice were
+preserved. `flake.lock`, dependency revisions, component rendering and visual
+baseline bytes did not change. The Xcode Preview canvas was not reopened for
+this rename; its source compiled as part of the library. Remote GitHub rename,
+push and CI execution were not performed for this local change.

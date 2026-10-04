@@ -9,7 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "tools" / "registry.json").read_text())
-COPY_ROOT = Path("Sources/ShadcnIOSCopied")
+COPY_ROOT = Path("Sources/EvoloomCopied")
+CONFIG = Path(".evoloom.json")
+LEGACY_CONFIG = Path(".shadcn-ios.json")
+LEGACY_COPY_ROOT = Path("Sources/ShadcnIOSCopied")
 
 
 class InstallError(Exception):
@@ -67,10 +70,13 @@ def plan(root, names, initialize=False, overwrite=False):
         raise InstallError("Destination symlink rejected")
     if not root.is_dir():
         raise InstallError(f"Destination directory missing: {root}")
-    if (
-        not initialize
-        and not safe_destination(root, Path(".shadcn-ios.json")).is_file()
-    ):
+    for legacy in (LEGACY_CONFIG, LEGACY_COPY_ROOT):
+        if safe_destination(root, legacy).exists():
+            raise InstallError(
+                f"Legacy ShadcnIOS installation detected at {legacy}; "
+                "back up custom files and follow docs/DISTRIBUTION.md before using Evoloom"
+            )
+    if not initialize and not safe_destination(root, CONFIG).is_file():
         raise InstallError("Destination is not initialized; run init first")
     legacy_theme = safe_destination(root, COPY_ROOT / "Theme/Theme.swift")
     if legacy_theme.exists():
@@ -92,12 +98,10 @@ def plan(root, names, initialize=False, overwrite=False):
             continue
         files[relative] = source.read_bytes()
     if initialize:
-        files[Path(".shadcn-ios.json")] = (
-            b'{"source": "shadcn-ios", "copyRoot": "Sources/ShadcnIOSCopied"}\n'
-        )
-        files[Path("SHADCN-IOS-LICENSE")] = (ROOT / "LICENSE").read_bytes()
-        files[Path("SHADCN-IOS-NOTICE")] = (ROOT / "NOTICE").read_bytes()
-        files[Path("SHADCN-IOS-DESIGN.md")] = (ROOT / "DESIGN.md").read_bytes()
+        files[CONFIG] = b'{"source": "evoloom", "copyRoot": "Sources/EvoloomCopied"}\n'
+        files[Path("EVOLOOM-LICENSE")] = (ROOT / "LICENSE").read_bytes()
+        files[Path("EVOLOOM-NOTICE")] = (ROOT / "NOTICE").read_bytes()
+        files[Path("EVOLOOM-DESIGN.md")] = (ROOT / "DESIGN.md").read_bytes()
     for relative in files:
         target = safe_destination(root, relative)
         if target.exists() and not overwrite:
@@ -116,7 +120,7 @@ def plan(root, names, initialize=False, overwrite=False):
 
 def install(root, files):
     """Stage files and restore old bytes if any replacement fails."""
-    stage = Path(tempfile.mkdtemp(prefix=".shadcn-stage-", dir=root))
+    stage = Path(tempfile.mkdtemp(prefix=".evoloom-stage-", dir=root))
     old = {}
     written = []
     try:
@@ -143,7 +147,7 @@ def install(root, files):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Copy owned SwiftUI component sources")
+    parser = argparse.ArgumentParser(description="Evoloom source-owning component CLI")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list")
     for command in ("init", "add", "dry-run"):
