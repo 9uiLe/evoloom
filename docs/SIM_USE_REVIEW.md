@@ -16,7 +16,7 @@ nix develop -c just verify-settings-interaction
 
 The last command builds and installs the existing host once, then runs the
 normal/error input and Toggle checks, a real-scene accessibility-medium check,
-Japanese/dark appearance, and an outlined input edit. Each scenario follows
+and Japanese/dark appearance. Each scenario follows
 observe → act → verify: it reads `sim-use ui --json` before and after actions,
 checks values and enabled states rather than command exit alone, and saves
 `sim-use screenshot` PNGs. The fixed UDID is passed to every sim-use action;
@@ -36,7 +36,11 @@ nix develop -c python3 tools/sim_use_review.py --scenario large --reuse-built-ho
 
 `--reuse-built-host` assumes the current source was already built and installed
 with `just run-host`; omit it for an independently reproducible run. Scenarios
-are `normal`, `error`, `large`, `japanese-dark`, and `outlined`. The manual GitHub Actions
+are `normal`, `error`, `large`, `japanese-dark`, and `outlined`. The default
+operation check runs the first four, with `large` before text injection so the
+software-keyboard state can be inspected before HID input changes it.
+`outlined` is available as a focused check; its existing default appearance
+also remains in the regular snapshot suite. The manual GitHub Actions
 `workflow_dispatch` input `verify_settings_interaction` runs this command in
 the existing iOS job after the image tests and uploads the resulting evidence
 with the usual `ios-test-evidence` artifact. Ordinary PR CI keeps its current

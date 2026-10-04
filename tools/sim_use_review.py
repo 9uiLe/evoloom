@@ -23,6 +23,7 @@ class Review:
         self.log = self.directory / "actions.jsonl"
         self.failures: list[str] = []
         self.prefix = "setup"
+        self.ui_sequence = 0
 
     def command(self, *args: str, timeout: int = 30) -> str:
         started = time.monotonic()
@@ -81,9 +82,10 @@ class Review:
 
     def ui(self, name: str) -> dict:
         data = self.sim("ui")
-        (self.directory / f"{self.prefix}-{name}.ui.json").write_text(
-            json.dumps(data, ensure_ascii=False, indent=2) + "\n"
-        )
+        self.ui_sequence += 1
+        (
+            self.directory / f"{self.prefix}-{name}-{self.ui_sequence:03}.ui.json"
+        ).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
         return data
 
     def await_ui(self, name: str, predicate, seconds: float = 12) -> dict:
@@ -148,14 +150,12 @@ class Review:
         )
 
     def tap_field(self, label: str) -> dict:
+        observed = self.ui(f"before-focus-{label.lower().replace(' ', '-')}")
+        frame = self.entry(observed, "TextField", label)["frame"]
         self.sim(
             "tap",
-            "--label",
-            label,
-            "--element-type",
-            "TextField",
-            "--wait-timeout",
-            "8",
+            "--point",
+            f"{round(frame['x'] + frame['width'] / 2)},{round(frame['y'] + frame['height'] / 2)}",
         )
         return self.ui(f"focused-{label.lower().replace(' ', '-')}")
 
@@ -434,13 +434,17 @@ def main() -> None:
         )
         record_environment(directory, device)
         scenarios = {
+            "large": review.large_text,
             "normal": review.normal_form,
             "error": review.error_form,
-            "large": review.large_text,
             "japanese-dark": review.japanese_and_dark,
             "outlined": review.outlined,
         }
-        selected = list(scenarios) if args.scenario == "all" else [args.scenario]
+        selected = (
+            ["large", "normal", "error", "japanese-dark"]
+            if args.scenario == "all"
+            else [args.scenario]
+        )
         for name in selected:
             review.prefix = name
             prior_failures = len(review.failures)
