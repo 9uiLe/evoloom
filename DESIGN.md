@@ -46,6 +46,15 @@ the complete value through `.iosDesignTokens(tokens)` so nested components
 use one decision set. Keep screen-specific layout choices in the screen.
 Avoid wrapping every section in a card.
 
+`IOSInput` defaults to an outlined field when it owns its surface. Inside a
+grouped native `Form`, opt in to `.formRow`: the Form row supplies the surface
+and separator, while the field keeps its persistent label, 44 pt minimum
+input height, supporting text and visible focus/error line. This avoids two
+competing outlines without changing inputs in a ScrollView or other container.
+Use the system Form's section spacing. The example Settings screen places its
+Save button in a section footer; that position and width are screen decisions,
+not a rule imposed by `IOSButton`.
+
 Components use ordinary SwiftUI `body` implementations. The former macro
 comparison boundary applied to five display-only components; components with
 Bindings, actions or child Views already used its ordinary-body fallback.

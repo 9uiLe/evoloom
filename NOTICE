@@ -19,3 +19,8 @@ AppMacros is MIT licensed; swift-syntax is Apache-2.0 licensed with a runtime
 library exception. The current library and component copies no longer use
 these dependencies. This provenance notice is retained for the earlier
 revisions; neither source is vendored into this repository.
+
+The Darwin-only development shell also installs lycorp-jp/sim-use v0.14.0
+from its fixed official binary release. It is licensed under Apache-2.0;
+the fixed upstream license is copied into its Nix output. It is not linked
+into the Evoloom library, development host, or copied components.

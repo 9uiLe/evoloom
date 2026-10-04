@@ -47,6 +47,8 @@ SNAPSHOT_NAMES = {
     "review-settings-light",
     "review-settings-dark",
     "review-settings-error",
+    "review-settings-narrow-ja",
+    "review-settings-large-text",
     "review-detail-light",
     "review-detail-dark",
     "review-detail-ja-long",
@@ -55,6 +57,9 @@ UNIT_TEST_COUNT = 6
 SNAPSHOT_TEST_COUNT = 9
 HOSTED_SNAPSHOT_TEST_COUNT = 5
 HOST_PROJECT = ROOT / "Testing/Host/EvoloomReviewHost.xcodeproj"
+HOST_APP = (
+    ROOT / "DerivedData/Host/Build/Products/Debug-iphonesimulator/EvoloomReviewHost.app"
+)
 
 
 def metric(phase, seconds, **details):
@@ -109,12 +114,17 @@ def doctor():
         "yamllint",
         "actionlint",
         "xcodegen",
+        "sim-use",
     ]
     missing = [tool for tool in required if shutil.which(tool) is None]
     if missing:
         raise RuntimeError(f"Nix shell missing tools: {missing}; run nix develop")
     if output("xcodegen", "--version") != "Version: 2.44.1":
         raise RuntimeError("Expected Nix-pinned XcodeGen 2.44.1")
+    if output("sim-use", "--version") != "0.14.0":
+        raise RuntimeError("Expected Nix-pinned sim-use 0.14.0")
+    if not (shutil.which("sim-use") or "").startswith("/nix/store/"):
+        raise RuntimeError("sim-use must come from the Nix store")
     sources = nix_sources()
     if output("sw_vers", "-buildVersion") != EXPECTED_MACOS_BUILD:
         raise RuntimeError(f"Expected macOS build {EXPECTED_MACOS_BUILD}")
@@ -625,6 +635,8 @@ def run_host():
         "feedback",
         "settings",
         "settingsError",
+        "settingsJapanese",
+        "settingsJapaneseError",
         "detail",
     }:
         raise RuntimeError(f"Unknown review screen: {screen}")
@@ -638,12 +650,10 @@ def run_host():
     subprocess.run(
         ["xcrun", "simctl", "bootstatus", device, "-b"], check=True, env=apple_env()
     )
-    app = (
-        ROOT
-        / "DerivedData/Host/Build/Products/Debug-iphonesimulator/EvoloomReviewHost.app"
-    )
     subprocess.run(
-        ["xcrun", "simctl", "install", device, str(app)], check=True, env=apple_env()
+        ["xcrun", "simctl", "install", device, str(HOST_APP)],
+        check=True,
+        env=apple_env(),
     )
     subprocess.run(
         ["xcrun", "simctl", "ui", device, "appearance", appearance],

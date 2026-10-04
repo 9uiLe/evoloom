@@ -98,6 +98,10 @@ project definition is JSON; `just prepare-host` generates its ignored Xcode
 project through Nix-pinned XcodeGen. This is separate from Xcode's native
 `project.xcproj` JSON format, which the pinned Xcode 27.0 could not generate.
 See [visual review and PR images](docs/VISUAL_REVIEW.md).
+For Simulator taps, editing, Toggle and Form scrolling, run
+`nix develop -c just verify-settings-interaction` and read the
+[operation review guide](docs/SIM_USE_REVIEW.md). The Nix shell supplies
+sim-use; this optional operation check is separate from normal snapshot CI.
 
 ## Documents
 
@@ -105,6 +109,7 @@ See [visual review and PR images](docs/VISUAL_REVIEW.md).
 [Distribution](docs/DISTRIBUTION.md) · [Environment](docs/ENVIRONMENT.md) ·
 [Testing](docs/TESTING.md) · [CI timing](docs/CI_PERFORMANCE.md) ·
 [Visual review](docs/VISUAL_REVIEW.md) ·
+[Settings operation review](docs/SIM_USE_REVIEW.md) ·
 [AI review prompt](docs/AI_REVIEW_PROMPT.md)
 · [Validation record](docs/VALIDATION.md)
 

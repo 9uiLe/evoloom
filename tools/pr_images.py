@@ -23,6 +23,11 @@ PAIRS = (
     ("List", "collection-light", "collection-dark"),
     ("Detail / edit", "review-detail-light", "review-detail-dark"),
 )
+EXTRA_CASES = {
+    "review-settings-error": "Settings · validation error",
+    "review-settings-narrow-ja": "Settings · narrow Japanese",
+    "review-settings-large-text": "Settings · large text",
+}
 
 
 def _git_object_type(root, object_name):
@@ -35,7 +40,7 @@ def _git_object_type(root, object_name):
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def markdown(sha, ci_url=None, root=None):
+def markdown(sha, ci_url=None, root=None, extra_cases=()):
     root = root or ROOT
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError("Use a full 40-character lowercase commit SHA")
@@ -44,7 +49,11 @@ def markdown(sha, ci_url=None, root=None):
             f"Commit {sha} is unavailable locally or is not a commit object; "
             "fetch that exact commit (including in a shallow checkout) and retry"
         )
+    unknown = set(extra_cases) - set(EXTRA_CASES)
+    if unknown:
+        raise ValueError(f"Unknown image cases: {sorted(unknown)}")
     names = [name for _, light, dark in PAIRS for name in (light, dark)]
+    names.extend(extra_cases)
     paths = [snapshot_path(name) for name in names]
     missing = [
         path for path in paths if _git_object_type(root, f"{sha}:{path}") != "blob"
@@ -79,6 +88,10 @@ def markdown(sha, ci_url=None, root=None):
             url = f"https://raw.githubusercontent.com/9uiLe/evoloom/{sha}/{path}"
             urls.append(f"![{label} {name}]({url})")
         lines.append(f"| {label} | {urls[0]} | {urls[1]} |")
+    for name in extra_cases:
+        path = snapshot_path(name)
+        url = f"https://raw.githubusercontent.com/9uiLe/evoloom/{sha}/{path}"
+        lines.append(f"\n![{EXTRA_CASES[name]} baseline]({url})")
     return "\n".join(lines) + "\n"
 
 
@@ -99,6 +112,13 @@ def main():
     parser.add_argument(
         "--ci-url", help="Successful comparison run URL for that exact SHA"
     )
+    parser.add_argument(
+        "--extra-case",
+        action="append",
+        choices=sorted(EXTRA_CASES),
+        default=[],
+        help="Also link a named settings state after verifying its blob in the commit",
+    )
     args = parser.parse_args()
     sha = (
         args.sha
@@ -107,7 +127,7 @@ def main():
         ).strip()
     )
     try:
-        body = markdown(sha, args.ci_url)
+        body = markdown(sha, args.ci_url, extra_cases=args.extra_case)
     except (FileNotFoundError, ValueError) as error:
         parser.exit(1, f"{error}\n")
     print(body, end="")

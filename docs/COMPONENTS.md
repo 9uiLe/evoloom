@@ -33,6 +33,13 @@ assume a performance improvement without profiling an integrating screen.
 translations in the integrating app or pass localized labels, for example
 `IOSSwitch("通知", isOn: $enabled, onStateLabel: "オン", offStateLabel: "オフ")`.
 The status cue is visual; the native Toggle announces its state to VoiceOver.
+`IOSInput` uses `.outlined` by default. For a grouped native Form row, pass
+`appearance: .formRow`; its own rounded surface is removed so the Form owns
+the grouping. The persistent label, hint or actionable error, disabled value,
+minimum 44 pt field height and native TextField or SecureField remain. Focus
+and error use a bottom line inside the row. Use `.outlined` on ungrouped
+surfaces such as the detail/edit example. The new argument is optional, so
+existing call sites and copied components keep their previous appearance.
 Most other public APIs accept `String`. Localize dynamic values at the call site with
 `String(localized:)` and supply a product String Catalog. Do not assume
 placeholder text is a label. Native system controls provide their own

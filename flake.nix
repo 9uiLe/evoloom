@@ -41,7 +41,10 @@
                 shellcheck
                 shfmt
               ]
-              ++ nixpkgs.lib.optionals (system == "aarch64-darwin") [ pkgs.xcodegen ];
+              ++ nixpkgs.lib.optionals (system == "aarch64-darwin") [
+                pkgs.xcodegen
+                (pkgs.callPackage ./nix/sim-use.nix { })
+              ];
             SNAPSHOT_SOURCE = "${snapshot}";
             shellHook = nixpkgs.lib.optionalString (system == "aarch64-darwin") ''
               unset SDKROOT

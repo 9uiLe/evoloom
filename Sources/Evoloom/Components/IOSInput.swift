@@ -1,5 +1,10 @@
 import SwiftUI
 
+/// Use formRow only when a native Form supplies the field's surface and row boundary.
+public enum IOSInputAppearance: Sendable {
+    case outlined, formRow
+}
+
 public struct IOSInput: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -13,11 +18,13 @@ public struct IOSInput: View {
     public var secure: Bool
     public var keyboardType: UIKeyboardType
     public var contentType: UITextContentType?
+    public var appearance: IOSInputAppearance
 
     public init(
         _ label: String, text: Binding<String>, placeholder: String = "",
         hint: String? = nil, error: String? = nil, secure: Bool = false,
-        keyboardType: UIKeyboardType = .default, contentType: UITextContentType? = nil
+        keyboardType: UIKeyboardType = .default, contentType: UITextContentType? = nil,
+        appearance: IOSInputAppearance = .outlined
     ) {
         self.label = label
         _text = text
@@ -27,11 +34,12 @@ public struct IOSInput: View {
         self.secure = secure
         self.keyboardType = keyboardType
         self.contentType = contentType
+        self.appearance = appearance
     }
 
     public var body: some View {
         let colors = tokens.palette(for: scheme)
-        VStack(alignment: .leading, spacing: tokens.spacing.xs) {
+        VStack(alignment: .leading, spacing: appearance == .formRow ? tokens.spacing.xxs : tokens.spacing.xs) {
             Text(label).font(tokens.typography.fieldLabel)
             Group {
                 if secure {
@@ -44,15 +52,28 @@ public struct IOSInput: View {
             .textContentType(contentType)
             .focused($focused)
             .foregroundStyle(isEnabled ? colors.foreground : colors.mutedForeground)
-            .padding(tokens.spacing.sm)
+            .padding(appearance == .outlined ? tokens.spacing.sm : 0)
             .frame(minHeight: tokens.controls.minimumHeight)
-            .background(isEnabled ? colors.background : colors.muted, in: RoundedRectangle(cornerRadius: tokens.radii.control))
+            .background {
+                if appearance == .outlined {
+                    RoundedRectangle(cornerRadius: tokens.radii.control)
+                        .fill(isEnabled ? colors.background : colors.muted)
+                }
+            }
             .overlay {
-                RoundedRectangle(cornerRadius: tokens.radii.control)
-                    .strokeBorder(
-                        error == nil ? (focused ? colors.primary : colors.input) : colors.destructiveText,
-                        lineWidth: focused || error != nil ? tokens.controls.emphasizedBorderWidth : tokens.controls.borderWidth
-                    )
+                if appearance == .outlined {
+                    RoundedRectangle(cornerRadius: tokens.radii.control)
+                        .strokeBorder(
+                            error == nil ? (focused ? colors.primary : colors.input) : colors.destructiveText,
+                            lineWidth: focused || error != nil ? tokens.controls.emphasizedBorderWidth : tokens.controls.borderWidth
+                        )
+                } else if focused || error != nil {
+                    Rectangle()
+                        .fill(error == nil ? colors.primary : colors.destructiveText)
+                        .frame(height: tokens.controls.emphasizedBorderWidth)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+                        .allowsHitTesting(false)
+                }
             }
             .accessibilityLabel(label)
             .accessibilityHint(error ?? hint ?? "")
