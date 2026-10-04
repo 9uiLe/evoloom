@@ -1,4 +1,5 @@
 import json
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -53,10 +54,11 @@ class XcodeCommandTests(unittest.TestCase):
                 patch.object(tasks, "doctor", return_value="fixed-device"),
                 patch.object(tasks, "apple_env", return_value={}),
                 patch.object(tasks, "metric"),
-                patch.object(tasks.subprocess, "run") as run,
+                patch.object(tasks.subprocess, "Popen") as popen,
             ):
+                popen.return_value.wait.return_value = 0
                 tasks.xcode("test", scheme="Fixed-Package")
-                command = run.call_args.args[0]
+                command = popen.call_args.args[0]
                 self.assertEqual(command[command.index("-scheme") + 1], "Fixed-Package")
                 self.assertEqual(
                     command[command.index("-parallel-testing-enabled") + 1], "NO"
@@ -64,6 +66,35 @@ class XcodeCommandTests(unittest.TestCase):
                 self.assertEqual(
                     "-showBuildTimingSummary" in command, diagnostics == "1"
                 )
+
+    def test_nonzero_xcode_exit_is_not_hidden(self):
+        with (
+            patch.object(tasks, "doctor", return_value="fixed-device"),
+            patch.object(tasks, "apple_env", return_value={}),
+            patch.object(tasks, "metric"),
+            patch.object(tasks.subprocess, "Popen") as popen,
+        ):
+            popen.return_value.wait.return_value = 65
+            self.assertEqual(tasks.xcode("test", check=False).returncode, 65)
+            with self.assertRaises(subprocess.CalledProcessError):
+                tasks.xcode("test")
+
+    def test_timeout_terminates_only_launched_process_group(self):
+        with (
+            patch.object(tasks, "doctor", return_value="fixed-device"),
+            patch.object(tasks, "apple_env", return_value={}),
+            patch.object(tasks, "metric"),
+            patch.object(tasks.os, "killpg") as killpg,
+            patch.object(tasks.subprocess, "Popen") as popen,
+        ):
+            popen.return_value.pid = 12345
+            popen.return_value.wait.side_effect = [
+                subprocess.TimeoutExpired("xcodebuild", 600),
+                0,
+            ]
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tasks.xcode("test")
+            killpg.assert_called_once_with(12345, tasks.signal.SIGTERM)
 
 
 if __name__ == "__main__":

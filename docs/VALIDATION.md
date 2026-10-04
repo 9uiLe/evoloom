@@ -302,3 +302,34 @@ Apple documents native JSON `project.xcproj` support from Xcode 27, with 27.2
 as the new-format default. Installed Xcode 27.0 did not expose the Project
 Format control or accept `xcodebuild -convert-project xcproj`; native JSON was
 not validated. The checked-in JSON is an XcodeGen spec, not `.xcproj`.
+
+## Hosted image mismatch termination, 2026-10-04
+
+The earlier five-minute stall above remains a record of the old in-test
+failure path. A second one-case diagnostic changed fixed Collection copy and
+ran only `testCollectionLight`. On the same pinned local Apple environment,
+the actual PNG appeared 39.6 seconds after xcodebuild started, and the diff
+appeared at 42.1 seconds. The command was still running 60 seconds after the
+diff; a process sample showed xcodebuild waiting for the test operation. The
+diagnostic ended that process group at 117.1 seconds and restored the fixture.
+This locates the observed wait after image comparison, but it does not prove
+which Xcode, XCTest or SnapshotTesting internal operation caused it.
+
+Hosted XCTest now captures and saves the real-window image without asserting
+pixel equality. After xcodebuild exits, `tools/compare_host_images.py` decodes
+both PNGs to RGBA, compares dimensions and pixels exactly, writes
+expected/actual/diff for a mismatch, and fails the outer task. Pillow 12.3.0
+is supplied by the existing pinned nixpkgs revision. Package-only snapshots
+still use their Swift exact-pixel comparison. The 28 baselines and product
+sources did not change.
+
+In a targeted changed-copy trial, hosted xcodebuild exited 0 after 19.5
+seconds; the external comparison reported a pixel mismatch and produced the
+three images 0.25 seconds later. Its CLI returned 1. A separate full
+`test-snapshot` trial changed only the light hosted case; all 14 XCTest methods
+passed, 28 actual PNGs were saved, and the outer command exited 1 with only
+`collection-light` mismatching after 47.5 seconds. After restoring that line,
+`test-snapshot` passed with all five hosted images matching and no stale diff.
+These are warm local observations under different build inputs, not a general
+performance estimate. CI failure-path and artifact verification are recorded
+separately when the temporary Cloud run completes.

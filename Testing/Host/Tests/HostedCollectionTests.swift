@@ -54,23 +54,43 @@ final class HostedCollectionTests: XCTestCase {
             size: window.bounds.size,
             traits: traits
         )
-        var strategy = Snapshotting<UIViewController, UIImage>.image(
+        let strategy = Snapshotting<UIViewController, UIImage>.image(
             on: configuration,
             drawHierarchyInKeyWindow: true,
             precision: 1,
             perceptualPrecision: 1,
             traits: traits
         )
+        let started = ProcessInfo.processInfo.systemUptime
+        let captured = expectation(description: "Captured \(name) in the app window")
+        var image: UIImage?
+        strategy.snapshot(host).run { result in
+            image = result
+            captured.fulfill()
+        }
+        wait(for: [captured], timeout: 30)
+        saveCapture(image, name: name, started: started)
+    }
+
+    private func saveCapture(_ image: UIImage?, name: String, started: TimeInterval) {
+        guard let data = image?.pngData() else {
+            XCTFail("Could not encode rendered image for \(name)")
+            return
+        }
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
-        strategy.diffing = exactImageDiffing(strategy.diffing, root: root, name: name)
-        let isRecording = FileManager.default.fileExists(atPath: root.appendingPathComponent(".prepared/record-host-snapshots").path)
-        if isRecording {
-            let message = verifySnapshot(of: host, as: strategy, named: name, record: true, testName: "components")
-            XCTAssertTrue(message?.contains("Record mode is on.") == true, message ?? "Snapshot recording failed")
-        } else {
-            assertSnapshot(of: host, as: strategy, named: name, record: false, testName: "components")
+        let rendered = root.appendingPathComponent("TestResults/Rendered")
+        do {
+            try FileManager.default.createDirectory(at: rendered, withIntermediateDirectories: true)
+            try data.write(to: rendered.appendingPathComponent("components.\(name).png"), options: .atomic)
+            let seconds = ProcessInfo.processInfo.systemUptime - started
+            try String(seconds).write(
+                to: rendered.appendingPathComponent("components.\(name).seconds"),
+                atomically: true, encoding: .utf8
+            )
+        } catch {
+            XCTFail("Could not save rendered image for \(name): \(error)")
         }
     }
 }

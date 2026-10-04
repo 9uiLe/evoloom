@@ -199,3 +199,17 @@ Nix setup and does not predict GitHub-hosted duration or a cold build. The
 trial cache now includes both derived build directories and remains manual
 opt-in; normal CI has no explicit Xcode build cache. A post-change CI run and
 transfer-inclusive comparison are still needed before any speed claim.
+
+## Hosted mismatch exit (local trial, 2026-10-04)
+
+A one-case in-XCTest mismatch saved the diff 42.1 seconds after starting
+xcodebuild, then remained running for another 60 seconds; it was terminated
+after diagnostic sampling. With hosted capture and post-process RGBA
+comparison, a targeted changed-copy run exited hosted xcodebuild in 19.5
+seconds and detected the mismatch about 0.25 seconds later. A full warm
+`test-snapshot` run with one altered hosted case returned nonzero in 47.5
+seconds, with all 28 actuals and the three diff PNGs. The next normal run
+passed. These trials differ in code, warm build state and scope; they establish
+an ordinary mismatch exit, not a stable speedup. The Xcode action timeout
+remains 600 seconds as an abnormal-stop limit, with only its launched process
+group terminated and available logs and images retained.

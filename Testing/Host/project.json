@@ -47,8 +47,7 @@
       "platform": "iOS",
       "deploymentTarget": "26.0",
       "sources": [
-        "Tests",
-        "../Tests/EvoloomSnapshotTests/SnapshotImageDiffing.swift"
+        "Tests"
       ],
       "dependencies": [
         {

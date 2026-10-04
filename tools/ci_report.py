@@ -93,9 +93,13 @@ def report():
     baseline_count = len(baseline_paths)
     rendered_paths = sorted((RESULTS / "Rendered").glob("*.png"))
     rendered_names = {path.name for path in rendered_paths}
-    capture_seconds = sum(
-        float(path.read_text()) for path in (RESULTS / "Rendered").glob("*.seconds")
-    )
+    evidence_errors = []
+    capture_seconds = 0.0
+    for path in (RESULTS / "Rendered").glob("*.seconds"):
+        try:
+            capture_seconds += float(path.read_text())
+        except (OSError, ValueError) as error:
+            evidence_errors.append(f"Unreadable capture duration {path}: {error}")
     snapshot_selected = os.environ.get("EVOLOOM_SNAPSHOT_SELECTED", "true") == "true"
     missing_rendered = (
         sorted(
@@ -109,10 +113,34 @@ def report():
     metrics = []
     metrics_file = RESULTS / "metrics.jsonl"
     if metrics_file.exists():
-        metrics = [json.loads(line) for line in metrics_file.read_text().splitlines()]
+        for line in metrics_file.read_text().splitlines():
+            try:
+                metrics.append(json.loads(line))
+            except ValueError as error:
+                evidence_errors.append(f"Unreadable Xcode metric: {error}")
+    comparison_path = RESULTS / "host-image-comparison.json"
+    comparison = None
+    if snapshot_selected:
+        try:
+            comparison = json.loads(comparison_path.read_text())
+        except (OSError, ValueError) as error:
+            comparison = {"error": f"Comparison report unavailable: {error}"}
+    host_xcode = next(
+        (
+            item["result"]
+            for item in reversed(metrics)
+            if item.get("phase") == "xcode"
+            and item.get("scheme") == "EvoloomReviewHost"
+            and item.get("action") == "test"
+        ),
+        "not run",
+    )
     preparation = None
     if (RESULTS / "preparation.json").exists():
-        preparation = json.loads((RESULTS / "preparation.json").read_text())
+        try:
+            preparation = json.loads((RESULTS / "preparation.json").read_text())
+        except (OSError, ValueError) as error:
+            evidence_errors.append(f"Unreadable preparation report: {error}")
     results = {}
     for name in ("ios", "host-ios", "unit", "snapshot", "host-snapshot"):
         path = RESULTS / f"{name}.xcresult"
@@ -134,6 +162,10 @@ def report():
         "capture_save_seconds": round(capture_seconds, 3),
         "missing_rendered": missing_rendered,
         "snapshot_selected": snapshot_selected,
+        "host_capture_xcode": host_xcode,
+        "host_image_comparison": comparison,
+        "test_step_outcome": os.environ.get("EVOLOOM_TEST_STEP_OUTCOME", "local"),
+        "evidence_errors": evidence_errors,
         "preparation": preparation,
         "xcode_actions": metrics,
         "tests": results,
@@ -152,6 +184,24 @@ def report():
             + ", ".join(missing_rendered)
             + "; inspect the test/build failure and xcresult. No image was fabricated."
         )
+    if snapshot_selected:
+        comparison_status = (
+            "unavailable"
+            if comparison is None or "error" in comparison
+            else "passed"
+            if comparison["passed"]
+            else "failed"
+        )
+        lines.append(
+            f"Hosted capture Xcode: {host_xcode}; external RGBA image comparison: "
+            f"{comparison_status}; test step: {document['test_step_outcome']}. "
+            "Details: TestResults/host-image-comparison.json"
+        )
+        if comparison and "cases" in comparison:
+            for item in comparison["cases"]:
+                lines.append(f"- {item['case']}: {item['status']}")
+    for error in evidence_errors:
+        lines.append(f"- Evidence warning: {error}")
     if preparation:
         lines.append(
             f"Nix-fixed source preparation: {'reused' if preparation['reused'] else 'copied'} "

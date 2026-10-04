@@ -4,11 +4,14 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+from compare_host_images import compare, manifest_cases
+from compare_host_images import record as record_host_images
 from prepared_sources import nix_sources, verify_prepared_sources
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -237,30 +240,62 @@ def xcode(
         command.extend(["-resultBundlePath", str(result)])
     print(" ".join(command), flush=True)
     started = time.monotonic()
+    logs = ROOT / "TestResults/Logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    log = logs / f"{result.stem if result else scheme + '-' + action}.log"
+    return_code = None
     try:
-        completed = subprocess.run(
-            command,
-            cwd=cwd,
-            env=apple_env(),
-            check=check,
-            timeout=XCODE_TIMEOUT_SECONDS,
-        )
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
+        with log.open("w") as stream:
+            process = subprocess.Popen(
+                command,
+                cwd=cwd,
+                env=apple_env(),
+                stdout=stream,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+            try:
+                return_code = process.wait(timeout=XCODE_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait()
+                raise
+    except subprocess.TimeoutExpired:
         metric(
             "xcode",
             time.monotonic() - started,
             action=action,
             scheme=scheme,
-            result=type(error).__name__,
+            result="timeout",
+            log=str(log),
         )
         raise
+    finally:
+        if log.exists():
+            lines = log.read_text(errors="replace").splitlines()
+            print(f"Xcode log: {log}; final {min(len(lines), 30)} lines:", flush=True)
+            print("\n".join(lines[-30:]), flush=True)
     metric(
         "xcode",
         time.monotonic() - started,
         action=action,
         scheme=scheme,
-        result="passed" if completed.returncode == 0 else "failed",
+        result="passed" if return_code == 0 else "failed",
+        log=str(log),
     )
+    completed = subprocess.CompletedProcess(command, return_code)
+    if check:
+        completed.check_returncode()
     return completed
 
 
@@ -332,6 +367,23 @@ def clear_rendered_images():
     rendered = ROOT / "TestResults/Rendered"
     if rendered.exists():
         shutil.rmtree(rendered)
+    differences = ROOT / "TestResults/SnapshotDiffs"
+    if differences.exists():
+        shutil.rmtree(differences)
+    (ROOT / "TestResults/host-image-comparison.json").unlink(missing_ok=True)
+
+
+def clear_test_results(*names):
+    clear_rendered_images()
+    logs = ROOT / "TestResults/Logs"
+    if logs.exists():
+        shutil.rmtree(logs)
+    for name in names:
+        path = ROOT / "TestResults" / name
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink(missing_ok=True)
 
 
 def rendered_preflight():
@@ -373,20 +425,45 @@ def snapshot_preflight():
     return len(expected)
 
 
+def compare_host_renderings():
+    cases, allowed_names = manifest_cases(ROOT)
+    comparison = compare(
+        cases,
+        ROOT / "TestResults/Rendered",
+        ROOT / "TestResults/SnapshotDiffs",
+        ROOT / "TestResults/host-image-comparison.json",
+        allowed_names,
+    )
+    metric(
+        "host-image-comparison",
+        comparison["seconds"],
+        result="passed" if comparison["passed"] else "failed",
+        cases=comparison["case_count"],
+    )
+    for item in comparison["cases"]:
+        print(f"Hosted image {item['case']}: {item['status']}", flush=True)
+    return comparison["passed"]
+
+
 def snapshots(record=False):
     prepared_dependencies()
+    clear_test_results(
+        "ios.xcresult",
+        "host-ios.xcresult",
+        "unit.xcresult",
+        "record.xcresult",
+        "host-record.xcresult",
+        "snapshot.xcresult",
+        "host-snapshot.xcresult",
+        "ci-report.json",
+        "metrics.jsonl",
+    )
     if not record:
         snapshot_preflight()
     before = snapshot_hashes()
-    clear_rendered_images()
-    differences = ROOT / "TestResults/SnapshotDiffs"
-    if differences.exists():
-        shutil.rmtree(differences)
     marker = ROOT / ".prepared/record-snapshots"
-    host_marker = ROOT / ".prepared/record-host-snapshots"
     if record:
         marker.write_text("Record mode enabled by just record-snapshots\n")
-        host_marker.write_text("Record mode enabled by just record-snapshots\n")
     result = (
         ROOT / "TestResults" / ("record.xcresult" if record else "snapshot.xcresult")
     )
@@ -414,11 +491,16 @@ def snapshots(record=False):
     finally:
         if record:
             marker.unlink(missing_ok=True)
-            host_marker.unlink(missing_ok=True)
-    after = snapshot_hashes()
-    if not record and before != after:
-        raise RuntimeError("Comparison created or changed baseline images")
+    if completed.returncode:
+        raise SystemExit(completed.returncode)
+    if hosted.returncode:
+        raise SystemExit(hosted.returncode)
+    test_result_count(result, SNAPSHOT_TEST_COUNT)
+    test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
     if record:
+        cases, _ = manifest_cases(ROOT)
+        record_host_images(cases, ROOT / "TestResults/Rendered")
+        after = snapshot_hashes()
         if {
             Path(name).stem.removeprefix("components.") for name in after
         } != SNAPSHOT_NAMES:
@@ -427,14 +509,15 @@ def snapshots(record=False):
             json.dumps(sorted(after), indent=2) + "\n"
         )
         print(f"Recorded {len(after)} PNGs. Review visually before committing.")
-    if completed.returncode:
-        raise SystemExit(completed.returncode)
-    if hosted.returncode:
-        raise SystemExit(hosted.returncode)
-    test_result_count(result, SNAPSHOT_TEST_COUNT)
-    test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
-    if not record:
+    else:
+        images_match = compare_host_renderings()
+        if before != snapshot_hashes():
+            raise RuntimeError("Comparison created or changed baseline images")
         rendered_preflight()
+        if not images_match:
+            raise RuntimeError(
+                "Hosted image comparison failed; see TestResults/SnapshotDiffs"
+            )
 
 
 def verify_copy():
@@ -489,12 +572,19 @@ def unit_tests():
 
 def ios_tests():
     prepared_dependencies()
+    clear_test_results(
+        "ios.xcresult",
+        "host-ios.xcresult",
+        "unit.xcresult",
+        "snapshot.xcresult",
+        "host-snapshot.xcresult",
+        "record.xcresult",
+        "host-record.xcresult",
+        "ci-report.json",
+        "metrics.jsonl",
+    )
     snapshot_preflight()
     before = snapshot_hashes()
-    clear_rendered_images()
-    differences = ROOT / "TestResults/SnapshotDiffs"
-    if differences.exists():
-        shutil.rmtree(differences)
     result = ROOT / "TestResults/ios.xcresult"
     host_result = ROOT / "TestResults/host-ios.xcresult"
     completed = xcode(
@@ -506,6 +596,7 @@ def ios_tests():
         check=False,
     )
     hosted = host_xcode("test", result=host_result, check=False)
+    images_match = compare_host_renderings()
     if before != snapshot_hashes():
         raise RuntimeError("Comparison created or changed baseline images")
     if completed.returncode:
@@ -515,6 +606,10 @@ def ios_tests():
     test_result_count(result, UNIT_TEST_COUNT + SNAPSHOT_TEST_COUNT)
     test_result_count(host_result, HOSTED_SNAPSHOT_TEST_COUNT)
     rendered_preflight()
+    if not images_match:
+        raise RuntimeError(
+            "Hosted image comparison failed; see TestResults/SnapshotDiffs"
+        )
 
 
 def run_host():

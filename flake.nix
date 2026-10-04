@@ -33,7 +33,7 @@
                 swiftlint
                 swiftformat
                 just
-                python3
+                (python3.withPackages (pythonPackages: [ pythonPackages.pillow ]))
                 ruff
                 nixfmt
                 yamllint
