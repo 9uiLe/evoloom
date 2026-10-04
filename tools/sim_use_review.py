@@ -9,7 +9,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from tasks import ROOT, apple_env, doctor, run_host
+from tasks import ROOT, apple_env, doctor, prepare_simulator, run_host
 
 APP_ID = "dev.evoloom.reviewhost"
 ERROR_EN = "Enter a valid email address before saving."
@@ -374,25 +374,24 @@ class Review:
         self.screenshot("outlined-edited")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path)
-    parser.add_argument(
-        "--reuse-built-host",
-        action="store_true",
-        help="Use the app already installed on the fixed simulator",
+def record_environment(directory: Path, device: str) -> None:
+    languages = subprocess.run(
+        [
+            "xcrun",
+            "simctl",
+            "spawn",
+            device,
+            "defaults",
+            "read",
+            "-g",
+            "AppleLanguages",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=apple_env(),
     )
-    parser.add_argument(
-        "--scenario",
-        choices=["all", "normal", "error", "large", "japanese-dark", "outlined"],
-        default="all",
-    )
-    args = parser.parse_args()
-    device = doctor()
-    directory = args.output or ROOT / "TestResults/SimUse" / datetime.now(UTC).strftime(
-        "%Y%m%dT%H%M%SZ"
-    )
-    review = Review(device, directory)
     (directory / "environment.json").write_text(
         json.dumps(
             {
@@ -415,19 +414,10 @@ def main() -> None:
                 "content_size": subprocess.check_output(
                     ["xcrun", "simctl", "ui", device, "content_size"], text=True
                 ).strip(),
-                "simulator_languages": subprocess.check_output(
-                    [
-                        "xcrun",
-                        "simctl",
-                        "spawn",
-                        device,
-                        "defaults",
-                        "read",
-                        "-g",
-                        "AppleLanguages",
-                    ],
-                    text=True,
-                ).strip(),
+                "simulator_languages": languages.stdout.strip()
+                if languages.returncode == 0
+                else f"unavailable: {languages.stderr.strip()}",
+                "simulator_languages_status": languages.returncode,
                 "runtime": "iOS 27.0 (24A434)",
                 "device_name": "iPhone 18 Pro",
                 "scene_points": "402 x 874; app window safe area is managed by iOS",
@@ -437,11 +427,34 @@ def main() -> None:
         )
         + "\n"
     )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--reuse-built-host",
+        action="store_true",
+        help="Use the app already installed on the fixed simulator",
+    )
+    parser.add_argument(
+        "--scenario",
+        choices=["all", "normal", "error", "large", "japanese-dark", "outlined"],
+        default="all",
+    )
+    args = parser.parse_args()
+    device = doctor()
+    directory = args.output or ROOT / "TestResults/SimUse" / datetime.now(UTC).strftime(
+        "%Y%m%dT%H%M%SZ"
+    )
+    review = Review(device, directory)
     os.environ.update(
         EVOLOOM_SCREEN="settings", EVOLOOM_STATE="normal", EVOLOOM_APPEARANCE="light"
     )
     try:
         if args.reuse_built_host:
+            prepare_simulator()
+            review.command("xcrun", "simctl", "bootstatus", device, "-b", timeout=120)
             review.launch("settings")
         else:
             run_host()
@@ -451,6 +464,7 @@ def main() -> None:
                 item.get("label") == "Settings" for item in data["entries"]
             ),
         )
+        record_environment(directory, device)
         scenarios = {
             "normal": review.normal_form,
             "error": review.error_form,
