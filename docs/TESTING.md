@@ -57,6 +57,11 @@ The copied Package build does not. Local `nix develop -c just check` always
 runs the complete suite. An independent `just build-package` command verifies
 the product alone; the combined test build already compiles it and the Preview
 fixtures in regular CI.
+The optional manual `use_xcode_cache` input measures a pinned cache without
+changing normal push checks. Cache hit or miss never skips compilation or
+tests. The CI Job Summary and `TestResults/ci-report.json` record the checkout,
+selected scope, cache state, action time, test count and 18 baseline count.
+See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` stores its
 baselines under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`.

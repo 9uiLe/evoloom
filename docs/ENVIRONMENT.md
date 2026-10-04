@@ -27,7 +27,7 @@ test source through the Nix-fixed local path, with automatic
 SwiftPM package resolution disabled.
 
 The flake also exposes the same static tools on `x86_64-linux`, used by the
-independent CI formatting, lint and Python job. Linux does not build or render
+independent CI formatting, lint and Python job on Ubuntu 24.04. Linux does not build or render
 the iOS Package. The Apple shell hook and exact Xcode checks apply only to
 `aarch64-darwin`; the root Package stays a normal SwiftPM dependency on either
 path. The CI change detector uses Git and Python supplied by the GitHub runner
@@ -58,6 +58,12 @@ a different macOS, Xcode, SDK or runtime build instead of selecting a newer
 Simulator. CI installs Determinate Nix v3.22.2 using its Action pinned to
 commit `527f17dd63d2d60d3e5552934bc84b9a33a14d11`; the fixed development
 packages and Swift test sources still come from `flake.lock`.
+An optional manual cache trial uses `actions/cache` v5.1.0 pinned to commit
+`caa296126883cff596d87d8935842f9db880ef25` for Xcode build output and
+already Nix-fixed prepared source. The cache is not an external dependency
+source; misses and incompatible inputs rebuild normally. Nix still uses the
+upstream `cache.nixos.org` substituter; no additional binary cache or account
+permission has been added.
 
 The product deployment target is iOS 26. The former root Package unit tests
 ran on the installed iOS 26.5 runtime (build 23F77) with an iPhone 17 Pro in

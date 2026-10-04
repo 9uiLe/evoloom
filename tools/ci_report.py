@@ -16,6 +16,13 @@ def test_cases(nodes):
         yield from test_cases(node.get("children", []))
 
 
+def action_cases(section):
+    if section.get("title", "").startswith("Run test case "):
+        yield section
+    for child in section.get("subsections", []):
+        yield from action_cases(child)
+
+
 def result_summary(path):
     def read(section):
         return json.loads(
@@ -33,11 +40,34 @@ def result_summary(path):
                 ],
                 text=True,
                 stderr=subprocess.DEVNULL,
+                timeout=15,
             )
         )
 
     summary = read("summary")
     cases = list(test_cases(read("tests").get("testNodes", [])))
+    action = json.loads(
+        subprocess.check_output(
+            [
+                "xcrun",
+                "xcresulttool",
+                "get",
+                "log",
+                "--type",
+                "action",
+                "--path",
+                str(path),
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=15,
+        )
+    )
+    timed_cases = list(action_cases(action))
+    first_case = min((case["startTime"] for case in timed_cases), default=None)
+    last_case = max(
+        (case["startTime"] + case["duration"] for case in timed_cases), default=None
+    )
     return {
         "count": summary["totalTestCount"],
         "passed": summary["passedTests"],
@@ -46,6 +76,14 @@ def result_summary(path):
         "case_seconds": round(
             sum(case.get("durationInSeconds", 0) for case in cases), 2
         ),
+        "action_to_first_case_seconds": round(first_case - action["startTime"], 2)
+        if first_case
+        else None,
+        "last_case_to_action_end_seconds": round(
+            action["startTime"] + action["duration"] - last_case, 2
+        )
+        if last_case
+        else None,
         "device": read("tests").get("devices", []),
     }
 
@@ -65,7 +103,12 @@ def report():
         if path.exists():
             try:
                 results[name] = result_summary(path)
-            except (OSError, ValueError, subprocess.CalledProcessError) as error:
+            except (
+                OSError,
+                ValueError,
+                subprocess.CalledProcessError,
+                subprocess.TimeoutExpired,
+            ) as error:
                 results[name] = {"error": str(error)}
     document = {
         "checkout": os.environ.get("GITHUB_SHA", "local working tree"),
@@ -73,13 +116,13 @@ def report():
         "preparation": preparation,
         "xcode_actions": metrics,
         "tests": results,
-        "xcode_cache": "not configured",
+        "xcode_cache": os.environ.get("EVOLOOM_XCODE_CACHE", "disabled"),
     }
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / "ci-report.json").write_text(json.dumps(document, indent=2) + "\n")
     lines = [
         "### iOS evidence",
-        f"Checkout: `{document['checkout']}`; baseline PNGs: {baseline_count}; Xcode cache: not configured",
+        f"Checkout: `{document['checkout']}`; baseline PNGs: {baseline_count}; Xcode cache: {document['xcode_cache']}",
     ]
     if preparation:
         lines.append(
@@ -97,7 +140,9 @@ def report():
         lines.append(
             f"- {name}: {result['passed']}/{result['count']} passed, "
             f"{result['failed']} failed; xcresult test phase {result['test_phase_seconds']}s, "
-            f"case sum {result['case_seconds']}s"
+            f"first case after {result['action_to_first_case_seconds']}s, "
+            f"case sum {result['case_seconds']}s, "
+            f"after last case {result['last_case_to_action_end_seconds']}s"
         )
     if os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as file:

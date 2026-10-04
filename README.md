@@ -97,7 +97,8 @@ Image tests provide visual verification when the canvas is unavailable.
 
 [Design rules](DESIGN.md) · [Components](docs/COMPONENTS.md) ·
 [Distribution](docs/DISTRIBUTION.md) · [Environment](docs/ENVIRONMENT.md) ·
-[Testing](docs/TESTING.md) · [AI review prompt](docs/AI_REVIEW_PROMPT.md)
+[Testing](docs/TESTING.md) · [CI timing](docs/CI_PERFORMANCE.md) ·
+[AI review prompt](docs/AI_REVIEW_PROMPT.md)
 · [Validation record](docs/VALIDATION.md)
 
 ## Inspiration and repository status
