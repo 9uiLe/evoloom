@@ -45,7 +45,7 @@
         EVOLOOM_LOCAL_DEPS = "1";
         shellHook = ''
           unset SDKROOT
-          export DEVELOPER_DIR=/Applications/Xcode-27.0.0.app/Contents/Developer
+          export DEVELOPER_DIR="''${EVOLOOM_XCODE_DEVELOPER_DIR:-/Applications/Xcode-27.0.0.app/Contents/Developer}"
         '';
       };
     };

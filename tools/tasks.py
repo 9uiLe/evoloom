@@ -12,6 +12,7 @@ from prepared_sources import nix_sources, verify_prepared_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_XCODE = "Xcode 27.0\nBuild version 27A266a"
+EXPECTED_MACOS_BUILD = "26A428"
 EXPECTED_SDK = "27.0"
 EXPECTED_SDK_BUILD = "24A430"
 EXPECTED_RUNTIME = "com.apple.CoreSimulator.SimRuntime.iOS-27-0"
@@ -76,6 +77,8 @@ def doctor():
     if missing:
         raise RuntimeError(f"Nix shell missing tools: {missing}; run nix develop")
     sources = nix_sources()
+    if output("sw_vers", "-buildVersion") != EXPECTED_MACOS_BUILD:
+        raise RuntimeError(f"Expected macOS build {EXPECTED_MACOS_BUILD}")
     if output("xcodebuild", "-version") != EXPECTED_XCODE:
         raise RuntimeError(
             f"Expected {EXPECTED_XCODE!r}, got {output('xcodebuild', '-version')!r}"

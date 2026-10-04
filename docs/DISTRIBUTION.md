@@ -3,8 +3,7 @@
 ## Use the library or own the source
 
 The root `Package.swift` provides the `Evoloom` library product for iOS 26+.
-The repository URL is currently `https://github.com/9uiLe/shadcn-ios-native`;
-the planned `9uiLe/evoloom` URL has not been activated. Outside the Nix shell,
+The repository URL is `https://github.com/9uiLe/evoloom`. Outside the Nix shell,
 SwiftPM fetches the pinned `swift-app-macros` commit. The internal Preview
 fixtures compile with the library but are not public API. The separate
 `Testing` package is used only for visual tests.
@@ -36,9 +35,10 @@ and runs a test without an app target.
 
 This unreleased package makes a breaking rename. Existing library consumers
 must select the `Evoloom` product and replace `import ShadcnIOS` with
-`import Evoloom`; the public `IOS…` type names are unchanged. The remote
-SwiftPM package identity may still reflect the current repository URL until
-GitHub is renamed.
+`import Evoloom`; the public `IOS…` type names are unchanged. Update the
+SwiftPM repository URL from `9uiLe/shadcn-ios-native` to `9uiLe/evoloom` in
+the integrating project. GitHub may redirect the former URL, but the new URL
+is the documented dependency identity.
 
 | Before | Now |
 | --- | --- |

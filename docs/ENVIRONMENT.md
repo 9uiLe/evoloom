@@ -30,16 +30,30 @@ still fail explicitly if developer dependencies have not been prepared.
 The normal consumer path lets SwiftPM resolve the macro's exact swift-syntax
 version; Nix controls developer and CI resolution through local paths.
 
-Apple prerequisites remain outside Nix: macOS on arm64; Xcode 27.0 build
-27A266a at `/Applications/Xcode-27.0.0.app/Contents/Developer`; Apple Swift
+Apple prerequisites remain outside Nix: macOS 27.0 build 26A428 on arm64;
+Xcode 27.0 build 27A266a at the local path
+`/Applications/Xcode-27.0.0.app/Contents/Developer`; Apple Swift
 6.4; iPhoneSimulator SDK 27.0 build 24A430; iOS 27.0 Simulator runtime build
 24A434; an available iPhone 18 Pro. `just doctor` checks exact versions,
-runtime build, device and architecture. It does not change the system-wide
-Xcode selection. The Nix shell sets `DEVELOPER_DIR` and clears `SDKROOT` so
+runtime build, device, macOS build and architecture. It does not change the
+system-wide Xcode selection. The Nix shell sets `DEVELOPER_DIR` to that
+local path or to `EVOLOOM_XCODE_DEVELOPER_DIR` when supplied, and clears `SDKROOT` so
 `xcrun` uses the chosen Apple toolchain and SDK. Build commands also remove
 Nix compiler and SDK variables and put Xcode's toolchain first on `PATH`.
 These Apple artifacts, Simulator pixels and Xcode license are outside the Nix
 lock.
+
+GitHub Actions runs on GitHub's ARM64 `xcode-27` hosted image. The image
+currently offers Xcode 27.0 build 27A266a and the iOS 27.0 Simulator with an
+iPhone 18 Pro; CI selects
+`/Applications/Xcode_27.0.0.app/Contents/Developer` through
+`EVOLOOM_XCODE_DEVELOPER_DIR`. The shell overwrites Nix's temporary Darwin
+SDK `DEVELOPER_DIR` with that Apple toolchain path.
+The hosted image is externally managed and can change. `just doctor` rejects
+a different macOS, Xcode, SDK or runtime build instead of selecting a newer
+Simulator. CI installs Determinate Nix v3.22.2 using its Action pinned to
+commit `527f17dd63d2d60d3e5552934bc84b9a33a14d11`; the fixed development
+packages and Swift test sources still come from `flake.lock`.
 
 The product deployment target is iOS 26. The root Package unit tests also
 ran on the installed iOS 26.5 runtime (build 23F77) with an iPhone 17 Pro in
@@ -64,3 +78,5 @@ References: [Nix manual](https://nixos.org/manual/nix/stable/),
 [AppMacros](https://github.com/9uiLe/swift-app-macros),
 [swift-syntax](https://github.com/swiftlang/swift-syntax), and
 [SnapshotTesting](https://github.com/pointfreeco/swift-snapshot-testing).
+Hosted CI details: [GitHub's Xcode 27 image](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md)
+and the [fixed Nix installer Action](https://github.com/DeterminateSystems/determinate-nix-action/tree/v3.22.2).

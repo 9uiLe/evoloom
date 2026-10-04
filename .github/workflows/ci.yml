@@ -1,12 +1,21 @@
 name: Verify
 on:
   push:
+    branches: [master]
   pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   ios:
-    runs-on: [self-hosted, macOS, ARM64, xcode-27-0]
+    runs-on: xcode-27
+    timeout-minutes: 60
+    env:
+      EVOLOOM_XCODE_DEVELOPER_DIR: /Applications/Xcode_27.0.0.app/Contents/Developer
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install fixed Nix version
+        uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11
       - name: Check exact Nix and Apple environment
         run: |
           nix --version

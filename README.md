@@ -8,8 +8,10 @@ remain unchanged.
 
 ## Requirements
 
-- Apple Silicon macOS with Xcode 27.0 build 27A266a selected at
-  `/Applications/Xcode-27.0.0.app/Contents/Developer`.
+- Apple Silicon macOS 27.0 build 26A428 with Xcode 27.0 build 27A266a.
+  Locally, Nix defaults `DEVELOPER_DIR` to
+  `/Applications/Xcode-27.0.0.app/Contents/Developer`; CI sets the equivalent
+  path on GitHub's `xcode-27` runner.
 - iOS Simulator SDK 27.0 build 24A430, runtime 27.0 build 24A434, and an
   available iPhone 18 Pro simulator. The commands verify these exact values.
 - Nix with flakes enabled. Nix supplies the development tools and fixed
@@ -33,8 +35,7 @@ missing baselines or changed baseline files. See [testing](docs/TESTING.md).
 
 ## Use as a library
 
-Add the current repository URL
-`https://github.com/9uiLe/shadcn-ios-native` to an iOS 26+ Xcode project,
+Add `https://github.com/9uiLe/evoloom` to an iOS 26+ Xcode project,
 choose its `Evoloom` library product, then:
 
 ```swift
@@ -101,9 +102,9 @@ Image tests provide visual verification when the canvas is unavailable.
 Evoloom takes inspiration from [shadcn/ui](https://ui.shadcn.com/docs): open
 component code, composition, and source ownership. It is an independent
 SwiftUI project, with no affiliation or endorsement by shadcn/ui or Apple.
-The project's current GitHub URL is the one shown above. Renaming that
-repository to `9uiLe/evoloom` is a separate, uncompleted operation; do not use
-the prospective URL for installation yet.
+The public GitHub repository is `9uiLe/evoloom`. GitHub-hosted Actions run the
+same Nix preparation and `just check` commands on the `xcode-27` runner; the
+doctor fails if the Apple versions or Simulator differ from the baselines.
 
 The module rename is a breaking change: replace `import ShadcnIOS` with
 `import Evoloom` and select the `Evoloom` product. Existing copied source is
