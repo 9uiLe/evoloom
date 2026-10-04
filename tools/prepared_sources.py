@@ -1,5 +1,6 @@
 """Keep prepared Swift sources tied to the Nix inputs selected by the shell."""
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,7 +23,21 @@ def nix_sources():
 
 
 def record_prepared_sources(directory, sources):
-    (directory / STAMP).write_text(json.dumps(sources, sort_keys=True) + "\n")
+    (directory / STAMP).write_text(
+        json.dumps(
+            {"sources": sources, "files": prepared_hashes(directory)}, sort_keys=True
+        )
+        + "\n"
+    )
+
+
+def prepared_hashes(directory):
+    root = directory / "SnapshotTesting"
+    return {
+        str(path.relative_to(directory)): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
 
 
 def verify_prepared_sources(directory):
@@ -37,7 +52,11 @@ def verify_prepared_sources(directory):
         raise RuntimeError(
             "Prepared source record missing or invalid; run just prepare-deps inside nix develop"
         ) from error
-    if recorded != nix_sources():
+    if not isinstance(recorded, dict) or recorded.get("sources") != nix_sources():
         raise RuntimeError(
             "Prepared sources differ from current Nix inputs; run just prepare-deps inside nix develop"
+        )
+    if recorded.get("files") != prepared_hashes(directory):
+        raise RuntimeError(
+            "Prepared source files changed or are incomplete; run just prepare-deps inside nix develop"
         )

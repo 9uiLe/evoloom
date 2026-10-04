@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from prepared_sources import nix_sources, verify_prepared_sources
@@ -39,6 +40,21 @@ SNAPSHOT_NAMES = {
     "switch-states-dark-increased-contrast",
     "switch-states-dark-ja",
 }
+UNIT_TEST_COUNT = 6
+SNAPSHOT_TEST_COUNT = 8
+
+
+def metric(phase, seconds, **details):
+    target = ROOT / "TestResults/metrics.jsonl"
+    target.parent.mkdir(exist_ok=True)
+    with target.open("a") as output_file:
+        output_file.write(
+            json.dumps(
+                {"phase": phase, "seconds": round(seconds, 3), **details},
+                sort_keys=True,
+            )
+            + "\n"
+        )
 
 
 def output(*command, cwd=ROOT):
@@ -138,7 +154,13 @@ def prepared_dependencies():
 
 
 def xcode(
-    action, cwd=ROOT, scheme="Evoloom", result=None, derived_data=None, check=True
+    action,
+    cwd=ROOT,
+    scheme="Evoloom",
+    result=None,
+    derived_data=None,
+    only_testing=(),
+    check=True,
 ):
     device = doctor()
     command = [
@@ -154,7 +176,10 @@ def xcode(
         "-disableAutomaticPackageResolution",
         "CODE_SIGNING_ALLOWED=NO",
     ]
-    if action == "test":
+    if os.environ.get("EVOLOOM_BUILD_DIAGNOSTICS") == "1":
+        command.remove("-quiet")
+        command.append("-showBuildTimingSummary")
+    if action in {"test", "test-without-building"}:
         command[3:3] = [
             "-parallel-testing-enabled",
             "NO",
@@ -165,15 +190,64 @@ def xcode(
             "-testRegion",
             "US",
         ]
+        for identifier in only_testing:
+            command.append(f"-only-testing:{identifier}")
     if result:
         result.parent.mkdir(parents=True, exist_ok=True)
         if result.exists():
             shutil.rmtree(result)
         command.extend(["-resultBundlePath", str(result)])
     print(" ".join(command), flush=True)
-    return subprocess.run(
-        command, cwd=cwd, env=apple_env(), check=check, timeout=XCODE_TIMEOUT_SECONDS
+    started = time.monotonic()
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=cwd,
+            env=apple_env(),
+            check=check,
+            timeout=XCODE_TIMEOUT_SECONDS,
+        )
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
+        metric(
+            "xcode",
+            time.monotonic() - started,
+            action=action,
+            scheme=scheme,
+            result=type(error).__name__,
+        )
+        raise
+    metric(
+        "xcode",
+        time.monotonic() - started,
+        action=action,
+        scheme=scheme,
+        result="passed" if completed.returncode == 0 else "failed",
     )
+    return completed
+
+
+def test_result_count(path, expected):
+    summary = json.loads(
+        output(
+            "xcrun",
+            "xcresulttool",
+            "get",
+            "test-results",
+            "summary",
+            "--path",
+            str(path),
+            "--format",
+            "json",
+        )
+    )
+    if (
+        summary.get("totalTestCount") != expected
+        or summary.get("failedTests")
+        or summary.get("skippedTests")
+    ):
+        raise RuntimeError(
+            f"Expected {expected} passing tests in {path}, got {summary}"
+        )
 
 
 def snapshot_hashes():
@@ -184,22 +258,31 @@ def snapshot_hashes():
     }
 
 
+def snapshot_preflight():
+    manifest = ROOT / "tools/snapshots.json"
+    if not manifest.exists():
+        raise RuntimeError(
+            "Snapshot manifest missing; run just record-snapshots and review images"
+        )
+    expected = json.loads(manifest.read_text())
+    if {
+        Path(name).stem.removeprefix("components.") for name in expected
+    } != SNAPSHOT_NAMES:
+        raise RuntimeError("Snapshot manifest does not list the full test matrix")
+    missing = [name for name in expected if not (ROOT / name).is_file()]
+    if missing:
+        raise RuntimeError(f"Missing baseline images: {missing}")
+    if (ROOT / ".prepared/record-snapshots").exists():
+        raise RuntimeError(
+            "Record marker is present; remove .prepared/record-snapshots before comparison"
+        )
+    return len(expected)
+
+
 def snapshots(record=False):
     prepared_dependencies()
-    manifest = ROOT / "tools/snapshots.json"
     if not record:
-        if not manifest.exists():
-            raise RuntimeError(
-                "Snapshot manifest missing; run just record-snapshots and review images"
-            )
-        expected = json.loads(manifest.read_text())
-        if {
-            Path(name).stem.removeprefix("components.") for name in expected
-        } != SNAPSHOT_NAMES:
-            raise RuntimeError("Snapshot manifest does not list the full test matrix")
-        missing = [name for name in expected if not (ROOT / name).is_file()]
-        if missing:
-            raise RuntimeError(f"Missing baseline images: {missing}")
+        snapshot_preflight()
     before = snapshot_hashes()
     differences = ROOT / "TestResults/SnapshotDiffs"
     if differences.exists():
@@ -207,10 +290,6 @@ def snapshots(record=False):
     marker = ROOT / ".prepared/record-snapshots"
     if record:
         marker.write_text("Record mode enabled by just record-snapshots\n")
-    elif marker.exists():
-        raise RuntimeError(
-            "Record marker is present; remove .prepared/record-snapshots before comparison"
-        )
     result = (
         ROOT / "TestResults" / ("record.xcresult" if record else "snapshot.xcresult")
     )
@@ -221,6 +300,7 @@ def snapshots(record=False):
             scheme="EvoloomVisualTests-Package",
             result=result,
             derived_data="Visual",
+            only_testing=("EvoloomSnapshotTests/ComponentSnapshots",),
             check=False,
         )
     finally:
@@ -240,6 +320,7 @@ def snapshots(record=False):
         print(f"Recorded {len(after)} PNGs. Review visually before committing.")
     if completed.returncode:
         raise SystemExit(completed.returncode)
+    test_result_count(result, SNAPSHOT_TEST_COUNT)
 
 
 def verify_copy():
@@ -265,21 +346,52 @@ def verify_copy():
 import PackageDescription
 let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
     products: [.library(name: "EvoloomCopied", targets: ["EvoloomCopied"])],
-    targets: [.target(name: "EvoloomCopied"),
-              .testTarget(name: "CopyCheckTests", dependencies: ["EvoloomCopied"])])
+    targets: [.target(name: "EvoloomCopied")])
 """
     )
-    test = destination / "Tests/CopyCheckTests/CopyCheckTests.swift"
-    test.parent.mkdir(parents=True)
-    test.write_text(
-        "import EvoloomCopied\nimport XCTest\nfinal class CopyCheckTests: XCTestCase { func testTokens() { XCTAssertEqual(IOSDesignTokens.neutral.spacing.md, 16) } }\n"
-    )
     xcode(
-        "test",
+        "build",
         cwd=destination,
         scheme="CopyCheck",
-        result=ROOT / "TestResults/copy.xcresult",
+        result=ROOT / "TestResults/copy-build.xcresult",
     )
+
+
+def unit_tests():
+    prepared_dependencies()
+    result = ROOT / "TestResults/unit.xcresult"
+    xcode(
+        "test",
+        cwd=ROOT / "Testing",
+        scheme="EvoloomVisualTests-Package",
+        result=result,
+        derived_data="Visual",
+        only_testing=(
+            "EvoloomSnapshotTests/DesignTokensTests",
+            "EvoloomSnapshotTests/InteractionTests",
+        ),
+    )
+    test_result_count(result, UNIT_TEST_COUNT)
+
+
+def ios_tests():
+    prepared_dependencies()
+    snapshot_preflight()
+    before = snapshot_hashes()
+    result = ROOT / "TestResults/ios.xcresult"
+    completed = xcode(
+        "test",
+        cwd=ROOT / "Testing",
+        scheme="EvoloomVisualTests-Package",
+        result=result,
+        derived_data="Visual",
+        check=False,
+    )
+    if before != snapshot_hashes():
+        raise RuntimeError("Comparison created or changed baseline images")
+    if completed.returncode:
+        raise SystemExit(completed.returncode)
+    test_result_count(result, UNIT_TEST_COUNT + SNAPSHOT_TEST_COUNT)
 
 
 def main():
@@ -287,7 +399,8 @@ def main():
     actions = {
         "doctor": doctor,
         "build-package": lambda: xcode("build"),
-        "test-unit": lambda: xcode("test", result=ROOT / "TestResults/unit.xcresult"),
+        "test-unit": unit_tests,
+        "test-ios": ios_tests,
         "test-snapshot": snapshots,
         "record-snapshots": lambda: snapshots(record=True),
         "verify-copy-install": verify_copy,

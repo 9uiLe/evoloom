@@ -35,6 +35,9 @@ build-package:
 test-unit:
     python3 tools/tasks.py test-unit
 
+test-ios:
+    python3 tools/tasks.py test-ios
+
 test-snapshot:
     python3 tools/tasks.py test-snapshot
 
@@ -44,9 +47,11 @@ record-snapshots:
 verify-copy-install:
     python3 tools/tasks.py verify-copy-install
 
-check: doctor format-check lint
+check-fast: format-check lint
     python3 -m unittest discover -s tools -p 'test_*.py'
-    just build-package
-    just test-unit
+
+check: doctor check-fast
+    just test-ios
     just verify-copy-install
-    just test-snapshot
+
+check-full: check

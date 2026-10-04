@@ -1,4 +1,3 @@
-import json
 import os
 import tempfile
 import unittest
@@ -6,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import tasks
+from prepared_sources import record_prepared_sources
 
 
 class PreparedSourceTests(unittest.TestCase):
@@ -30,12 +30,16 @@ class PreparedSourceTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "prepare-deps"):
                     tasks.prepared_dependencies()
 
-                (prepared / "sources.json").write_text(
-                    json.dumps(
-                        {key: str(path.resolve()) for key, path in sources.items()}
-                    )
+                record_prepared_sources(
+                    prepared,
+                    {key: str(path.resolve()) for key, path in sources.items()},
                 )
                 tasks.prepared_dependencies()
+
+                (prepared / "SnapshotTesting/Package.swift").write_text("changed")
+                with self.assertRaisesRegex(RuntimeError, "prepare-deps"):
+                    tasks.prepared_dependencies()
+                (prepared / "SnapshotTesting/Package.swift").write_text("")
 
                 newer_snapshot = root / "new-snapshot-source"
                 (newer_snapshot / "Sources/SnapshotTesting").mkdir(parents=True)

@@ -7,23 +7,32 @@
 | nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1 |
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
 
-Run `nix develop`, then `just prepare-deps`. That preparation copies the
-Nix-fixed sources to ignored `.prepared/` local Swift packages and records the
-selected Nix store paths in `.prepared/sources.json` after copying finishes.
-Visual test commands reject missing or stale preparation, including files left
-from an earlier `flake.lock`; rerun `just prepare-deps` after updating the
-lock. Root library builds, root unit tests and copy builds do not require the
-prepared SnapshotTesting Package. SnapshotTesting is reduced to its image
+Run `nix develop`, then `just prepare-deps` for the development test harness.
+Preparation copies the Nix-fixed source to ignored `.prepared/` and records
+the Nix store path and each prepared file hash in `.prepared/sources.json`.
+When all inputs and hashes match, a repeated preparation preserves file mtimes;
+stale or incomplete content is regenerated. Test commands reject missing or
+stale preparation. The root library and copied Package build without prepared
+SnapshotTesting. Unit and image tests share the separate development harness,
+which does require it. SnapshotTesting is reduced to its image
 comparison module, excluding its optional sibling products and their
 transitive dependencies. Its prepared
 manifest uses Swift 5 language mode, matching the upstream manifest on this
 Xcode. Both the root product and visual test harness use Swift tools 6.2.
 The root `Package.swift` has no external dependency and remains readable
 without `.prepared`; ordinary consumers only need SwiftPM and Apple's
-toolchain. The `just` visual test task fails explicitly if the test-only
+toolchain. The `just` development test tasks fail explicitly if the test-only
 SnapshotTesting source has not been prepared. Development and CI resolve that
 test source through the Nix-fixed local path, with automatic
 SwiftPM package resolution disabled.
+
+The flake also exposes the same static tools on `x86_64-linux`, used by the
+independent CI formatting, lint and Python job. Linux does not build or render
+the iOS Package. The Apple shell hook and exact Xcode checks apply only to
+`aarch64-darwin`; the root Package stays a normal SwiftPM dependency on either
+path. The CI change detector uses Git and Python supplied by the GitHub runner
+before Nix is installed; all development format, lint and test tools come
+from the locked shell.
 
 Apple prerequisites remain outside Nix: macOS 27.0 build 26A428 on arm64;
 Xcode 27.0 build 27A266a at the local path
@@ -50,9 +59,10 @@ Simulator. CI installs Determinate Nix v3.22.2 using its Action pinned to
 commit `527f17dd63d2d60d3e5552934bc84b9a33a14d11`; the fixed development
 packages and Swift test sources still come from `flake.lock`.
 
-The product deployment target is iOS 26. The root Package unit tests also
+The product deployment target is iOS 26. The former root Package unit tests
 ran on the installed iOS 26.5 runtime (build 23F77) with an iPhone 17 Pro in
-the earlier baseline validation. Pinned image baselines and `just check` use
+the earlier baseline validation. Current unit tests reside in the development
+test Package alongside the image tests. Pinned image baselines and `just check` use
 iOS 27.0; the iOS 26.5 run is separate.
 
 Preparation and execution are separate. `just prepare-deps` is the only step

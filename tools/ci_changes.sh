@@ -4,7 +4,6 @@ set -euo pipefail
 # Unknown paths and unavailable Git history run the complete suite.
 quality=false
 cli=false
-build=false
 unit=false
 copy=false
 snapshot=false
@@ -12,7 +11,6 @@ snapshot=false
 mark_full() {
     quality=true
     cli=true
-    build=true
     unit=true
     copy=true
     snapshot=true
@@ -24,7 +22,10 @@ mark_path() {
         Sources/* | Package.swift | flake.nix | flake.lock | justfile | .github/workflows/*)
             mark_full
             ;;
-        Tests/*)
+        Testing/Package.swift)
+            mark_full
+            ;;
+        Tests/* | Testing/Tests/EvoloomSnapshotTests/DesignTokensTests.swift | Testing/Tests/EvoloomSnapshotTests/InteractionTests.swift)
             quality=true
             unit=true
             ;;
@@ -57,18 +58,20 @@ mark_path() {
     esac
 }
 
-if [[ "${GITHUB_EVENT_NAME:-}" == "push" || "${GITHUB_EVENT_NAME:-}" == "pull_request" ]] &&
+diff_base=""
+if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]] &&
     [[ "${CI_BASE_SHA:-}" =~ ^[0-9a-f]{40}$ && "${CI_HEAD_SHA:-}" =~ ^[0-9a-f]{40}$ ]]; then
+    diff_base=$(git merge-base "$CI_BASE_SHA" "$CI_HEAD_SHA" || true)
+elif [[ "${GITHUB_EVENT_NAME:-}" == "push" ]] &&
+    [[ "${CI_VERIFIED_BASE_SHA:-}" =~ ^[0-9a-f]{40}$ && "${CI_HEAD_SHA:-}" =~ ^[0-9a-f]{40}$ ]] &&
+    git merge-base --is-ancestor "$CI_VERIFIED_BASE_SHA" "$CI_HEAD_SHA"; then
+    diff_base=$CI_VERIFIED_BASE_SHA
+fi
+
+if [[ -n "$diff_base" ]]; then
     changed_paths=$(mktemp)
     trap 'rm -f "$changed_paths"' EXIT
-
-    if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-        diff_base=$(git merge-base "$CI_BASE_SHA" "$CI_HEAD_SHA" || true)
-    else
-        diff_base=$CI_BASE_SHA
-    fi
-
-    if [[ -n "$diff_base" ]] && git diff --name-only --no-renames -z "$diff_base" "$CI_HEAD_SHA" >"$changed_paths"; then
+    if git diff --name-only --no-renames -z "$diff_base" "$CI_HEAD_SHA" >"$changed_paths"; then
         while IFS= read -r -d '' path; do
             mark_path "$path"
         done <"$changed_paths"
@@ -80,21 +83,31 @@ else
 fi
 
 prepare=false
-if [[ "$build" == true || "$unit" == true || "$copy" == true || "$snapshot" == true ]]; then
+if [[ "$unit" == true || "$snapshot" == true ]]; then
     prepare=true
 fi
+ios=false
+if [[ "$unit" == true || "$copy" == true || "$snapshot" == true ]]; then
+    ios=true
+fi
 run_checks=false
-if [[ "$quality" == true || "$cli" == true || "$prepare" == true ]]; then
+if [[ "$quality" == true || "$cli" == true || "$ios" == true ]]; then
     run_checks=true
+fi
+full=false
+if [[ "$quality" == true && "$cli" == true && "$unit" == true && "$copy" == true && "$snapshot" == true ]]; then
+    full=true
 fi
 
 {
+    printf 'base_used=%s\n' "$diff_base"
     printf 'run_checks=%s\n' "$run_checks"
     printf 'quality=%s\n' "$quality"
     printf 'cli=%s\n' "$cli"
     printf 'prepare=%s\n' "$prepare"
-    printf 'build=%s\n' "$build"
+    printf 'ios=%s\n' "$ios"
     printf 'unit=%s\n' "$unit"
     printf 'copy=%s\n' "$copy"
     printf 'snapshot=%s\n' "$snapshot"
+    printf 'full=%s\n' "$full"
 } | tee -a "$GITHUB_OUTPUT"

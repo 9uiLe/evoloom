@@ -6,56 +6,136 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
+concurrency:
+  group: evoloom-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      quality: ${{ steps.changes.outputs.quality }}
+      cli: ${{ steps.changes.outputs.cli }}
+      prepare: ${{ steps.changes.outputs.prepare }}
+      ios: ${{ steps.changes.outputs.ios }}
+      unit: ${{ steps.changes.outputs.unit }}
+      copy: ${{ steps.changes.outputs.copy }}
+      snapshot: ${{ steps.changes.outputs.snapshot }}
+      full: ${{ steps.changes.outputs.full }}
+      base_used: ${{ steps.changes.outputs.base_used }}
+      verified_run: ${{ steps.verified.outputs.verified_run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Find validated ancestor
+        id: verified
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/verified_base.py
+      - name: Select required checks
+        id: changes
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_VERIFIED_BASE_SHA: ${{ steps.verified.outputs.verified_base }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash tools/ci_changes.sh
+
+  static:
+    needs: detect
+    if: needs.detect.outputs.quality == 'true' || needs.detect.outputs.cli == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install fixed Nix version
+        uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11
+      - name: Check formatting and lint
+        if: needs.detect.outputs.quality == 'true'
+        run: nix develop -c just format-check lint
+      - name: Test CLI and dependency preparation
+        if: needs.detect.outputs.cli == 'true'
+        run: nix develop -c python3 -m unittest discover -s tools -p 'test_*.py'
+
   ios:
+    needs: detect
+    if: needs.detect.outputs.ios == 'true'
     runs-on: xcode-27
     timeout-minutes: 60
     env:
       EVOLOOM_XCODE_DEVELOPER_DIR: /Applications/Xcode_27.0.0.app/Contents/Developer
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          fetch-depth: 0
-      - name: Detect code changes
-        id: changes
-        env:
-          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: bash tools/ci_changes.sh
       - name: Install fixed Nix version
-        if: steps.changes.outputs.run_checks == 'true'
         uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11
       - name: Check exact Nix and Apple environment
-        if: steps.changes.outputs.prepare == 'true'
         run: |
           nix --version
           nix develop -c just doctor
-      - name: Prepare locked Swift dependencies
-        if: steps.changes.outputs.prepare == 'true'
+      - name: Prepare locked Swift dependency
+        if: needs.detect.outputs.prepare == 'true'
         run: nix develop -c just prepare-deps
-      - name: Check formatting and lint
-        if: steps.changes.outputs.quality == 'true'
-        run: nix develop -c just format-check lint
-      - name: Test CLI and dependency preparation
-        if: steps.changes.outputs.cli == 'true'
-        run: nix develop -c python3 -m unittest discover -s tools -p 'test_*.py'
-      - name: Build iOS library Package
-        if: steps.changes.outputs.build == 'true'
-        run: nix develop -c just build-package
-      - name: Run Package unit tests
-        if: steps.changes.outputs.unit == 'true'
+      - name: Run combined iOS tests
+        if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot == 'true'
+        run: nix develop -c just test-ios
+      - name: Run unit tests
+        if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot != 'true'
         run: nix develop -c just test-unit
-      - name: Verify copied source Package
-        if: steps.changes.outputs.copy == 'true'
-        run: nix develop -c just verify-copy-install
       - name: Compare iOS snapshots
-        if: steps.changes.outputs.snapshot == 'true'
+        if: needs.detect.outputs.snapshot == 'true' && needs.detect.outputs.unit != 'true'
         run: nix develop -c just test-snapshot
+      - name: Verify copied source Package
+        if: needs.detect.outputs.copy == 'true'
+        run: nix develop -c just verify-copy-install
+      - name: Summarize iOS evidence
+        if: always()
+        run: nix develop -c python3 tools/ci_report.py
       - name: Save test evidence
-        if: always() && steps.changes.outputs.prepare == 'true'
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ios-test-evidence
           path: |
             TestResults/
             Testing/Tests/EvoloomSnapshotTests/__Snapshots__/
+
+  validation:
+    name: validation
+    if: always()
+    needs: [detect, static, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require selected checks
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          STATIC_RESULT: ${{ needs.static.result }}
+          IOS_RESULT: ${{ needs.ios.result }}
+          QUALITY: ${{ needs.detect.outputs.quality }}
+          CLI: ${{ needs.detect.outputs.cli }}
+          IOS: ${{ needs.detect.outputs.ios }}
+          UNIT: ${{ needs.detect.outputs.unit }}
+          COPY: ${{ needs.detect.outputs.copy }}
+          SNAPSHOT: ${{ needs.detect.outputs.snapshot }}
+          BASE_USED: ${{ needs.detect.outputs.base_used }}
+          VERIFIED_RUN: ${{ needs.detect.outputs.verified_run }}
+        run: |
+          {
+            echo '### Evoloom validation'
+            echo "Checkout: \`${GITHUB_SHA}\`; cumulative base: \`${BASE_USED:-none}\`"
+            echo "Selected: quality=${QUALITY}, CLI=${CLI}, unit=${UNIT}, copy=${COPY}, snapshot=${SNAPSHOT}"
+            echo "Jobs: detect=${DETECT_RESULT}, static=${STATIC_RESULT}, iOS=${IOS_RESULT}"
+            echo "Previous full validation: ${VERIFIED_RUN:-none}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$DETECT_RESULT" = success
+          if [[ "$QUALITY" = true || "$CLI" = true ]]; then
+            test "$STATIC_RESULT" = success
+          else
+            test "$STATIC_RESULT" = skipped
+          fi
+          if [[ "$IOS" = true ]]; then
+            test "$IOS_RESULT" = success
+          else
+            test "$IOS_RESULT" = skipped
+          fi
+      - name: Mark full validation
+        if: needs.detect.outputs.full == 'true'
+        run: echo "Full validation completed for $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

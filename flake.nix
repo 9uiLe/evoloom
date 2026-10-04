@@ -14,28 +14,38 @@
       ...
     }:
     let
-      system = "aarch64-darwin";
-      pkgs = import nixpkgs { inherit system; };
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
     in
     {
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          swiftlint
-          swiftformat
-          just
-          python3
-          ruff
-          nixfmt
-          yamllint
-          actionlint
-          shellcheck
-          shfmt
-        ];
-        SNAPSHOT_SOURCE = "${snapshot}";
-        shellHook = ''
-          unset SDKROOT
-          export DEVELOPER_DIR="''${EVOLOOM_XCODE_DEVELOPER_DIR:-/Applications/Xcode-27.0.0.app/Contents/Developer}"
-        '';
-      };
+      devShells = nixpkgs.lib.genAttrs systems (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              swiftlint
+              swiftformat
+              just
+              python3
+              ruff
+              nixfmt
+              yamllint
+              actionlint
+              shellcheck
+              shfmt
+            ];
+            SNAPSHOT_SOURCE = "${snapshot}";
+            shellHook = nixpkgs.lib.optionalString (system == "aarch64-darwin") ''
+              unset SDKROOT
+              export DEVELOPER_DIR="''${EVOLOOM_XCODE_DEVELOPER_DIR:-/Applications/Xcode-27.0.0.app/Contents/Developer}"
+            '';
+          };
+        }
+      );
     };
 }

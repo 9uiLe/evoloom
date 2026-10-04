@@ -1,15 +1,20 @@
 # Testing and baseline review
 
-Run `nix develop -c just prepare-deps`, then `nix develop -c just check`.
-The root Package unit target checks token boundaries, Card supporting text
-contrast, Bindings and the Button action gate. Python tests check registry
-closure, copy source imports, cycles, dry-run, conflict protection and unsafe
-paths. `verify-copy-install` creates a temporary Package from copied source,
-compiles it for the iOS Simulator and runs a test without AppMacros.
-Each Xcode command has a 600-second failure timeout. On the first GitHub-hosted
-run, the copied Package test reached its test case just before the former
-240-second limit; the runner's cold Simulator startup required a longer bound.
-The timeout does not delay a completed test.
+Run `nix develop -c just check-fast` for formatting, lint and Python/CLI
+tests. Run `nix develop -c just prepare-deps`, then `nix develop -c just check`
+for the complete local suite (`check-full` is an alias). The root Package
+contains only the library product, so ordinary SwiftPM use needs no prepared
+test dependency. The development Package under `Testing/` places unit and
+image tests in one test target and `just test-ios` runs all 14 methods in one
+XCTest session. Unit tests cover token contrast, Bindings and the Button action
+gate. Python tests cover registry closure, copy imports, cycles, dry-run,
+conflict protection, unsafe paths and CI selection. `verify-copy-install`
+creates a temporary Package containing every copied component and builds its
+library for the iOS Simulator without a separate test runner. The former copy
+test only asserted the default spacing value; that assertion remains in the
+unit tests, while the copy build covers Swift compilation of all copied files.
+It does not exercise copied controls at runtime. Each Xcode command retains
+its 600-second failure timeout.
 Xcode tests explicitly use `-testLanguage en -testRegion US`; the SwiftUI
 fixtures then set `en_US` or `ja_JP` for their own content. This also fixes
 native List typography and Japanese fallback fonts across a Japanese-language
@@ -18,26 +23,40 @@ the test runner language was fixed. They were regenerated from the local iOS
 Simulator, visually reviewed, and their PNG bytes matched the corresponding
 actual images from [the failed Cloud comparison](https://github.com/9uiLe/evoloom/actions/runs/37173749612).
 
-GitHub Actions compares the changed paths for pushes and pull requests before
-installing Nix. It runs only the checks affected by those paths:
+GitHub Actions uses a lightweight Linux job to select checks before installing
+Nix. For PRs it compares from the merge base. For master pushes it compares
+from the latest successful **full** validation ancestor, found from GitHub's
+Jobs API; a documentation-only or partial success is never used as that base.
+If that API, Git history or ancestor check is unavailable, the full suite runs.
+This cumulative range makes it safe to cancel an older run when a newer commit
+arrives, including a code commit followed by documentation only. Manual full
+runs use a separate concurrency group so a push does not cancel them. The
+constant `validation` job checks that all selected jobs succeeded; skipped
+jobs are accepted only when no checks were selected. Its full-validation marker
+step runs only after the complete selected suite passes, so a documentation
+run cannot become the next comparison base or leave a required check pending.
+The Linux static job runs independently of the macOS iOS job. The path matrix:
 
 | Changed path | CI checks |
 | --- | --- |
-| README, design/contribution/license text, or `docs/*.md` only | No Nix or tests; the change-detection job still succeeds. |
-| `Sources/`, root `Package.swift`, Nix, `justfile`, or workflow | Formatting, lint, CLI, iOS build, unit, copied Package and snapshots. |
-| `Tests/` | Formatting, lint and Package unit tests. |
-| `Testing/` | Snapshot comparison; Swift or manifest edits also run formatting and lint. |
-| CLI implementation or registry | Formatting, lint, CLI tests and copied Package. |
+| README, design/contribution/license text, or `docs/*.md` only, with a validated ancestor | No Nix or tests; the aggregate job succeeds. |
+| `Sources/`, root `Package.swift`, Nix, `justfile`, or workflow | Formatting, lint, CLI, combined iOS unit and snapshot tests, copied Package build. |
+| Unit source under `Testing/Tests/EvoloomSnapshotTests/` | Formatting, lint and filtered unit tests. |
+| Snapshot source or PNG under `Testing/` | Snapshot comparison; Swift edits also run formatting and lint. |
+| `Testing/Package.swift` | Complete suite. |
+| CLI implementation or registry | Formatting, lint, CLI tests and copied Package build. |
 | CLI test source | Formatting, lint and CLI tests. |
 | Formatter/linter configuration | Formatting and lint. |
 | Any unrecognized path or unavailable Git comparison | The complete suite. |
 
 Multiple paths combine their checks. `workflow_dispatch` always runs the
 complete suite. The path detector uses NUL-delimited Git output and treats
-renames as a deletion plus an addition so a source removal cannot be hidden by
-a move into a documentation path. iOS checks still require the fixed Apple
-environment and Nix-prepared dependencies. Local `nix develop -c just check`
-always runs the complete suite.
+renames as a deletion plus an addition. iOS checks still require the fixed
+Apple environment; unit and image tests require Nix-prepared SnapshotTesting.
+The copied Package build does not. Local `nix develop -c just check` always
+runs the complete suite. An independent `just build-package` command verifies
+the product alone; the combined test build already compiles it and the Preview
+fixtures in regular CI.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` stores its
 baselines under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`.

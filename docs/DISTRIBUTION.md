@@ -42,7 +42,10 @@ For an app project, add the copied Swift files to the app target with Xcode's
 Target Membership inspector. The CLI does not edit `.xcodeproj` files. For a
 standalone copied Package, name its library target `EvoloomCopied`. The
 repository's `just verify-copy-install` creates such a temporary iOS Package
-and runs a test without an app target.
+from every registry component and builds its library for the iOS Simulator
+without an app target. Python tests cover the CLI plan, source selection and
+customization protection; the copied Package build covers Swift compilation,
+not runtime interaction.
 
 ## Move from the former package or a former copy
 

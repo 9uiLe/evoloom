@@ -6,8 +6,5 @@ let package = Package(
     defaultLocalization: "en",
     platforms: [.iOS(.v26)],
     products: [.library(name: "Evoloom", targets: ["Evoloom"])],
-    targets: [
-        .target(name: "Evoloom"),
-        .testTarget(name: "EvoloomTests", dependencies: ["Evoloom"]),
-    ]
+    targets: [.target(name: "Evoloom")]
 )

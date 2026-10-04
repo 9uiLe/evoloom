@@ -27,11 +27,15 @@ VoiceOver validation. See [design rules](DESIGN.md).
 nix develop
 just doctor
 just prepare-deps
+just check-fast
 just check
 ```
 
-`just check` checks formatting, lint, CLI, iOS Package builds, unit tests,
-copied source and image snapshots. Run `just record-snapshots` only to update
+`just check-fast` runs formatting, lint and Python/CLI tests without Xcode.
+`just check` runs those checks plus one iOS test session containing unit and
+snapshot tests, then builds a Package from all copied components. The iOS test
+build compiles the library and its internal Preview fixtures; `just build-package`
+remains an independent product build command. Run `just record-snapshots` only to update
 image baselines; review every PNG in `Testing/Tests/.../__Snapshots__/` and
 the `TestResults/record.xcresult` before committing. Normal comparison refuses
 missing baselines or changed baseline files. See [testing](docs/TESTING.md).
@@ -101,10 +105,11 @@ Image tests provide visual verification when the canvas is unavailable.
 Evoloom takes inspiration from [shadcn/ui](https://ui.shadcn.com/docs): open
 component code, composition, and source ownership. It is an independent
 SwiftUI project, with no affiliation or endorsement by shadcn/ui or Apple.
-The public GitHub repository is `9uiLe/evoloom`. GitHub-hosted Actions use the
-same Nix and `just` checks on the `xcode-27` runner, selecting checks from the
-changed paths. Documentation-only changes skip Nix and tests; manual runs
-execute the complete suite. The doctor fails if the Apple versions or
+The public GitHub repository is `9uiLe/evoloom`. GitHub-hosted Actions select
+checks from the cumulative change since the last fully validated ancestor;
+static checks use Linux and iOS checks use the fixed `xcode-27` runner.
+Documentation-only changes after a full validation skip Nix and tests; manual
+runs execute the complete suite. The doctor fails if the Apple versions or
 Simulator differ from the baselines. See the [CI matrix](docs/TESTING.md).
 
 The module rename is a breaking change: replace `import ShadcnIOS` with
