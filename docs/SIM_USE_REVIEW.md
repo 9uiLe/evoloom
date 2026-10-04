@@ -57,8 +57,11 @@ suffix with the documented Backspace keycode. It does not depend on the
 iOS paste menu, which failed to appear on the initial Cloud operation run.
 The error scenario verifies the changed field value and Save/error states;
 it does not require the software keyboard to stay visible after the normal
-scenario's HID typing. The normal and large scenarios check the software
-keyboard explicitly before typing.
+scenario's HID typing. The normal scenario proves focus by editing each
+target field after a tap and saves the visible focus state; the large scenario
+explicitly requires the software keyboard while scrolling. HID typing can
+change the keyboard connection state in later scenarios, so the normal
+scenario does not duplicate that large-case requirement.
 The native Toggle's accessibility frame spans its Form row, so the script
 touches the switch at the trailing edge of the observed frame and verifies
 the value transition. It does not retain `@N` aliases across screen changes.
@@ -163,6 +166,21 @@ The next review observes keyboard state before requesting the full UI tree,
 allows a bounded 45 seconds for that query, and reuses the already built
 host in the manual CI job. The captured failure remains available in that
 run's [Artifact](https://github.com/9uiLe/evoloom/actions/runs/37228513283/artifacts/11312909879).
+
+The [Cloud run on 12956fa](https://github.com/9uiLe/evoloom/actions/runs/37230154630)
+completed the `large` scenario. At accessibility-medium size, the
+[focused Email and software keyboard](images/pr2-sim-use/large-cloud-email-focused-keyboard.png)
+were visible. A `sim-use swipe` within the Form moved Email from y=421 to
+y=151 while `keyboard-state` remained `visible:true`; the
+[post-scroll PNG](images/pr2-sim-use/large-cloud-after-scroll-keyboard.png)
+shows the focused value, hint, lower settings and keyboard. After an Escape
+key event, the [Save control was reachable](images/pr2-sim-use/large-cloud-save-reached.png)
+within the 402×874 pt scene. These three PNGs are the actual `sim-use screenshot`
+outputs from that run, copied unchanged from its
+[Artifact](https://github.com/9uiLe/evoloom/actions/runs/37230154630/artifacts/11313253961).
+The overall manual job still failed: a later normal keyboard visibility check
+and separate UI queries timed out. The successful large scenario is evidence
+for that combination only; the run is not reported as a passing full review.
 
 Visual snapshots remain strict RGBA comparisons and unchanged by this
 operation review. A passing snapshot or readable accessibility tree is not a
