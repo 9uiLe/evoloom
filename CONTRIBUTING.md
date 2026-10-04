@@ -6,12 +6,11 @@ copies use `.evoloom.json`; never overwrite a legacy copy to migrate it.
 
 Read `DESIGN.md`, `docs/ENVIRONMENT.md` and `docs/TESTING.md`. Keep iOS 26
 compatibility, native control semantics, copyable sources, and the root
-Package's normal SwiftPM consumer path. Pin macro revisions; materialize the
-same sources through Nix local paths for development and CI. Use
-`@AutoEquatableView` on component Views and reserve its equality boundary for
-comparable parent inputs. Do not mark actions, Bindings, or arbitrary child
-Views as safe to skip without a test showing changed inputs remain current.
-Update `tools/registry.json` when adding
+Package's normal SwiftPM consumer path. Keep product and copied source free
+of test-only dependencies; Nix prepares SnapshotTesting for the visual test
+Package. Preserve ordinary SwiftUI updates for actions, Bindings, child Views
+and environment values. Measure an integrating screen before adding an update
+suppression boundary. Update `tools/registry.json` when adding
 a component. Include a Preview example, unit/CLI checks where behavior can
 regress, and a visually reviewed PNG baseline for a new visual state.
 

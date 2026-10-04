@@ -30,7 +30,11 @@ SNAPSHOT_NAMES = {
     "collection-light",
     "collection-dark",
     "collection-compact-accessibility",
+    "collection-empty",
+    "collection-loading",
+    "collection-error",
     "customized-tokens",
+    "customized-tokens-dark",
     "switch-states-dark",
     "switch-states-dark-increased-contrast",
     "switch-states-dark-ja",
@@ -126,8 +130,6 @@ def doctor():
     print(f"Simulator UDID: {matches[0]['udid']}")
     print(f"Swift: {output('xcrun', 'swift', '--version').splitlines()[0]}")
     print(f"Nix snapshot source: {sources['SNAPSHOT_SOURCE']}")
-    print(f"Nix macro source: {sources['APP_MACROS_SOURCE']}")
-    print(f"Nix syntax source: {sources['SWIFT_SYNTAX_SOURCE']}")
     return matches[0]["udid"]
 
 
@@ -138,7 +140,6 @@ def prepared_dependencies():
 def xcode(
     action, cwd=ROOT, scheme="Evoloom", result=None, derived_data=None, check=True
 ):
-    prepared_dependencies()
     device = doctor()
     command = [
         "xcodebuild",
@@ -151,7 +152,6 @@ def xcode(
         "-derivedDataPath",
         str(ROOT / "DerivedData" / (derived_data or scheme)),
         "-disableAutomaticPackageResolution",
-        "-skipMacroValidation",
         "CODE_SIGNING_ALLOWED=NO",
     ]
     if action == "test":
@@ -261,12 +261,11 @@ def verify_copy():
         check=True,
     )
     (destination / "Package.swift").write_text(
-        """// swift-tools-version: 6.3
+        """// swift-tools-version: 6.2
 import PackageDescription
 let package = Package(name: "CopyCheck", platforms: [.iOS(.v26)],
     products: [.library(name: "EvoloomCopied", targets: ["EvoloomCopied"])],
-    dependencies: [.package(name: "swift-app-macros", path: "../AppMacros")],
-    targets: [.target(name: "EvoloomCopied", dependencies: [.product(name: "AppMacros", package: "swift-app-macros")]),
+    targets: [.target(name: "EvoloomCopied"),
               .testTarget(name: "CopyCheckTests", dependencies: ["EvoloomCopied"])])
 """
     )

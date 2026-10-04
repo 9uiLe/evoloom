@@ -1,7 +1,5 @@
-import AppMacros
 import SwiftUI
 
-@AutoEquatableView
 public struct IOSTextArea: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -20,7 +18,7 @@ public struct IOSTextArea: View {
         self.error = error
     }
 
-    @ViewBuilder public var equatableBody: some View {
+    public var body: some View {
         let colors = tokens.palette(for: scheme)
         let outline = error == nil ? (focused ? colors.primary : colors.input) : colors.destructiveText
         VStack(alignment: .leading, spacing: tokens.spacing.xs) {

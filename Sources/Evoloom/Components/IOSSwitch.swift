@@ -1,7 +1,5 @@
-import AppMacros
 import SwiftUI
 
-@AutoEquatableView
 public struct IOSSwitch: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -23,7 +21,7 @@ public struct IOSSwitch: View {
         self.offStateLabel = offStateLabel
     }
 
-    public var equatableBody: some View {
+    public var body: some View {
         Toggle(isOn: $isOn) {
             VStack(alignment: .leading, spacing: tokens.spacing.xxs) {
                 Text(title)

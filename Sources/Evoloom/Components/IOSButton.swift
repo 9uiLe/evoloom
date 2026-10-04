@@ -1,4 +1,3 @@
-import AppMacros
 import SwiftUI
 
 public enum IOSButtonVariant: CaseIterable {
@@ -72,7 +71,6 @@ public struct IOSButtonStyle: ButtonStyle {
     }
 }
 
-@AutoEquatableView
 public struct IOSButton<Label: View>: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.isEnabled) private var isEnabled
@@ -80,7 +78,7 @@ public struct IOSButton<Label: View>: View {
     private let size: IOSButtonSize
     private let isLoading: Bool
     private let action: () -> Void
-    @SkipEquatable private let label: Label
+    private let label: Label
 
     public init(
         variant: IOSButtonVariant = .primary,
@@ -96,7 +94,7 @@ public struct IOSButton<Label: View>: View {
         self.label = label()
     }
 
-    public var equatableBody: some View {
+    public var body: some View {
         Button(action: { trigger(isEnabled: isEnabled) }, label: {
             HStack(spacing: tokens.spacing.xs) {
                 if isLoading {

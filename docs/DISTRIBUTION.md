@@ -3,10 +3,10 @@
 ## Use the library or own the source
 
 The root `Package.swift` provides the `Evoloom` library product for iOS 26+.
-The repository URL is `https://github.com/9uiLe/evoloom`. Outside the Nix shell,
-SwiftPM fetches the pinned `swift-app-macros` commit. The internal Preview
+The repository URL is `https://github.com/9uiLe/evoloom`. The library has no
+external Swift dependency for ordinary SwiftPM consumers. Internal Preview
 fixtures compile with the library but are not public API. The separate
-`Testing` package is used only for visual tests.
+`Testing` package uses Nix-prepared SnapshotTesting for visual tests.
 
 To copy source, run `nix develop -c python3 tools/evoloom.py list`, then use
 `dry-run --init --destination DIR button`, `init --destination DIR button`, or
@@ -17,13 +17,26 @@ resolves dependencies from `tools/registry.json`. A copied component includes
 the shared design tokens when needed. Existing files are protected unless
 `--overwrite` is explicit.
 
-Copied Swift files import SwiftUI and `AppMacros`, not `Evoloom`. Add the
-exact `swift-app-macros` commit recorded in the root `Package.swift` and attach
-its `AppMacros` product to the target containing the copies. Macro code is a
-compile-time dependency; `EquatableBodyView` is used at runtime by display
-components. Xcode may ask for approval before executing the macro plugin.
-Review the pinned source before approving it. Noninteractive package checks
-use Xcode's `-skipMacroValidation` after the fixed source has been reviewed.
+Copied Swift files import SwiftUI, not `Evoloom` or `AppMacros`. The target
+containing copies needs no package dependency from Evoloom. Existing copies
+from the macro-based version retain `import AppMacros` until the owner reviews
+and replaces those files. The CLI will not overwrite edited files by default;
+compare local customizations with the current source before explicitly using
+`--overwrite` or migrating edits manually.
+After migrating all copied components, remove the `AppMacros` product and
+`swift-app-macros` package reference only if no other code in the integrating
+target uses them. The new `cardMutedForeground` initializer parameter is
+optional; existing palette construction remains source-compatible. Set it
+explicitly when a custom Card needs a distinct supporting text color.
+
+This source simplification changes two public implementation-facing contracts:
+`equatableBody` is now `body`, and the five display-only component types no
+longer conform to `Equatable` or `EquatableBodyView`. Calls to a component's
+`equatableBody`, comparisons such as `IOSBadge(...) == IOSBadge(...)`, or
+`.equatable()` applied directly to those components need migration. Compare
+the product's own state where equality matters, or add a locally measured
+comparison boundary around its composed View. Normal component construction,
+Bindings, actions, token injection and iOS 26 availability are unchanged.
 
 For an app project, add the copied Swift files to the app target with Xcode's
 Target Membership inspector. The CLI does not edit `.xcodeproj` files. For a

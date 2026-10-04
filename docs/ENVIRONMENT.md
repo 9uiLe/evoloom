@@ -5,30 +5,25 @@
 | Source | Fixed version / revision | Use |
 | --- | --- | --- |
 | nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1 |
-| swift-app-macros | `0.4.0`, revision `4146637f4d9cf59e5051840311063ddd45a1b316` | `AppMacros` and `@AutoEquatableView` |
-| swift-syntax | `604.0.0`, revision `050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf` | Macro compiler plugin and its local Swift module graph |
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
 
 Run `nix develop`, then `just prepare-deps`. That preparation copies the
 Nix-fixed sources to ignored `.prepared/` local Swift packages and records the
 selected Nix store paths in `.prepared/sources.json` after copying finishes.
-Build and test commands reject missing or stale preparation, including files
-left from an earlier `flake.lock`; rerun `just prepare-deps` after updating the
-lock. The AppMacros manifest contains only its product and compiler plugin and
-points to the prepared swift-syntax source. The pinned swift-syntax package has
-no remote SwiftPM dependencies. SnapshotTesting is reduced to
-its image comparison module, excluding its optional sibling products and their
-transitive dependencies. Its prepared manifest uses Swift 5 language mode,
-matching the upstream manifest on this Xcode. The root product uses Swift
-tools 6.3, required by the pinned macro package; the visual test harness uses
-tools 6.2. `Package.swift` selects local AppMacros only when
-`EVOLOOM_LOCAL_DEPS=1` is set by the Nix shell and the prepared macro
-manifest exists beside the root manifest. For normal consumers, including a
-clone opened inside that shell without `.prepared`, it pins the upstream Git
-commit through SwiftPM and remains readable. The `just` build and test tasks
-still fail explicitly if developer dependencies have not been prepared.
-The normal consumer path lets SwiftPM resolve the macro's exact swift-syntax
-version; Nix controls developer and CI resolution through local paths.
+Visual test commands reject missing or stale preparation, including files left
+from an earlier `flake.lock`; rerun `just prepare-deps` after updating the
+lock. Root library builds, root unit tests and copy builds do not require the
+prepared SnapshotTesting Package. SnapshotTesting is reduced to its image
+comparison module, excluding its optional sibling products and their
+transitive dependencies. Its prepared
+manifest uses Swift 5 language mode, matching the upstream manifest on this
+Xcode. Both the root product and visual test harness use Swift tools 6.2.
+The root `Package.swift` has no external dependency and remains readable
+without `.prepared`; ordinary consumers only need SwiftPM and Apple's
+toolchain. The `just` visual test task fails explicitly if the test-only
+SnapshotTesting source has not been prepared. Development and CI resolve that
+test source through the Nix-fixed local path, with automatic
+SwiftPM package resolution disabled.
 
 Apple prerequisites remain outside Nix: macOS 27.0 build 26A428 on arm64;
 Xcode 27.0 build 27A266a at the local path
@@ -62,21 +57,16 @@ iOS 27.0; the iOS 26.5 run is separate.
 
 Preparation and execution are separate. `just prepare-deps` is the only step
 that materializes external Swift source. Development and CI Xcode commands use
-`-disableAutomaticPackageResolution` and local package paths. Missing or stale
-prepared sources fail with a preparation instruction. They use Xcode's
-`-skipMacroValidation` because CI cannot accept an interactive macro approval;
-the macro source is pinned by Nix's NAR hash and reviewed before the check.
-Xcode's local help documents that this flag bypasses macro validation. To
-verify a clean checkout,
-clone to another directory, run `nix develop`, `just doctor`,
+`-disableAutomaticPackageResolution`; the visual test Package references the
+prepared local SnapshotTesting path. Its missing or stale source fails with a
+preparation instruction. To verify a clean checkout, clone to another
+directory, run `nix develop`, `just doctor`,
 `just prepare-deps`, then `just check` on the specified Apple host. A missing
 tool or mismatched Simulator fails before tests.
 
 References: [Nix manual](https://nixos.org/manual/nix/stable/),
 [SwiftLint](https://github.com/realm/SwiftLint),
-[SwiftFormat](https://github.com/nicklockwood/SwiftFormat),
-[AppMacros](https://github.com/9uiLe/swift-app-macros),
-[swift-syntax](https://github.com/swiftlang/swift-syntax), and
+[SwiftFormat](https://github.com/nicklockwood/SwiftFormat), and
 [SnapshotTesting](https://github.com/pointfreeco/swift-snapshot-testing).
 Hosted CI details: [GitHub's Xcode 27 image](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md)
 and the [fixed Nix installer Action](https://github.com/DeterminateSystems/determinate-nix-action/tree/v3.22.2).

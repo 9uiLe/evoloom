@@ -1,14 +1,12 @@
-import AppMacros
 import SwiftUI
 
-@AutoEquatableView
 public struct IOSEmptyState<Action: View>: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
     public let title: String
     public let message: String
     public let symbol: String
-    @SkipEquatable private let action: Action
+    private let action: Action
 
     public init(
         _ title: String, message: String, symbol: String = "tray",
@@ -20,7 +18,7 @@ public struct IOSEmptyState<Action: View>: View {
         self.action = action()
     }
 
-    @ViewBuilder public var equatableBody: some View {
+    public var body: some View {
         let colors = tokens.palette(for: scheme)
         VStack(spacing: tokens.spacing.sm) {
             Image(systemName: symbol)

@@ -32,6 +32,7 @@ final class DesignTokensTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(contrast(palette.primary, palette.primaryForeground), 4.5)
             XCTAssertGreaterThanOrEqual(contrast(palette.background, palette.foreground), 4.5)
             XCTAssertGreaterThanOrEqual(contrast(palette.card, palette.cardForeground), 4.5)
+            XCTAssertGreaterThanOrEqual(contrast(palette.card, palette.cardMutedForeground), 4.5)
             XCTAssertGreaterThanOrEqual(contrast(palette.secondary, palette.secondaryForeground), 4.5)
             XCTAssertGreaterThanOrEqual(contrast(palette.muted, palette.mutedForeground), 4.5)
             XCTAssertGreaterThanOrEqual(contrast(palette.destructive, palette.destructiveForeground), 4.5)

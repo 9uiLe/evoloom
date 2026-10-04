@@ -6,21 +6,11 @@
       url = "github:pointfreeco/swift-snapshot-testing/1.18.9";
       flake = false;
     };
-    appMacros = {
-      url = "github:9uiLe/swift-app-macros/4146637f4d9cf59e5051840311063ddd45a1b316";
-      flake = false;
-    };
-    swiftSyntax = {
-      url = "github:swiftlang/swift-syntax/604.0.0";
-      flake = false;
-    };
   };
   outputs =
     {
       nixpkgs,
       snapshot,
-      appMacros,
-      swiftSyntax,
       ...
     }:
     let
@@ -42,9 +32,6 @@
           shfmt
         ];
         SNAPSHOT_SOURCE = "${snapshot}";
-        APP_MACROS_SOURCE = "${appMacros}";
-        SWIFT_SYNTAX_SOURCE = "${swiftSyntax}";
-        EVOLOOM_LOCAL_DEPS = "1";
         shellHook = ''
           unset SDKROOT
           export DEVELOPER_DIR="''${EVOLOOM_XCODE_DEVELOPER_DIR:-/Applications/Xcode-27.0.0.app/Contents/Developer}"

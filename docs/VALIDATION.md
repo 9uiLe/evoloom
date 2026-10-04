@@ -225,3 +225,45 @@ Package build and 1 test, and 8 visual methods comparing all 14 PNGs. The
 unit, copy and image result bundles reported zero failures. Two formatter
 runs left the second run unchanged. The Xcode Preview canvas and manual
 VoiceOver interaction were not opened for this change.
+
+## Card tokens, copy dependencies and shared Collection fixture, 2026-10-04
+
+`IOSCard` now supplies `cardForeground` to its child content while respecting
+children with explicit styles. `IOSCardHeader` applies that color to its title
+and uses the new `cardMutedForeground` for supporting text. The new initializer
+argument is optional; existing palette calls remain source-compatible. The
+light and dark customized-token images use strongly different card surfaces,
+show default and supporting text, and include an explicitly colored child.
+Both images were opened at full size; the title, supporting text and child
+colors remained distinct and readable. The neutral light/dark catalogs,
+compact accessibility image, and Collection normal/empty/loading/error images
+were also opened. The Collection images use the same internal `CollectionContent`
+as the Preview's interactive screen; they omit the navigation bar, searchable
+field, destination and sheet. The loading state gives the screen a visible
+"Loading items" element while `IOSSkeleton` remains decorative.
+
+The former `@AutoEquatableView` boundary covered five display-only components;
+the six components with Bindings, actions or child Views used the macro's
+ordinary-body fallback. Components now use ordinary SwiftUI `body`. The root
+manifest has no external Swift package dependencies; `xcrun swift package
+dump-package` reported `dependencies: []` and tools version 6.2. Nix still pins
+SnapshotTesting 1.18.9 for the separate visual test Package. `nix flake lock`
+removed only the former AppMacros and swift-syntax inputs; nixpkgs and
+SnapshotTesting revisions remained fixed. The copy-install test compiled and
+tested a copied Package without either macro package.
+With the prepared SnapshotTesting directory temporarily hidden, the Nix
+`just build-package` command still passed, while `just test-snapshot` failed
+with an explicit `just prepare-deps` instruction. The directory was restored.
+
+On Apple Silicon macOS 27.0 build 26A428, Xcode 27.0 (27A266a), iPhone 18 Pro
+arm64 and iOS Simulator 27.0 (24A434), `nix develop -c just prepare-deps`,
+`just format-check`, `just lint`, and `just check` passed. The full check ran
+15 Python/CLI tests, the iOS library and Preview source build, 6 root unit
+tests, the copied Package build and 1 test, and 8 visual test methods comparing
+18 real PNGs. Result bundles reported zero failures. Two consecutive formatter
+runs changed no files. Recording and comparison were separate commands. A
+temporary Card foreground regression made both customized-theme comparisons
+fail with expected/actual/diff PNGs; after restoring the source, normal
+comparison passed. Hiding one baseline made comparison fail before Xcode and
+did not recreate the image. The Xcode Preview canvas, manual VoiceOver flow,
+keyboard operation, search and sheet interactions were not run for this change.

@@ -1,11 +1,9 @@
-import AppMacros
 import SwiftUI
 
 public enum IOSAlertVariant: Equatable {
     case information, error
 }
 
-@AutoEquatableView
 public struct IOSInlineAlert: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -19,7 +17,7 @@ public struct IOSInlineAlert: View {
         self.variant = variant
     }
 
-    @ViewBuilder public var equatableBody: some View {
+    public var body: some View {
         let colors = tokens.palette(for: scheme)
         HStack(alignment: .top, spacing: tokens.spacing.sm) {
             Image(systemName: variant == .error ? "exclamationmark.triangle" : "info.circle")
@@ -33,6 +31,5 @@ public struct IOSInlineAlert: View {
         .foregroundStyle(variant == .error ? colors.destructiveText : colors.foreground)
         .padding(tokens.spacing.md)
         .background(colors.muted, in: RoundedRectangle(cornerRadius: tokens.radii.control))
-        .accessibilityElement(children: .combine)
     }
 }

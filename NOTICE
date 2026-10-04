@@ -12,9 +12,10 @@ It is MIT licensed; its full license accompanies the fixed upstream source
 at its Nix store path. This module is not included in the library product or
 in component copies.
 
-Components use 9uiLe/swift-app-macros 0.4.0 at commit
+Earlier component revisions used 9uiLe/swift-app-macros 0.4.0 at commit
 4146637f4d9cf59e5051840311063ddd45a1b316 and swiftlang/swift-syntax
 604.0.0 at commit 050f1a346fbbac0ca2cfb15a95274f7bd1cf0ccf.
 AppMacros is MIT licensed; swift-syntax is Apache-2.0 licensed with a runtime
-library exception. Nix stores their fixed sources and licenses; they are not
-vendored into this repository or copied by the component CLI.
+library exception. The current library and component copies no longer use
+these dependencies. This provenance notice is retained for the earlier
+revisions; neither source is vendored into this repository.

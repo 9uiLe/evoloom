@@ -6,6 +6,7 @@ public struct IOSColorTokens: Sendable {
     public var foreground: Color
     public var card: Color
     public var cardForeground: Color
+    public var cardMutedForeground: Color
     public var primary: Color
     public var primaryForeground: Color
     public var secondary: Color
@@ -28,12 +29,13 @@ public struct IOSColorTokens: Sendable {
         secondaryForeground: Color, muted: Color, mutedForeground: Color,
         border: Color, input: Color, destructive: Color, destructiveForeground: Color,
         destructiveText: Color, success: Color, successForeground: Color,
-        toggleOnBackground: Color? = nil
+        toggleOnBackground: Color? = nil, cardMutedForeground: Color? = nil
     ) {
         self.background = background
         self.foreground = foreground
         self.card = card
         self.cardForeground = cardForeground
+        self.cardMutedForeground = cardMutedForeground ?? cardForeground
         self.primary = primary
         self.primaryForeground = primaryForeground
         self.secondary = secondary
@@ -134,7 +136,8 @@ public struct IOSDesignTokens: Sendable {
             border: Color(red: 0.87, green: 0.87, blue: 0.89), input: Color(red: 0.54, green: 0.54, blue: 0.56),
             destructive: Color(red: 0.72, green: 0.10, blue: 0.13), destructiveForeground: .white,
             destructiveText: Color(red: 0.65, green: 0.08, blue: 0.10),
-            success: Color(red: 0.80, green: 0.94, blue: 0.83), successForeground: Color(red: 0.05, green: 0.38, blue: 0.22)
+            success: Color(red: 0.80, green: 0.94, blue: 0.83), successForeground: Color(red: 0.05, green: 0.38, blue: 0.22),
+            cardMutedForeground: Color(red: 0.38, green: 0.38, blue: 0.42)
         ),
         dark: IOSColorTokens(
             background: Color(red: 0.06, green: 0.06, blue: 0.07), foreground: Color(red: 0.98, green: 0.98, blue: 0.98),
@@ -146,7 +149,8 @@ public struct IOSDesignTokens: Sendable {
             destructive: Color(red: 0.65, green: 0.16, blue: 0.16), destructiveForeground: .white,
             destructiveText: Color(red: 1, green: 0.70, blue: 0.70),
             success: Color(red: 0.08, green: 0.24, blue: 0.17), successForeground: Color(red: 0.68, green: 0.95, blue: 0.76),
-            toggleOnBackground: Color(red: 0.58, green: 0.58, blue: 0.60)
+            toggleOnBackground: Color(red: 0.58, green: 0.58, blue: 0.60),
+            cardMutedForeground: Color(red: 0.68, green: 0.68, blue: 0.71)
         )
     )
 }

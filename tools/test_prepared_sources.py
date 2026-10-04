@@ -13,26 +13,13 @@ class PreparedSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             prepared = root / ".prepared"
-            for manifest in (
-                "SnapshotTesting/Package.swift",
-                "AppMacros/Package.swift",
-                "swift-syntax/Package.swift",
-            ):
+            for manifest in ("SnapshotTesting/Package.swift",):
                 path = prepared / manifest
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
 
-            sources = {
-                "SNAPSHOT_SOURCE": root / "snapshot-source",
-                "APP_MACROS_SOURCE": root / "macro-source",
-                "SWIFT_SYNTAX_SOURCE": root / "syntax-source",
-            }
-            for key, witness in (
-                ("SNAPSHOT_SOURCE", "Sources/SnapshotTesting"),
-                ("APP_MACROS_SOURCE", "Sources/AppMacros"),
-                ("SWIFT_SYNTAX_SOURCE", "Sources/SwiftSyntax"),
-            ):
-                (sources[key] / witness).mkdir(parents=True)
+            sources = {"SNAPSHOT_SOURCE": root / "snapshot-source"}
+            (sources["SNAPSHOT_SOURCE"] / "Sources/SnapshotTesting").mkdir(parents=True)
 
             with (
                 patch.object(tasks, "ROOT", root),
@@ -50,10 +37,10 @@ class PreparedSourceTests(unittest.TestCase):
                 )
                 tasks.prepared_dependencies()
 
-                newer_macro = root / "new-macro-source"
-                (newer_macro / "Sources/AppMacros").mkdir(parents=True)
+                newer_snapshot = root / "new-snapshot-source"
+                (newer_snapshot / "Sources/SnapshotTesting").mkdir(parents=True)
                 with (
-                    patch.dict(os.environ, {"APP_MACROS_SOURCE": str(newer_macro)}),
+                    patch.dict(os.environ, {"SNAPSHOT_SOURCE": str(newer_snapshot)}),
                     self.assertRaisesRegex(RuntimeError, "prepare-deps"),
                 ):
                     tasks.prepared_dependencies()

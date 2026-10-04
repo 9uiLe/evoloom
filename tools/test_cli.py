@@ -16,7 +16,11 @@ from evoloom import (
 class DistributionTests(unittest.TestCase):
     def test_registry_sources_and_order(self):
         for name in REGISTRY:
-            self.assertTrue(source_for(name).is_file())
+            source = source_for(name)
+            self.assertTrue(source.is_file())
+            self.assertNotIn("import Evoloom", source.read_text())
+            self.assertNotIn("import AppMacros", source.read_text())
+            self.assertNotIn("@AutoEquatableView", source.read_text())
         self.assertEqual(resolve(["empty"]), ["tokens", "button", "empty"])
 
     def test_unknown_and_cycle(self):

@@ -1,7 +1,5 @@
-import AppMacros
 import SwiftUI
 
-@AutoEquatableView
 public struct IOSInput: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -31,7 +29,7 @@ public struct IOSInput: View {
         self.contentType = contentType
     }
 
-    @ViewBuilder public var equatableBody: some View {
+    public var body: some View {
         let colors = tokens.palette(for: scheme)
         VStack(alignment: .leading, spacing: tokens.spacing.xs) {
             Text(label).font(tokens.typography.fieldLabel)

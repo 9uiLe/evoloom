@@ -1,11 +1,9 @@
-import AppMacros
 import SwiftUI
 
 public enum IOSBadgeVariant: CaseIterable, Equatable {
     case neutral, secondary, success, destructive
 }
 
-@AutoEquatableView
 public struct IOSBadge: View {
     @Environment(\.iosDesignTokens) private var tokens
     @Environment(\.colorScheme) private var scheme
@@ -19,7 +17,7 @@ public struct IOSBadge: View {
         self.variant = variant
     }
 
-    @ViewBuilder public var equatableBody: some View {
+    public var body: some View {
         let colors = tokens.palette(for: scheme)
         HStack(spacing: tokens.spacing.xxs) {
             if let symbol {
@@ -32,7 +30,6 @@ public struct IOSBadge: View {
         .padding(.horizontal, tokens.spacing.xs)
         .padding(.vertical, tokens.spacing.xxs)
         .background(background(colors), in: RoundedRectangle(cornerRadius: tokens.radii.badge))
-        .accessibilityElement(children: .combine)
     }
 
     private func foreground(_ colors: IOSColorTokens) -> Color {

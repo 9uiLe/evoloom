@@ -37,63 +37,84 @@ struct ComponentCatalog: View {
     }
 }
 
-struct ExampleCollectionView: View {
-    enum FixtureState: String, CaseIterable, Identifiable {
-        case normal, empty, loading, error
-        var id: String {
-            rawValue
-        }
+enum CollectionState: String, CaseIterable, Identifiable {
+    case normal, empty, loading, error
+    var id: String {
+        rawValue
     }
+}
 
+struct ExampleCollectionView: View {
     @State private var search = ""
-    @State private var state: FixtureState = .normal
+    @State private var state: CollectionState = .normal
     @State private var showingNew = false
 
-    private let items = ["Design notes", "Release checklist", "Research summary"]
+    init(initialState: CollectionState = .normal) {
+        _state = State(initialValue: initialState)
+    }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Preview state") {
-                    Picker("State", selection: $state) {
-                        ForEach(FixtureState.allCases) { item in
-                            Text(item.rawValue.capitalized).tag(item)
-                        }
+            CollectionContent(state: $state, search: search)
+                .navigationTitle("Collection")
+                .searchable(text: $search)
+                .navigationDestination(for: String.self) { item in
+                    Text(item).navigationTitle(item)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("New", systemImage: "plus") { showingNew = true }
                     }
                 }
-                Section("Items") {
-                    switch state {
-                    case .normal:
-                        ForEach(items.filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }, id: \.self) { item in
-                            NavigationLink(item, value: item)
-                        }
-                    case .empty:
-                        IOSEmptyState("No items", message: "Add your first item.")
-                    case .loading:
-                        IOSSkeleton().accessibilityLabel("Loading items")
-                    case .error:
-                        IOSInlineAlert("Items unavailable", message: "Check your connection and retry.", variant: .error)
-                    }
-                }
-            }
-            .navigationTitle("Collection")
-            .searchable(text: $search)
-            .navigationDestination(for: String.self) { item in
-                Text(item).navigationTitle(item)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("New", systemImage: "plus") { showingNew = true }
-                }
-            }
-            .sheet(isPresented: $showingNew) {
-                NavigationStack {
-                    Text("Create item").navigationTitle("New item")
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { showingNew = false }
+                .sheet(isPresented: $showingNew) {
+                    NavigationStack {
+                        Text("Create item").navigationTitle("New item")
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { showingNew = false }
+                                }
                             }
-                        }
+                    }
+                }
+        }
+    }
+}
+
+struct CollectionContent: View {
+    @Binding var state: CollectionState
+    let search: String
+
+    private let items = ["Design notes", "Release checklist", "Research summary"]
+
+    init(state: Binding<CollectionState>, search: String = "") {
+        _state = state
+        self.search = search
+    }
+
+    var body: some View {
+        List {
+            Section("Preview state") {
+                Picker("State", selection: $state) {
+                    ForEach(CollectionState.allCases) { item in
+                        Text(item.rawValue.capitalized).tag(item)
+                    }
+                }
+            }
+            Section("Items") {
+                switch state {
+                case .normal:
+                    ForEach(items.filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }, id: \.self) { item in
+                        NavigationLink(item, value: item)
+                    }
+                case .empty:
+                    IOSEmptyState("No items", message: "Add your first item.")
+                case .loading:
+                    VStack(alignment: .leading) {
+                        Text("Loading items")
+                        IOSSkeleton()
+                    }
+                case .error:
+                    IOSInlineAlert("Items unavailable", message: "Check your connection and retry.", variant: .error)
                 }
             }
         }
@@ -127,6 +148,18 @@ private struct SwitchStatesPreview: View {
 
 #Preview("Collection") {
     ExampleCollectionView()
+}
+
+#Preview("Collection - empty") {
+    ExampleCollectionView(initialState: .empty)
+}
+
+#Preview("Collection - loading") {
+    ExampleCollectionView(initialState: .loading)
+}
+
+#Preview("Collection - error") {
+    ExampleCollectionView(initialState: .error)
 }
 
 #Preview("Adjusted design tokens") {

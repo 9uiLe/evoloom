@@ -1,10 +1,11 @@
 # Testing and baseline review
 
 Run `nix develop -c just prepare-deps`, then `nix develop -c just check`.
-The root Package unit target checks token boundaries and foreground/background
-contrast. Python tests check registry closure, cycles, dry-run, conflict
-protection and unsafe paths. `verify-copy-install` creates a temporary Package
-from copied source, compiles it for the iOS Simulator and runs a test.
+The root Package unit target checks token boundaries, Card supporting text
+contrast, Bindings and the Button action gate. Python tests check registry
+closure, copy source imports, cycles, dry-run, conflict protection and unsafe
+paths. `verify-copy-install` creates a temporary Package from copied source,
+compiles it for the iOS Simulator and runs a test without AppMacros.
 Each Xcode command has a 600-second failure timeout. On the first GitHub-hosted
 run, the copied Package test reached its test case just before the former
 240-second limit; the runner's cold Simulator startup required a longer bound.
@@ -57,16 +58,16 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | --- | --- |
 | `catalog-light`, `catalog-dark` | Standard appearance for every initial component; all button variants, disabled/loading/destructive role, Card, Badge variants, Switch, Alert, Empty, Separator, Skeleton. |
 | `switch-states-dark`, `switch-states-dark-increased-contrast`, `switch-states-dark-ja` | Native Toggle on/off tracks, thumb position, state text and glyph in dark mode; Increased Contrast and Japanese labels. |
-| `customized-tokens` | A single changed token set propagates to Button, Card, Input and Badge, including color, spacing, radius and operation height. |
+| `customized-tokens`, `customized-tokens-dark` | Strongly different Card backgrounds, default and supporting Card text, and an explicitly styled child in both appearances; also Button, Input, Badge, spacing, radius and operation height. |
 | `inputs-light`, `inputs-dark` | Normal, error, disabled and long Input and TextArea content. Native focus border is implemented but not captured because keyboard and focus timing would add instability. |
 | `compact-accessibility` | 320 pt width, accessibility medium text, Increased Contrast, long Card, Alert, Button, Badge and Empty copy. |
-| `collection-light`, `collection-dark`, `collection-compact-accessibility` | A representative native List composition in regular, dark and narrow accessibility configurations. Navigation, search and sheet interaction are covered by Preview, not by a static image. |
+| `collection-light`, `collection-dark`, `collection-compact-accessibility`, `collection-empty`, `collection-loading`, `collection-error` | The `CollectionContent` List used by `ExampleCollectionView`, including normal/empty/loading/error states and narrow large text. Snapshot host supplies a NavigationStack with its bar hidden. Search UI, toolbar, destination and sheet are omitted; Preview provides a manual path to those controls, not an automated interaction test. |
 | `locale-ja`, `locale-en` | Japanese and English content. |
 
 To record, run `nix develop -c just record-snapshots`. This is a deliberate
 write operation; it places a short-lived marker under `.prepared` so the
 Simulator test process enters record mode, then removes it. The recorder checks
-that SnapshotTesting acknowledged each intentional write and that all fourteen
+that SnapshotTesting acknowledged each intentional write and that all eighteen
 expected PNGs exist. Open every baseline PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and commit the PNGs and

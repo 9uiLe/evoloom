@@ -1,4 +1,4 @@
-import Evoloom
+@testable import Evoloom
 import SnapshotTesting
 import SwiftUI
 import UIKit
@@ -34,19 +34,25 @@ final class ComponentSnapshots: XCTestCase {
     }
 
     func testCustomizedDesignTokens() {
-        var tokens = IOSDesignTokens.neutral
-        tokens.light.primary = .indigo
-        tokens.light.primaryForeground = .white
-        tokens.spacing.md = 20
-        tokens.radii.control = 16
-        tokens.controls.minimumHeight = 48
-        let view = VStack(alignment: .leading, spacing: tokens.spacing.md) {
-            IOSButton("Save changes") {}
-            IOSCard { IOSCardHeader("Project", detail: "Shared tokens apply to every component.") }
-            IOSInput("Name", text: .constant("Alex"), hint: "Visible to collaborators.")
-            IOSBadge("Ready", symbol: "checkmark", variant: .neutral)
+        for scheme in [ColorScheme.light, .dark] {
+            let tokens = customizedTokens()
+            let view = VStack(alignment: .leading, spacing: tokens.spacing.md) {
+                IOSButton("Save changes") {}
+                IOSCard {
+                    VStack(alignment: .leading, spacing: tokens.spacing.xs) {
+                        IOSCardHeader("Project", detail: "Supporting card text stays legible.")
+                        Text("Default card text")
+                        Text("Explicit child color").foregroundStyle(scheme == .light ? .cyan : .blue)
+                    }
+                }
+                IOSInput("Name", text: .constant("Alex"), hint: "Visible to collaborators.")
+                IOSBadge("Ready", symbol: "checkmark", variant: .neutral)
+            }
+            snapshot(
+                view, name: scheme == .light ? "customized-tokens" : "customized-tokens-dark",
+                height: 450, scheme: scheme, tokens: tokens
+            )
         }
-        snapshot(view, name: "customized-tokens", height: 360, scheme: .light, tokens: tokens)
     }
 
     func testInputs() {
@@ -98,28 +104,39 @@ final class ComponentSnapshots: XCTestCase {
     }
 
     func testRepresentativeScreen() {
-        snapshot(collection(), name: "collection-light", height: 780, scheme: .light, inset: false)
+        snapshot(collection(.normal), name: "collection-light", height: 780, scheme: .light, inset: false)
         snapshot(
-            collection(), name: "collection-compact-accessibility", width: 320,
+            collection(.normal), name: "collection-compact-accessibility", width: 320,
             height: 780, scheme: .light, category: .accessibilityMedium,
             contrast: .increased, inset: false
         )
-        snapshot(collection(), name: "collection-dark", height: 780, scheme: .dark, inset: false)
+        snapshot(collection(.normal), name: "collection-dark", height: 780, scheme: .dark, inset: false)
+        snapshot(collection(.empty), name: "collection-empty", height: 780, scheme: .light, inset: false)
+        snapshot(collection(.loading), name: "collection-loading", height: 780, scheme: .light, inset: false)
+        snapshot(collection(.error), name: "collection-error", height: 780, scheme: .light, inset: false)
     }
 
-    private func collection() -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Collection").font(.largeTitle.bold()).padding(16)
-            List {
-                Section("Upcoming") {
-                    Text("Design notes")
-                    Text("Release checklist")
-                }
-                Section("Status") {
-                    IOSInlineAlert("Ready to review", message: "Two items are available.")
-                }
-            }
+    private func collection(_ state: CollectionState) -> some View {
+        NavigationStack {
+            CollectionContent(state: .constant(state))
+                .toolbar(.hidden, for: .navigationBar)
         }
+    }
+
+    private func customizedTokens() -> IOSDesignTokens {
+        var tokens = IOSDesignTokens.neutral
+        tokens.light.primary = .indigo
+        tokens.light.primaryForeground = .white
+        tokens.light.card = Color(red: 0.15, green: 0.10, blue: 0.25)
+        tokens.light.cardForeground = Color(red: 1, green: 0.95, blue: 0.75)
+        tokens.light.cardMutedForeground = Color(red: 0.83, green: 0.78, blue: 0.91)
+        tokens.dark.card = Color(red: 1, green: 0.93, blue: 0.68)
+        tokens.dark.cardForeground = Color(red: 0.20, green: 0.11, blue: 0.08)
+        tokens.dark.cardMutedForeground = Color(red: 0.32, green: 0.21, blue: 0.14)
+        tokens.spacing.md = 20
+        tokens.radii.control = 16
+        tokens.controls.minimumHeight = 48
+        return tokens
     }
 
     private func catalog() -> some View {

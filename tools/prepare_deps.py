@@ -17,17 +17,12 @@ def remove_tree(target):
         shutil.rmtree(target)
 
 
-def replace_tree(source, target):
-    remove_tree(target)
-    shutil.copytree(source, target, copy_function=shutil.copyfile)
-
-
 sources = nix_sources()
 snapshot = Path(sources["SNAPSHOT_SOURCE"])
-macros = Path(sources["APP_MACROS_SOURCE"])
-syntax = Path(sources["SWIFT_SYNTAX_SOURCE"])
 PREPARED.mkdir(exist_ok=True)
 (PREPARED / STAMP).unlink(missing_ok=True)
+for obsolete in ("AppMacros", "swift-syntax"):
+    remove_tree(PREPARED / obsolete)
 
 snapshot_target = PREPARED / "SnapshotTesting"
 remove_tree(snapshot_target)
@@ -51,41 +46,5 @@ let package = Package(
 """
 )
 
-replace_tree(syntax, PREPARED / "swift-syntax")
-macro_target = PREPARED / "AppMacros"
-remove_tree(macro_target)
-(macro_target / "Sources").mkdir(parents=True)
-for module in ("AppMacros", "AppMacrosMacros"):
-    shutil.copytree(
-        macros / "Sources" / module,
-        macro_target / "Sources" / module,
-        copy_function=shutil.copyfile,
-    )
-shutil.copyfile(macros / "LICENSE", macro_target / "LICENSE")
-(macro_target / "Package.swift").write_text(
-    """// swift-tools-version: 6.3
-import CompilerPluginSupport
-import PackageDescription
-let package = Package(
-    name: "swift-app-macros",
-    platforms: [.iOS(.v26), .macOS(.v26)],
-    products: [.library(name: "AppMacros", targets: ["AppMacros"])],
-    dependencies: [.package(name: "swift-syntax", path: "../swift-syntax")],
-    targets: [
-        .macro(name: "AppMacrosMacros", dependencies: [
-            .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-            .product(name: "SwiftDiagnostics", package: "swift-syntax"),
-            .product(name: "SwiftSyntax", package: "swift-syntax"),
-            .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-            .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-        ]),
-        .target(name: "AppMacros", dependencies: ["AppMacrosMacros"]),
-    ],
-    swiftLanguageModes: [.v6]
-)
-"""
-)
 record_prepared_sources(PREPARED, sources)
 print(f"Prepared SnapshotTesting from {snapshot}")
-print(f"Prepared AppMacros from {macros}")
-print(f"Prepared swift-syntax from {syntax}")

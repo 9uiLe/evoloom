@@ -6,14 +6,8 @@ from pathlib import Path
 
 SOURCE_WITNESSES = {
     "SNAPSHOT_SOURCE": "Sources/SnapshotTesting",
-    "APP_MACROS_SOURCE": "Sources/AppMacros",
-    "SWIFT_SYNTAX_SOURCE": "Sources/SwiftSyntax",
 }
-PREPARED_MANIFESTS = (
-    "SnapshotTesting/Package.swift",
-    "AppMacros/Package.swift",
-    "swift-syntax/Package.swift",
-)
+PREPARED_MANIFESTS = ("SnapshotTesting/Package.swift",)
 STAMP = "sources.json"
 
 

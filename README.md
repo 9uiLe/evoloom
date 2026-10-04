@@ -6,6 +6,10 @@ the component source as your product grows. Compose screens with shared tokens
 and native SwiftUI navigation and controls. The public `IOS…` component names
 remain unchanged.
 
+Evoloom owns recurring visual choices and component semantics. The integrating
+product owns screen structure, user flow, contextual accessibility and final
+VoiceOver validation. See [design rules](DESIGN.md).
+
 ## Requirements
 
 - Apple Silicon macOS 27.0 build 26A428 with Xcode 27.0 build 27A266a.
@@ -15,8 +19,7 @@ remain unchanged.
 - iOS Simulator SDK 27.0 build 24A430, runtime 27.0 build 24A434, and an
   available iPhone 18 Pro simulator. The commands verify these exact values.
 - Nix with flakes enabled. Nix supplies the development tools and fixed
-  SnapshotTesting, AppMacros and swift-syntax sources; Apple supplies Xcode,
-  the SDK and Simulator.
+  SnapshotTesting source; Apple supplies Xcode, the SDK and Simulator.
 
 ## Start
 
@@ -56,13 +59,10 @@ struct Example: View {
 }
 ```
 
-The root Package manifest pins `swift-app-macros` 0.4.0 to its release commit
-for normal SwiftPM consumers. Xcode may request approval to run the package's
-macro plugin on first use; review the pinned source and approve it in Xcode. In the
-Nix development shell the manifest uses the locally prepared,
-Nix-fixed source instead. Run `just prepare-deps` before opening the Package
-in Xcode from that shell. The snapshot test harness is a separate Package
-under `Testing/`.
+The library has no external Swift dependency. Normal SwiftPM consumers can
+read the root manifest without `.prepared`. Development and CI use Nix to
+prepare the test-only SnapshotTesting source for the separate Package under
+`Testing/`; run `just prepare-deps` before its tests.
 
 ## Own the source
 
@@ -75,19 +75,18 @@ nix develop -c python3 tools/evoloom.py init --destination /tmp/my-ios-package b
 
 Copied files live under `Sources/EvoloomCopied`; use `EvoloomCopied` as
 the target name in a Swift Package, or add the files to your app target in
-Xcode. Copied source imports `AppMacros`, but not `Evoloom`; add the pinned
-`AppMacros` product to the target. Existing files are
-protected unless `--overwrite` is explicit. See [distribution and migration](docs/DISTRIBUTION.md).
+Xcode. Copied source imports SwiftUI without requiring `Evoloom` or a macro
+product. Existing files are protected unless `--overwrite` is explicit. See
+[distribution and migration](docs/DISTRIBUTION.md).
 
 ## Preview
 
 Open `Package.swift` in Xcode, select the iPhone 18 Pro destination and
 `Sources/Evoloom/Preview/ComponentCatalog.swift`. Its `#Preview` entries
 show light, dark, adjusted design tokens, and a native navigation/list/search/sheet
-example. The fixture views are internal to the library target. The package
-compilation verifies the preview source. Before this rename, the Xcode 27.0
-canvas rendered the light, dark, Collection and adjusted token previews in the
-stated Simulator.
+example with normal, empty, loading and error states. The fixture views are
+internal to the library target. The package compilation verifies the preview
+source; opening the Xcode canvas is a separate manual check.
 Image tests provide visual verification when the canvas is unavailable.
 
 ## Documents
