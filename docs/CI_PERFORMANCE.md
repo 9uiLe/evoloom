@@ -21,15 +21,19 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 Step durations below come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
-uses one successful full run of each configuration on the same fixed Apple
-host class. It is evidence for these runs, not a stable percentile.
+uses one old, two uncached combined-configuration and one cache miss/hit pair
+on the same fixed Apple host class. It is evidence for these runs, not a
+stable percentile.
 
 | Run | First static/CLI feedback after creation | Complete after creation | Aggregate runner time | Mac runner time | Queue or pending before first job |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | [Before, 3de4628](https://github.com/9uiLe/evoloom/actions/runs/37180096395) | 183 s, within the sole iOS job | 1063 s | 1053 s | 1053 s | 9 s |
 | [Combined tests, ac713ec](https://github.com/9uiLe/evoloom/actions/runs/37182970001) | 366 s observed; 59 s after jobs were created | 732 s observed; 425 s after jobs were created | 460 s | 400 s | 307 s before the detector job was created, following a canceled run |
+| [Combined tests, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37183857742) | 51 s | 489 s | 518 s | 468 s | 2 s to start the detector; 15 s to start iOS |
+| [Cache miss, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184286785) | 56 s | 416 s | 445 s | 394 s | 5 s to start the detector |
+| [Exact cache hit, b08f4da](https://github.com/9uiLe/evoloom/actions/runs/37184653047) | 53 s | 620 s | 643 s | 592 s | 4 s to start the detector |
 
-The second run's long pending interval is not job execution time. Its Linux
+The ac713ec run's long pending interval is not job execution time. Its Linux
 detector took 8 seconds and its static job 47 seconds. The macOS job took 400
 seconds: Nix installation 61, environment check 48, combined iOS tests 227,
 copied Package build 36, with the remainder in setup, evidence and cleanup.
@@ -37,8 +41,16 @@ The former macOS job took 1053 seconds; its separate unit, copy and image
 steps took 360, 248 and 201 seconds respectively. The iOS runner saving in
 this observation comes mainly from fewer XCTest sessions and replacing the
 copy's one runtime assertion with an all-source compile. The former spacing
-assertion remains in the unit target. CPU and cloud scheduling vary; two more
-similar runs are needed before estimating typical improvement or variance.
+assertion remains in the unit target. The b08f4da run took 304 seconds for
+combined tests and 33 for the copied Package build. Its xcresult reports 14
+passing methods, 18 baselines, 163.33 seconds from action start to first case
+and 60.93 seconds summed across cases. The ac713ec run reported 193.84 and
+5.05 seconds respectively; the representative-screen case alone took 30.07
+seconds in b08f4da. CPU and cloud scheduling vary. The two combined
+runs have macOS runner durations of 400 and 468 seconds (median 434, range
+68); their total runner usage is 460 and 518 seconds (median 489, range 58).
+The sole old-configuration run used 1053 runner seconds. This sample is too
+small for a stable percentile or a typical speedup estimate.
 
 The [new run's xcresult](https://github.com/9uiLe/evoloom/actions/runs/37182970001)
 reports 14 passing methods, 0 failed, an iPhone 18 Pro on iOS 27.0 build
@@ -55,9 +67,20 @@ task-seconds across parallel work. It compiled Evoloom and SnapshotTesting,
 with no SwiftSyntax or AppMacros target. The total task-seconds are not wall
 time.
 
+The fixed iPhone 18 Pro was `Shutdown` after a test that began `Shutdown`,
+while a test that began `Booted` left it `Booted`. On the local warm build,
+one test from `Shutdown` took 49.57 seconds. An explicit `simctl boot`
+request took 0.51 seconds, followed immediately by a 28.18-second test.
+The run order and host warmup can affect this one-pair comparison. CI now
+requests boot after dependency preparation and before `xcodebuild test`, so
+the Simulator can continue starting while Xcode builds. The request and
+starting state are recorded in `metrics.jsonl`; a Cloud run is needed to
+evaluate end-to-end benefit and confirm its final state.
+
 ## Experiments and cache boundary
 
-Apple's `build-for-testing` generated an `.xctestrun` for this Swift Package,
+Apple's [build-for-testing and test-without-building commands](https://developer.apple.com/library/archive/technotes/tn2339/_index.html)
+generated an `.xctestrun` for this Swift Package,
 and `test-without-building` then passed all 14 methods. On a warm local host
 the two commands took 14.29 and 15.22 seconds, compared with about 27 seconds
 for one `test` action. Splitting is available for diagnostics but is not the
@@ -77,6 +100,19 @@ transfer and unpack time, so it is not a speedup claim. Keep the cache in
 normal CI only if miss, exact hit and source-change runs show a net improvement
 including restore and save time. GitHub's [cache matching and branch scope](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching)
 apply; eviction or a lock change causes a safe miss.
+
+The same-SHA Cloud trial saved a 4.48 MB archive in about 2 seconds; its next
+run restored it in about 2 seconds. Nix-prepared source verification reported
+`reused: true` on the hit, versus `false` on the miss. The Xcode test steps
+lasted 242 and 378 seconds, and the whole runs 416 and 620 seconds. The
+hit's first-case wait was 217.91 seconds versus 151.18 on the miss; case
+durations summed to 88.33 versus 41.86 seconds. This is one miss/hit pair,
+so the longer hit is not proof that the cache itself caused the delay, but
+there is no observed end-to-end gain. Normal push CI therefore leaves this
+cache disabled. The 4.48 MB Cloud archive and 97 MB local compression trial
+had different host/build footprints; neither predicts another host's transfer
+cost. A source-change trial is still needed before deciding whether to retain
+the manual cache option for diagnostics.
 
 The workflow-level concurrency group cancels older push or PR runs on the same
 ref, while manual full runs use their own run ID. Push selection is cumulative
