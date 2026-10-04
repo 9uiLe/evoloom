@@ -310,10 +310,14 @@ failure path. A second one-case diagnostic changed fixed Collection copy and
 ran only `testCollectionLight`. On the same pinned local Apple environment,
 the actual PNG appeared 39.6 seconds after xcodebuild started, and the diff
 appeared at 42.1 seconds. The command was still running 60 seconds after the
-diff; a process sample showed xcodebuild waiting for the test operation. The
-diagnostic ended that process group at 117.1 seconds and restored the fixture.
-This locates the observed wait after image comparison, but it does not prove
-which Xcode, XCTest or SnapshotTesting internal operation caused it.
+diff. A process sample found xcodebuild's main thread in
+`waitForBuildWithBuildLog`, while another thread was waiting inside
+`XCTHRunDestinationAllocator.collectSimulatorDiagnostics` /
+`simCtlDiagnose`. The diagnostic ended that process group at 117.1 seconds and
+restored the fixture. The interrupted xcresult lacked `Info.plist`, so the
+last XCTest case completion could not be read from it. This locates the
+observed wait after image comparison, but does not prove what held up the
+Xcode diagnostic subprocess or which component initiated it.
 
 Hosted XCTest now captures and saves the real-window image without asserting
 pixel equality. After xcodebuild exits, `tools/compare_host_images.py` decodes
@@ -323,13 +327,30 @@ is supplied by the existing pinned nixpkgs revision. Package-only snapshots
 still use their Swift exact-pixel comparison. The 28 baselines and product
 sources did not change.
 
-In a targeted changed-copy trial, hosted xcodebuild exited 0 after 19.5
-seconds; the external comparison reported a pixel mismatch and produced the
-three images 0.25 seconds later. Its CLI returned 1. A separate full
+In a targeted changed-copy trial, the interval from fixture change through
+host preparation and xcodebuild's exit code 0 was 19.5 seconds; the external
+comparison reported a pixel mismatch and produced the three images 0.25
+seconds later. Its CLI returned 1. A separate full
 `test-snapshot` trial changed only the light hosted case; all 14 XCTest methods
 passed, 28 actual PNGs were saved, and the outer command exited 1 with only
 `collection-light` mismatching after 47.5 seconds. After restoring that line,
 `test-snapshot` passed with all five hosted images matching and no stale diff.
 These are warm local observations under different build inputs, not a general
-performance estimate. CI failure-path and artifact verification are recorded
-separately when the temporary Cloud run completes.
+performance estimate.
+
+Cloud [normal run 37209628472](https://github.com/9uiLe/evoloom/actions/runs/37209628472)
+passed for PR head `ce97a08a3722f1f04e518a16ee08b57cf3880ab7` at synthetic
+merge checkout `faf83294d3d5ca91c4b8b1002120aee86e40a661`. Its downloaded
+[evidence artifact](https://github.com/9uiLe/evoloom/actions/runs/37209628472/artifacts/11306516307)
+contains 15 Package tests, five hosted tests, 28 rendered PNGs and a report
+with all five hosted cases matching. No diff PNGs were generated. A separate
+temporary branch changed only `testCollectionLight` to render the empty state
+against the normal baseline. Its manual [failure run 37209665511](https://github.com/9uiLe/evoloom/actions/runs/37209665511)
+used checkout `39a514892d2923e9f7eb0a5233673dcc82a9b6db`. All 20 XCTest
+methods passed; the external comparator reported only `collection-light` as
+`pixel_mismatch` in 1.926 seconds. The iOS job and required validation job
+failed. The downloaded [failure artifact](https://github.com/9uiLe/evoloom/actions/runs/37209665511/artifacts/11306077250)
+contains 28 actual PNGs, `host-image-comparison.json`, both Xcode logs,
+xcresults, and the 1206 × 2622 expected/actual/diff PNGs. The diff was opened
+and shows the intended list-to-empty change. The temporary branch was deleted
+after verification; its intentional mismatch is absent from the PR branch.

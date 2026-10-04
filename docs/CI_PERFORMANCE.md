@@ -205,11 +205,26 @@ transfer-inclusive comparison are still needed before any speed claim.
 A one-case in-XCTest mismatch saved the diff 42.1 seconds after starting
 xcodebuild, then remained running for another 60 seconds; it was terminated
 after diagnostic sampling. With hosted capture and post-process RGBA
-comparison, a targeted changed-copy run exited hosted xcodebuild in 19.5
-seconds and detected the mismatch about 0.25 seconds later. A full warm
+comparison, a targeted changed-copy run took 19.5 seconds through fixture
+change, host preparation and hosted xcodebuild exit, then detected the
+mismatch about 0.25 seconds later. A full warm
 `test-snapshot` run with one altered hosted case returned nonzero in 47.5
 seconds, with all 28 actuals and the three diff PNGs. The next normal run
 passed. These trials differ in code, warm build state and scope; they establish
 an ordinary mismatch exit, not a stable speedup. The Xcode action timeout
 remains 600 seconds as an abnormal-stop limit, with only its launched process
 group terminated and available logs and images retained.
+
+The first Cloud normal run of this change
+([37209628472](https://github.com/9uiLe/evoloom/actions/runs/37209628472))
+took 11m22s from creation to completion. Its combined iOS test step took
+8m10s; the hosted RGBA comparison took 0.577s of that step. The previous
+[successful run](https://github.com/9uiLe/evoloom/actions/runs/37204472776)
+took 8m48s overall and 5m47s for the combined step. The observed increases
+were 2m34s and 2m23s respectively, while Package and host Xcode actions
+together increased about 2m14s. This is one run per configuration under
+different commits and cloud conditions; it does not establish that the
+external comparator caused the increase. The deliberate [failure run](https://github.com/9uiLe/evoloom/actions/runs/37209665511)
+took 5m40s for its combined step, including two successful Xcode actions and
+a 1.926s failing comparison. It uploaded the diff artifact and failed the
+required validation job. No new test session or simulator launch was added.
