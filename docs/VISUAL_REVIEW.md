@@ -60,10 +60,23 @@ The first baselines are a **starting point for discussion**, not design
 approval. In the first review, the settings error fixture was corrected to
 show invalid input and disable Save. The collection image now captures the
 whole native NavigationStack, including toolbar and search, so its six
-existing baselines changed intentionally. The light collection's native
-search and toolbar chrome still appear faint in this fixed host; assess them
-in Xcode Canvas and a real integration before treating this as an accepted
-product decision. No runtime component tokens or styles changed in this PR.
+existing baselines changed intentionally. **The light collection baseline is
+not reliable evidence for the native search and toolbar chrome:** its white
+glyphs sit on a light area. A temporary, component-free
+`NavigationStack`/`List`/`searchable`/toolbar rendered the same way with this
+SnapshotTesting host. Its default strategy attaches a window without an active
+scene and captures `layer.render`; the simulator XCTest process reported zero
+connected scenes, and an attempted `drawHierarchy` capture returned `false`
+and a black image. Explicit light traits, a nonzero safe area, and an extra
+layout turn did not correct the chrome. Those diagnostic changes were removed;
+the six committed collection baselines have not been re-recorded. Xcode 27.0
+Canvas was opened on the same fixture and iPhone 18 Pro destination, but its
+build failed with `Unable to resolve module dependency: 'Evoloom'`. A Canvas
+or app-window comparison therefore remains unverified. Do not infer that the
+production UI has the same contrast issue, or approve native chrome from this
+baseline. The collection content and state images remain useful for layout
+discussion; a scene-backed capture path is needed before reviewing native
+chrome from CI. No runtime component tokens or styles changed for this issue.
 
 ## Put images in a PR
 
@@ -72,7 +85,11 @@ and after images, capture conditions, review findings and the CI run for the
 image commit. Generate the representative Markdown from the committed
 baselines with `nix develop -c python3 tools/pr_images.py --sha <full-SHA>`.
 The script checks all ten listed PNGs and uses raw image URLs pinned to that
-SHA. Paste it into the PR description; confirm the ten images display in the
+SHA. It reads the specified local Git commit and requires every image path to
+be a blob in that commit; the working tree is not evidence that an image was
+committed. If the SHA is absent in a shallow checkout, fetch that exact commit
+and retry. Commit new baselines before generating links. Paste the output into
+the PR description; confirm the ten images display in the
 rendered GitHub PR. These are **committed baselines**, even when the CI for the
 same SHA passes. Add `--ci-url <successful-run-URL>` after the comparison
 finishes and verify that the run's **PR head SHA** matches the image commit.

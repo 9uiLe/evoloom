@@ -24,9 +24,35 @@ PAIRS = (
 )
 
 
-def markdown(sha, ci_url=None):
+def _git_object_type(root, object_name):
+    result = subprocess.run(
+        ["git", "-C", str(root), "cat-file", "-t", object_name],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def markdown(sha, ci_url=None, root=None):
+    root = root or ROOT
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError("Use a full 40-character lowercase commit SHA")
+    if _git_object_type(root, sha) != "commit":
+        raise ValueError(
+            f"Commit {sha} is unavailable locally or is not a commit object; "
+            "fetch that exact commit (including in a shallow checkout) and retry"
+        )
+    names = [name for _, light, dark in PAIRS for name in (light, dark)]
+    paths = [f"{SNAPSHOTS}/components.{name}.png" for name in names]
+    missing = [
+        path for path in paths if _git_object_type(root, f"{sha}:{path}") != "blob"
+    ]
+    if missing:
+        raise FileNotFoundError(
+            f"Commit {sha} has no image blob at: {', '.join(missing)}; "
+            "commit the recorded baselines before generating PR links"
+        )
     lines = [
         "These are **committed baseline PNGs**, not images downloaded from this CI run.",
         f"Image commit: `{sha}`. Capture: Xcode 27.0 (27A266a), iOS 27.0 Simulator (24A434),",
@@ -48,10 +74,6 @@ def markdown(sha, ci_url=None):
         urls = []
         for name in (light, dark):
             path = f"{SNAPSHOTS}/components.{name}.png"
-            if not (ROOT / path).is_file():
-                raise FileNotFoundError(
-                    f"Missing baseline: {path}; run just record-snapshots"
-                )
             url = f"https://raw.githubusercontent.com/9uiLe/evoloom/{sha}/{path}"
             urls.append(f"![{label} {name}]({url})")
         lines.append(f"| {label} | {urls[0]} | {urls[1]} |")
@@ -73,7 +95,11 @@ def main():
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip()
     )
-    print(markdown(sha, args.ci_url), end="")
+    try:
+        body = markdown(sha, args.ci_url)
+    except (FileNotFoundError, ValueError) as error:
+        parser.exit(1, f"{error}\n")
+    print(body, end="")
 
 
 if __name__ == "__main__":
