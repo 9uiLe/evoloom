@@ -309,12 +309,19 @@ class Review:
             initial = self.launch("settings")
             self.entry(initial, "TextField", "Email")
             self.screenshot("large-initial")
-            self.tap_field("Email")
+            focused = self.tap_field("Email")
             keyboard_visible = self.keyboard(True)
             self.screenshot("large-email-focused")
             self.sim("gesture", "scroll-up")
             scrolled = self.ui("large-after-scroll")
-            self.entry(scrolled, "TextField", "Email")
+            before_y = self.entry(focused, "TextField", "Email")["frame"]["y"]
+            after_y = self.entry(scrolled, "TextField", "Email")["frame"]["y"]
+            if after_y >= before_y:
+                raise AssertionError(
+                    "Form did not move upward after the scroll gesture"
+                )
+            if keyboard_visible:
+                self.keyboard(True)
             self.screenshot("large-after-scroll")
             if keyboard_visible:
                 self.sim("ios", "key", "41")

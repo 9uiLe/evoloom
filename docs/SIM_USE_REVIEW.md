@@ -55,7 +55,8 @@ the value transition. It does not retain `@N` aliases across screen changes.
 `large` sets `simctl ui <UDID> content_size accessibility-medium`, verifies
 that setting, then restores the original size in a `finally` block. It checks
 software keyboard visibility through both `keyboard-state` and the captured
-screen, scrolls the Form, and requires Save's frame to be inside the real
+screen, requires the Email field's frame to move upward after a Form scroll,
+and requires Save's frame to be inside the real
 402×874 pt scene above the bottom safe area. The fixed 390×1050 pt snapshot
 does not establish this reachability. `japanese-dark` checks the shared long
 Japanese fixture's label, value, hint and actionable error at real device
