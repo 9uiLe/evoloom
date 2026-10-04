@@ -135,6 +135,20 @@ keyboard appears, rerun `just verify-settings-interaction` and review its
 fresh PNG and UI evidence before closing that gap. Do not use the earlier
 normal-size keyboard screenshot to claim the large-text combination passed.
 
+The [2026-10-05 Cloud operation run](https://github.com/9uiLe/evoloom/actions/runs/37226649166)
+captured the accessibility-medium Email field with the **software keyboard
+visible**, confirmed by both `keyboard-state` and a Simulator PNG. Its generic
+`gesture scroll-up` left the field at the same screen coordinate; the review
+correctly failed rather than reporting Save reachability. The next run uses a
+swipe explicitly inside the Form above the keyboard. This is a test gesture
+change, pending validation, not a product layout change. That run also showed
+the email keyboard inserting an extra `@` during `sim-use type`; the review
+now checks the fixture's actual condition and removes the suffix observed in
+the UI. Each scenario relaunches its initial screen to avoid inheriting the
+previous keyboard and scroll state. The Cloud run's
+[Artifact](https://github.com/9uiLe/evoloom/actions/runs/37226649166/artifacts/11313410024)
+contains the image, UI JSON, command times and failure details.
+
 Visual snapshots remain strict RGBA comparisons and unchanged by this
 operation review. A passing snapshot or readable accessibility tree is not a
 VoiceOver test or evidence of persisted settings.

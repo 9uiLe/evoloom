@@ -208,10 +208,10 @@ class Review:
         )
 
     def normal_form(self) -> None:
-        normal = self.ui("normal-light")
+        normal = self.launch("settings")
+        self.screenshot("normal-light")
         self.entry(normal, "TextField", "Display name")
         self.assert_save(normal, disabled=False)
-        self.screenshot("normal-light")
         self.tap_field("Display name")
         self.keyboard(True)
         self.screenshot("display-name-focused-keyboard")
@@ -237,13 +237,25 @@ class Review:
         self.keyboard(False)
         self.tap_field("Email")
         self.keyboard(True)
-        corrected = self.append_text("Email", "@example.com")
+        self.sim("type", "@example.com")
+        self.ui("error-after-type")
+        self.screenshot("error-after-type")
+        corrected = self.await_ui(
+            "error-corrected",
+            lambda data: (
+                self.entry(data, "TextField", "Email")["value"].startswith("invalid@")
+                and not any(item.get("label") == ERROR_EN for item in data["entries"])
+            ),
+        )
         if any(item.get("label") == ERROR_EN for item in corrected["entries"]):
             raise AssertionError("Error remained after valid fixture input")
         self.assert_save(corrected, disabled=False)
         self.screenshot("error-corrected-keyboard")
-        # The caret remains at the end after typing; remove the appended suffix.
-        self.sim("ios", "key-sequence", "--keycodes", ",".join(["42"] * 12))
+        # The email keyboard may insert an extra @; remove the observed suffix.
+        appended = len(self.entry(corrected, "TextField", "Email")["value"]) - len(
+            "invalid"
+        )
+        self.sim("ios", "key-sequence", "--keycodes", ",".join(["42"] * appended))
         invalid = self.await_ui(
             "error-returned",
             lambda data: any(item.get("label") == ERROR_EN for item in data["entries"]),
@@ -280,8 +292,18 @@ class Review:
             focused = self.tap_field("Email")
             keyboard_visible = self.keyboard(True)
             self.screenshot("large-email-focused")
-            self.sim("gesture", "scroll-up")
+            # Keep the swipe inside the Form above the software keyboard.
+            self.sim(
+                "swipe",
+                "--from",
+                "200,500",
+                "--to",
+                "200,220",
+                "--coordinate-space",
+                "ui",
+            )
             scrolled = self.ui("large-after-scroll")
+            self.screenshot("large-after-scroll")
             before_y = self.entry(focused, "TextField", "Email")["frame"]["y"]
             after_y = self.entry(scrolled, "TextField", "Email")["frame"]["y"]
             if after_y >= before_y:
@@ -290,7 +312,6 @@ class Review:
                 )
             if keyboard_visible:
                 self.keyboard(True)
-            self.screenshot("large-after-scroll")
             if keyboard_visible:
                 self.sim("ios", "key", "41")
                 self.keyboard(False)
