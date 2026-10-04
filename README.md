@@ -102,9 +102,11 @@ Image tests provide visual verification when the canvas is unavailable.
 Evoloom takes inspiration from [shadcn/ui](https://ui.shadcn.com/docs): open
 component code, composition, and source ownership. It is an independent
 SwiftUI project, with no affiliation or endorsement by shadcn/ui or Apple.
-The public GitHub repository is `9uiLe/evoloom`. GitHub-hosted Actions run the
-same Nix preparation and `just check` commands on the `xcode-27` runner; the
-doctor fails if the Apple versions or Simulator differ from the baselines.
+The public GitHub repository is `9uiLe/evoloom`. GitHub-hosted Actions use the
+same Nix and `just` checks on the `xcode-27` runner, selecting checks from the
+changed paths. Documentation-only changes skip Nix and tests; manual runs
+execute the complete suite. The doctor fails if the Apple versions or
+Simulator differ from the baselines. See the [CI matrix](docs/TESTING.md).
 
 The module rename is a breaking change: replace `import ShadcnIOS` with
 `import Evoloom` and select the `Evoloom` product. Existing copied source is

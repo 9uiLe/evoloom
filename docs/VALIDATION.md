@@ -182,3 +182,24 @@ preserved. `flake.lock`, dependency revisions, component rendering and visual
 baseline bytes did not change. The Xcode Preview canvas was not reopened for
 this rename; its source compiled as part of the library. Remote GitHub rename,
 push and CI execution were not performed for this local change.
+
+## Public GitHub-hosted CI, 2026-10-04
+
+The repository is now [9uiLe/evoloom](https://github.com/9uiLe/evoloom),
+public, with `master` as the default branch. Commit `ac8be8a` on `master`
+introduced changed-path CI selection and an explicit Xcode test language and
+region. The [GitHub-hosted full run](https://github.com/9uiLe/evoloom/actions/runs/37175410424)
+passed on the pinned `xcode-27` ARM64 runner. Its archived xcresult summaries
+report 7 root Package tests, 1 copied Package test and 8 visual test methods,
+all passed with zero failures. The visual methods compared 12 real PNG
+baselines; the artifact contained no diff images. Format, lint, CLI tests and
+the iOS library build also passed in that run.
+
+Locally, `nix develop -c just check` passed after the same change. The
+changed-path detector's 15 Python/CLI tests passed, including documentation
+only, each test area, combined paths, an unknown path and a source-to-docs
+rename. Five baselines were re-recorded after setting
+`-testLanguage en -testRegion US`. Their PNG bytes matched the earlier Cloud
+actual images, and light, dark, compact accessibility and Japanese output were
+reviewed.
+The visual comparator still requires exact pixel equality.
