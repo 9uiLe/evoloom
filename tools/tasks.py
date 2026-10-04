@@ -10,8 +10,6 @@ import sys
 import time
 from pathlib import Path
 
-from compare_host_images import compare, manifest_cases
-from compare_host_images import record as record_host_images
 from prepared_sources import nix_sources, verify_prepared_sources
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -426,6 +424,8 @@ def snapshot_preflight():
 
 
 def compare_host_renderings():
+    from compare_host_images import compare, manifest_cases
+
     cases, allowed_names = manifest_cases(ROOT)
     comparison = compare(
         cases,
@@ -463,6 +463,9 @@ def snapshots(record=False):
     before = snapshot_hashes()
     marker = ROOT / ".prepared/record-snapshots"
     if record:
+        from compare_host_images import manifest_cases
+        from compare_host_images import record as record_host_images
+
         marker.write_text("Record mode enabled by just record-snapshots\n")
     result = (
         ROOT / "TestResults" / ("record.xcresult" if record else "snapshot.xcresult")

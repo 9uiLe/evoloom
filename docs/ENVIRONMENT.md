@@ -4,7 +4,7 @@
 
 | Source | Fixed version / revision | Use |
 | --- | --- | --- |
-| nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1, XcodeGen 2.44.1 (Darwin only) |
+| nixpkgs | `44a91898084f46797b5fac650c7e8c9ac38c43d4` | SwiftLint 0.65.1, SwiftFormat 0.63.0, just 1.58.0, Python 3.14.7 with Pillow 12.3.0 for hosted image comparison, Ruff 0.16.8, nixfmt 1.5.0, yamllint 1.37.1, actionlint 1.7.12, ShellCheck 0.11.0, shfmt 3.14.1, XcodeGen 2.44.1 (Darwin only) |
 | swift-snapshot-testing | `1.18.9`, revision `bf8d8c27f0f0c6d5e77bff0db76ab68f2050d15d` | Test-only image comparison |
 
 Run `nix develop`, then `just prepare-deps` for the development test harness.
@@ -19,6 +19,8 @@ comparison module, excluding its optional sibling products and their
 transitive dependencies. Its prepared
 manifest uses Swift 5 language mode, matching the upstream manifest on this
 Xcode. Both the root product and visual test harness use Swift tools 6.2.
+Pillow runs only in the development/CI shell after the hosted test process
+exits. It is not linked into the Evoloom library, app host or copied sources.
 The root `Package.swift` has no external dependency and remains readable
 without `.prepared`; ordinary consumers only need SwiftPM and Apple's
 toolchain. The `just` development test tasks fail explicitly if the test-only

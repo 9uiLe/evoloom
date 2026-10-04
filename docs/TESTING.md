@@ -67,7 +67,8 @@ tests. Manual `build_diagnostics` prints Xcode's build timing summary and
 compile commands so an incremental source-change run can be inspected. The CI
 Job Summary and `TestResults/ci-report.json` record the checkout,
 selected scope, cache state, action time, test count, 28 baselines and actual
-render count. Image-save duration is measured in the comparison callback.
+render count. Image-save duration is measured in the Package comparison
+callback or hosted capture test, depending on the case.
 See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` depends on the
@@ -81,15 +82,22 @@ They set 390 or 320 pt width, fixed height, scale 3, zero test safe area,
 system fonts, light/dark appearance, explicit content size, `en_US` or
 `ja_JP` locale and UTC timezone. Fixtures use constant data and a static
 skeleton, with no network, random identifiers, clocks or animation. Exact
-pixel comparison uses normalized RGBA bytes with no tolerance. SnapshotTesting
-handles rendering and baseline naming. Its standard three-attachment image
-diff stalled Xcode 27's Package test runner on a mismatch in this environment,
-so the test supplies an exact diff that writes `expected.png`, `actual.png` and
-`diff.png` under `TestResults/SnapshotDiffs/<case>/`. The same callback writes
-actual images on success and mismatch to `TestResults/Rendered/`, without a
-second render for PR images. The xcresult records failures and paths. A
-build failure has no actual PNG; the CI report names missing images. Equal
-images produce no diff files.
+pixel comparison uses normalized RGBA bytes with no tolerance. The 23
+Package images still compare inside XCTest with `SnapshotImageDiffing.swift`;
+its callback saves actual images on success and expected/actual/diff on
+mismatch. The five app-hosted tests use SnapshotTesting to capture the real
+key window, then save actual PNGs without asserting pixel equality inside
+XCTest. After hosted xcodebuild exits, `tools/compare_host_images.py` decodes
+the baseline and actual PNGs with Nix-pinned Pillow and compares exact RGBA
+dimensions and pixels. A mismatch writes `expected.png`, `actual.png` and
+`diff.png` under `TestResults/SnapshotDiffs/<case>/` and makes the outer task
+return nonzero. Both paths save actuals to `TestResults/Rendered/` without a
+second render for PR images. The hosted xcresult records capture results;
+`host-image-comparison.json` records the separate pixel result. A build
+failure has no actual PNG; the CI report names missing images. Equal images
+produce no diff files. The Package mismatch path and its separate Xcode
+behavior remain as before; the observed termination stall was in the hosted
+failure path.
 The API follows the fixed [SnapshotTesting source](https://github.com/pointfreeco/swift-snapshot-testing/tree/1.18.9).
 
 | Image test | Risk covered |
@@ -107,17 +115,18 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | `locale-ja`, `locale-en` | Japanese and English content. |
 
 To record, run `nix develop -c just record-snapshots`. This is a deliberate
-write operation; it places a short-lived marker under `.prepared` so the
-Simulator test process enters record mode, then removes it. The recorder checks
-that SnapshotTesting acknowledged each intentional write and that all 28
-expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
+write operation; it places a short-lived marker under `.prepared` for the
+Package test's record mode, then removes it. The hosted test always saves
+actuals; only the recording command copies those five images to baselines.
+The recorder checks that SnapshotTesting acknowledged the Package writes and
+that all 28 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and `host-record.xcresult`; commit the PNGs and
 `tools/snapshots.json` together. Then run `nix develop -c just test-snapshot`.
 Normal comparison prechecks every listed PNG, hashes them before and after,
-and refuses new or changed baselines. Xcode's `.xcresult` and the library's
-expected/actual/diff attachments are retained under `TestResults/` and CI
-uploads them on failure and success. See [visual review](VISUAL_REVIEW.md)
+and refuses new or changed baselines. Xcode's `.xcresult`, logs, actual PNGs,
+hosted comparison report and available expected/actual/diff images are
+retained under `TestResults/`; CI uploads them on failure and success. See [visual review](VISUAL_REVIEW.md)
 for the Preview, PR images and first baseline review.
 
 Before updating the Apple environment, select an exact Xcode build, SDK,
