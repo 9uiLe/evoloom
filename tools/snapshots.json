@@ -23,7 +23,9 @@
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.review-detail-light.png",
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.review-settings-dark.png",
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.review-settings-error.png",
+  "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.review-settings-large-text.png",
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.review-settings-light.png",
+  "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.review-settings-narrow-ja.png",
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.switch-states-dark-increased-contrast.png",
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.switch-states-dark-ja.png",
   "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/components.switch-states-dark.png"

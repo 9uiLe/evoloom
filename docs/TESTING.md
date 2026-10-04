@@ -66,13 +66,13 @@ changing normal push checks. Cache hit or miss never skips compilation or
 tests. Manual `build_diagnostics` prints Xcode's build timing summary and
 compile commands so an incremental source-change run can be inspected. The CI
 Job Summary and `TestResults/ci-report.json` record the checkout,
-selected scope, cache state, action time, test count, 28 baselines and actual
+selected scope, cache state, action time, test count, 30 baselines and actual
 render count. Image-save duration is measured in the Package comparison
 callback or hosted capture test, depending on the case.
 See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` depends on the
-development-only `EvoloomReviewFixtures` target and stores 23 baselines under
+development-only `EvoloomReviewFixtures` target and stores 25 baselines under
 `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`. Five collection cases use
 `Testing/Host/Tests/HostedCollectionTests.swift` and its baseline directory.
 The development app provides a scene/key window for native search and toolbar
@@ -82,7 +82,7 @@ They set 390 or 320 pt width, fixed height, scale 3, zero test safe area,
 system fonts, light/dark appearance, explicit content size, `en_US` or
 `ja_JP` locale and UTC timezone. Fixtures use constant data and a static
 skeleton, with no network, random identifiers, clocks or animation. Exact
-pixel comparison uses normalized RGBA bytes with no tolerance. The 23
+pixel comparison uses normalized RGBA bytes with no tolerance. The 25
 Package images still compare inside XCTest with `SnapshotImageDiffing.swift`;
 its callback saves actual images on success and expected/actual/diff on
 mismatch. The five app-hosted tests use SnapshotTesting to capture the real
@@ -110,7 +110,7 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | `collection-light`, `collection-dark`, `collection-empty`, `collection-loading`, `collection-error` | The whole Preview `ExampleCollectionView` in a scene-backed app, including native NavigationStack, toolbar, search and List. Static images do not exercise the controls. |
 | `collection-compact-accessibility` | Fixed 320 pt large-text layout and Increased Contrast. Native search/toolbar chrome is unreliable in this fixed host, so this case covers density and wrapping only. |
 | `review-components-controls-*`, `review-components-feedback-*` | Two readable component pages in light/dark, covering labels, error, switch, disabled/loading, Card, Badge, Alert, Empty and Skeleton. |
-| `review-settings-*` | Native Settings Form in light/dark and invalid-email/disabled-Save state. |
+| `review-settings-*` | Native Settings Form in light/dark, invalid-email/disabled-Save, 320 pt long Japanese and accessibility-medium text. The Form-specific input appearance does not change the ungrouped Input baseline. |
 | `review-detail-*` | Detail/edit in light/dark and long Japanese notes at 320 pt. |
 | `locale-ja`, `locale-en` | Japanese and English content. |
 
@@ -119,7 +119,7 @@ write operation; it places a short-lived marker under `.prepared` for the
 Package test's record mode, then removes it. The hosted test always saves
 actuals; only the recording command copies those five images to baselines.
 The recorder checks that SnapshotTesting acknowledged the Package writes and
-that all 28 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
+that all 30 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and `host-record.xcresult`; commit the PNGs and
 `tools/snapshots.json` together. Then run `nix develop -c just test-snapshot`.

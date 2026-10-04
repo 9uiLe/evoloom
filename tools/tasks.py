@@ -47,6 +47,8 @@ SNAPSHOT_NAMES = {
     "review-settings-light",
     "review-settings-dark",
     "review-settings-error",
+    "review-settings-narrow-ja",
+    "review-settings-large-text",
     "review-detail-light",
     "review-detail-dark",
     "review-detail-ja-long",

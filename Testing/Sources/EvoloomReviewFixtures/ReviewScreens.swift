@@ -70,9 +70,12 @@ struct ReviewSettingsView: View {
     @State private var email = "alex@example.com"
     @State private var notifications = true
     let showError: Bool
+    let longJapanese: Bool
 
-    init(showError: Bool = false) {
+    init(showError: Bool = false, longJapanese: Bool = false) {
         self.showError = showError
+        self.longJapanese = longJapanese
+        _displayName = State(initialValue: longJapanese ? "調査とリリースの確認事項" : "Alex Rivera")
         _email = State(initialValue: showError ? "invalid" : "alex@example.com")
     }
 
@@ -80,29 +83,46 @@ struct ReviewSettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    IOSInput("Display name", text: $displayName, hint: "Shown to your team.")
                     IOSInput(
-                        "Email", text: $email, hint: showError ? nil : "Used for account notices.",
+                        longJapanese ? "チーム全員に表示する名前" : "Display name", text: $displayName,
+                        hint: longJapanese ? "共同作業の画面と通知に表示されます。" : "Shown to your team.",
+                        appearance: .formRow
+                    )
+                    IOSInput(
+                        longJapanese ? "メールアドレス" : "Email", text: $email,
+                        hint: showError ? nil : (longJapanese ? "アカウントに関する通知に使用します。" : "Used for account notices."),
                         error: showError && !email.contains("@") ? "Enter a valid email address before saving." : nil,
-                        keyboardType: .emailAddress
+                        keyboardType: .emailAddress, appearance: .formRow
                     )
                 } header: {
-                    Text("Profile")
+                    Text(longJapanese ? "プロフィール" : "Profile")
                 }
                 Section {
-                    IOSSwitch("Project updates", isOn: $notifications, detail: "Receive changes on this device.")
-                    IOSInput("Workspace", text: .constant("Field notes"), hint: "Managed by your team.")
-                        .disabled(true)
+                    IOSSwitch(
+                        longJapanese ? "プロジェクトの更新通知" : "Project updates", isOn: $notifications,
+                        detail: longJapanese ? "この端末で変更内容を受け取ります。" : "Receive changes on this device.",
+                        onStateLabel: longJapanese ? "オン" : "On", offStateLabel: longJapanese ? "オフ" : "Off"
+                    )
+                    IOSInput(
+                        longJapanese ? "ワークスペース" : "Workspace", text: .constant("Field notes"),
+                        hint: longJapanese ? "チームの管理者が設定します。" : "Managed by your team.",
+                        appearance: .formRow
+                    )
+                    .disabled(true)
                 } header: {
-                    Text("Preferences")
-                }
-                Section {
-                    IOSButton("Save settings") {}
-                        .frame(maxWidth: .infinity)
-                        .disabled(showError && !email.contains("@"))
+                    Text(longJapanese ? "通知と管理" : "Preferences")
+                } footer: {
+                    IOSButton(
+                        action: {},
+                        label: {
+                            Text(longJapanese ? "設定を保存" : "Save settings")
+                                .frame(maxWidth: .infinity)
+                        }
+                    )
+                    .disabled(showError && !email.contains("@"))
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(longJapanese ? "設定" : "Settings")
         }
     }
 }
@@ -167,6 +187,17 @@ struct ReviewDetailView: View {
 
 #Preview("Settings - error") {
     ReviewSettingsView(showError: true).preferredColorScheme(.light)
+}
+
+#Preview("Settings - narrow Japanese") {
+    ReviewSettingsView(longJapanese: true)
+        .environment(\.locale, Locale(identifier: "ja_JP"))
+        .frame(width: 320)
+}
+
+#Preview("Settings - large text") {
+    ReviewSettingsView()
+        .environment(\.sizeCategory, .accessibilityMedium)
 }
 
 #Preview("Detail - light") {

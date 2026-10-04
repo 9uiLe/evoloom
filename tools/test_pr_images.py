@@ -115,6 +115,31 @@ class PRImageTests(unittest.TestCase):
         self.assertIn(sha, stderr.getvalue())
         self.assertIn(self.image_paths()[-1].name, stderr.getvalue())
 
+    def test_extra_case_checks_commit_blob_even_if_worktree_has_image(self):
+        sha = self.commit_images()
+        path = self.root / pr_images.snapshot_path("review-settings-error")
+        path.write_bytes(b"not committed")
+        with self.assertRaisesRegex(FileNotFoundError, path.name):
+            pr_images.markdown(
+                sha, root=self.root, extra_cases=["review-settings-error"]
+            )
+
+    def test_extra_case_link_is_pinned_and_survives_worktree_deletion(self):
+        self.commit_images()
+        path = self.root / pr_images.snapshot_path("review-settings-error")
+        path.write_bytes(b"committed PNG")
+        self.git("add", ".")
+        self.git("commit", "-qm", "record error state")
+        sha = self.git("rev-parse", "HEAD")
+        path.unlink()
+        body = pr_images.markdown(
+            sha, root=self.root, extra_cases=["review-settings-error"]
+        )
+        self.assertIn(
+            f"/evoloom/{sha}/{pr_images.snapshot_path('review-settings-error')}", body
+        )
+        self.assertIn("Settings · validation error baseline", body)
+
 
 if __name__ == "__main__":
     unittest.main()

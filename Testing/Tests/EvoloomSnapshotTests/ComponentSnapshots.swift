@@ -112,6 +112,14 @@ final class ComponentSnapshots: XCTestCase {
         snapshot(ReviewSettingsView(), name: "review-settings-light", height: 780, scheme: .light, inset: false)
         snapshot(ReviewSettingsView(), name: "review-settings-dark", height: 780, scheme: .dark, inset: false)
         snapshot(ReviewSettingsView(showError: true), name: "review-settings-error", height: 780, scheme: .light, inset: false)
+        snapshot(
+            ReviewSettingsView(longJapanese: true), name: "review-settings-narrow-ja", width: 320,
+            height: 1050, scheme: .light, locale: "ja_JP", inset: false
+        )
+        snapshot(
+            ReviewSettingsView(), name: "review-settings-large-text", height: 1050,
+            scheme: .light, category: .accessibilityMedium, inset: false
+        )
         snapshot(ReviewDetailView(), name: "review-detail-light", height: 660, scheme: .light, inset: false)
         snapshot(ReviewDetailView(), name: "review-detail-dark", height: 660, scheme: .dark, inset: false)
         snapshot(
