@@ -39,9 +39,19 @@ SNAPSHOT_NAMES = {
     "switch-states-dark",
     "switch-states-dark-increased-contrast",
     "switch-states-dark-ja",
+    "review-components-controls-light",
+    "review-components-controls-dark",
+    "review-components-feedback-light",
+    "review-components-feedback-dark",
+    "review-settings-light",
+    "review-settings-dark",
+    "review-settings-error",
+    "review-detail-light",
+    "review-detail-dark",
+    "review-detail-ja-long",
 }
 UNIT_TEST_COUNT = 6
-SNAPSHOT_TEST_COUNT = 8
+SNAPSHOT_TEST_COUNT = 9
 
 
 def metric(phase, seconds, **details):
@@ -279,6 +289,25 @@ def snapshot_hashes():
     }
 
 
+def clear_rendered_images():
+    rendered = ROOT / "TestResults/Rendered"
+    if rendered.exists():
+        shutil.rmtree(rendered)
+
+
+def rendered_preflight():
+    expected = {
+        Path(path).name
+        for path in json.loads((ROOT / "tools/snapshots.json").read_text())
+    }
+    actual = {path.name for path in (ROOT / "TestResults/Rendered").glob("*.png")}
+    if actual != expected:
+        raise RuntimeError(
+            f"Expected {len(expected)} actual render PNGs, got {len(actual)}; "
+            f"missing={sorted(expected - actual)}, extra={sorted(actual - expected)}"
+        )
+
+
 def snapshot_preflight():
     manifest = ROOT / "tools/snapshots.json"
     if not manifest.exists():
@@ -305,6 +334,7 @@ def snapshots(record=False):
     if not record:
         snapshot_preflight()
     before = snapshot_hashes()
+    clear_rendered_images()
     differences = ROOT / "TestResults/SnapshotDiffs"
     if differences.exists():
         shutil.rmtree(differences)
@@ -342,6 +372,8 @@ def snapshots(record=False):
     if completed.returncode:
         raise SystemExit(completed.returncode)
     test_result_count(result, SNAPSHOT_TEST_COUNT)
+    if not record:
+        rendered_preflight()
 
 
 def verify_copy():
@@ -399,6 +431,7 @@ def ios_tests():
     prepared_dependencies()
     snapshot_preflight()
     before = snapshot_hashes()
+    clear_rendered_images()
     result = ROOT / "TestResults/ios.xcresult"
     completed = xcode(
         "test",
@@ -413,6 +446,7 @@ def ios_tests():
     if completed.returncode:
         raise SystemExit(completed.returncode)
     test_result_count(result, UNIT_TEST_COUNT + SNAPSHOT_TEST_COUNT)
+    rendered_preflight()
 
 
 def main():

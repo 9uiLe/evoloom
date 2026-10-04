@@ -34,7 +34,7 @@ just check
 `just check-fast` runs formatting, lint and Python/CLI tests without Xcode.
 `just check` runs those checks plus one iOS test session containing unit and
 snapshot tests, then builds a Package from all copied components. The iOS test
-build compiles the library and its internal Preview fixtures; `just build-package`
+build compiles the library and the development Preview fixtures; `just build-package`
 remains an independent product build command. Run `just record-snapshots` only to update
 image baselines; review every PNG in `Testing/Tests/.../__Snapshots__/` and
 the `TestResults/record.xcresult` before committing. Normal comparison refuses
@@ -85,19 +85,20 @@ product. Existing files are protected unless `--overwrite` is explicit. See
 
 ## Preview
 
-Open `Package.swift` in Xcode, select the iPhone 18 Pro destination and
-`Sources/Evoloom/Preview/ComponentCatalog.swift`. Its `#Preview` entries
-show light, dark, adjusted design tokens, and a native navigation/list/search/sheet
-example with normal, empty, loading and error states. The fixture views are
-internal to the library target. The package compilation verifies the preview
-source; opening the Xcode canvas is a separate manual check.
-Image tests provide visual verification when the canvas is unavailable.
+Open `Testing/Package.swift` in Xcode, select the fixed iPhone 18 Pro
+destination, and open `Testing/Sources/EvoloomReviewFixtures/` for the
+component pages, Settings Form, collection List, detail/edit screen and
+their named `#Preview` entries. These fixtures are in the development Package,
+not the consumer library. `just test-ios` compiles them and compares their
+fixed real-render images; opening Canvas is a separate manual check.
+See [visual review and PR images](docs/VISUAL_REVIEW.md).
 
 ## Documents
 
 [Design rules](DESIGN.md) · [Components](docs/COMPONENTS.md) ·
 [Distribution](docs/DISTRIBUTION.md) · [Environment](docs/ENVIRONMENT.md) ·
 [Testing](docs/TESTING.md) · [CI timing](docs/CI_PERFORMANCE.md) ·
+[Visual review](docs/VISUAL_REVIEW.md) ·
 [AI review prompt](docs/AI_REVIEW_PROMPT.md)
 · [Validation record](docs/VALIDATION.md)
 

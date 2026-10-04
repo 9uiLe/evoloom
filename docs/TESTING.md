@@ -5,7 +5,7 @@ tests. Run `nix develop -c just prepare-deps`, then `nix develop -c just check`
 for the complete local suite (`check-full` is an alias). The root Package
 contains only the library product, so ordinary SwiftPM use needs no prepared
 test dependency. The development Package under `Testing/` places unit and
-image tests in one test target and `just test-ios` runs all 14 methods in one
+image tests in one test target and `just test-ios` runs all 15 methods in one
 XCTest session. Unit tests cover token contrast, Bindings and the Button action
 gate. Python tests cover registry closure, copy imports, cycles, dry-run,
 conflict protection, unsafe paths and CI selection. `verify-copy-install`
@@ -66,10 +66,12 @@ changing normal push checks. Cache hit or miss never skips compilation or
 tests. Manual `build_diagnostics` prints Xcode's build timing summary and
 compile commands so an incremental source-change run can be inspected. The CI
 Job Summary and `TestResults/ci-report.json` record the checkout,
-selected scope, cache state, action time, test count and 18 baseline count.
+selected scope, cache state, action time, test count, 28 baselines and actual
+render count. Image-save duration is measured in the comparison callback.
 See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
 
-The `EvoloomSnapshotTests` target in `Testing/Package.swift` stores its
+The `EvoloomSnapshotTests` target in `Testing/Package.swift` depends on the
+development-only `EvoloomReviewFixtures` target and stores its
 baselines under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`.
 Visual tests use a `UIHostingController` and SnapshotTesting's real PNG image
 strategy. They set 390 or 320 pt width, fixed height, scale 3, zero safe area,
@@ -80,8 +82,11 @@ pixel comparison uses normalized RGBA bytes with no tolerance. SnapshotTesting
 handles rendering and baseline naming. Its standard three-attachment image
 diff stalled Xcode 27's Package test runner on a mismatch in this environment,
 so the test supplies an exact diff that writes `expected.png`, `actual.png` and
-`diff.png` under `TestResults/SnapshotDiffs/<case>/`. The xcresult records the
-failure and paths. Equal images produce no diff files.
+`diff.png` under `TestResults/SnapshotDiffs/<case>/`. The same callback writes
+actual images on success and mismatch to `TestResults/Rendered/`, without a
+second render or test session. The xcresult records failures and paths. A
+build failure has no actual PNG; the CI report names missing images. Equal
+images produce no diff files.
 The API follows the fixed [SnapshotTesting source](https://github.com/pointfreeco/swift-snapshot-testing/tree/1.18.9).
 
 | Image test | Risk covered |
@@ -91,13 +96,16 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | `customized-tokens`, `customized-tokens-dark` | Strongly different Card backgrounds, default and supporting Card text, and an explicitly styled child in both appearances; also Button, Input, Badge, spacing, radius and operation height. |
 | `inputs-light`, `inputs-dark` | Normal, error, disabled and long Input and TextArea content. Native focus border is implemented but not captured because keyboard and focus timing would add instability. |
 | `compact-accessibility` | 320 pt width, accessibility medium text, Increased Contrast, long Card, Alert, Button, Badge and Empty copy. |
-| `collection-light`, `collection-dark`, `collection-compact-accessibility`, `collection-empty`, `collection-loading`, `collection-error` | The `CollectionContent` List used by `ExampleCollectionView`, including normal/empty/loading/error states and narrow large text. Snapshot host supplies a NavigationStack with its bar hidden. Search UI, toolbar, destination and sheet are omitted; Preview provides a manual path to those controls, not an automated interaction test. |
+| `collection-light`, `collection-dark`, `collection-compact-accessibility`, `collection-empty`, `collection-loading`, `collection-error` | The whole `ExampleCollectionView` used by Preview, including native NavigationStack, toolbar, search and List, in normal/empty/loading/error states and narrow large text. Static images do not exercise the controls. |
+| `review-components-controls-*`, `review-components-feedback-*` | Two readable component pages in light/dark, covering labels, error, switch, disabled/loading, Card, Badge, Alert, Empty and Skeleton. |
+| `review-settings-*` | Native Settings Form in light/dark and invalid-email/disabled-Save state. |
+| `review-detail-*` | Detail/edit in light/dark and long Japanese notes at 320 pt. |
 | `locale-ja`, `locale-en` | Japanese and English content. |
 
 To record, run `nix develop -c just record-snapshots`. This is a deliberate
 write operation; it places a short-lived marker under `.prepared` so the
 Simulator test process enters record mode, then removes it. The recorder checks
-that SnapshotTesting acknowledged each intentional write and that all eighteen
+that SnapshotTesting acknowledged each intentional write and that all 28
 expected PNGs exist. Open every baseline PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and commit the PNGs and
@@ -105,7 +113,8 @@ text images. Review `TestResults/record.xcresult` and commit the PNGs and
 Normal comparison prechecks every listed PNG, hashes them before and after,
 and refuses new or changed baselines. Xcode's `.xcresult` and the library's
 expected/actual/diff attachments are retained under `TestResults/` and CI
-uploads them on failure.
+uploads them on failure and success. See [visual review](VISUAL_REVIEW.md)
+for the Preview, PR images and first baseline review.
 
 Before updating the Apple environment, select an exact Xcode build, SDK,
 runtime build, device class and architecture, change the doctor expectations,

@@ -89,7 +89,23 @@ def result_summary(path):
 
 
 def report():
-    baseline_count = len(json.loads((ROOT / "tools/snapshots.json").read_text()))
+    baseline_paths = json.loads((ROOT / "tools/snapshots.json").read_text())
+    baseline_count = len(baseline_paths)
+    rendered_paths = sorted((RESULTS / "Rendered").glob("*.png"))
+    rendered_names = {path.name for path in rendered_paths}
+    capture_seconds = sum(
+        float(path.read_text()) for path in (RESULTS / "Rendered").glob("*.seconds")
+    )
+    snapshot_selected = os.environ.get("EVOLOOM_SNAPSHOT_SELECTED", "true") == "true"
+    missing_rendered = (
+        sorted(
+            Path(path).name
+            for path in baseline_paths
+            if Path(path).name not in rendered_names
+        )
+        if snapshot_selected
+        else []
+    )
     metrics = []
     metrics_file = RESULTS / "metrics.jsonl"
     if metrics_file.exists():
@@ -113,6 +129,10 @@ def report():
     document = {
         "checkout": os.environ.get("GITHUB_SHA", "local working tree"),
         "baseline_pngs": baseline_count,
+        "rendered_pngs": len(rendered_paths),
+        "capture_save_seconds": round(capture_seconds, 3),
+        "missing_rendered": missing_rendered,
+        "snapshot_selected": snapshot_selected,
         "preparation": preparation,
         "xcode_actions": metrics,
         "tests": results,
@@ -123,7 +143,14 @@ def report():
     lines = [
         "### iOS evidence",
         f"Checkout: `{document['checkout']}`; baseline PNGs: {baseline_count}; Xcode cache: {document['xcode_cache']}",
+        f"Actual rendered PNGs: {len(rendered_paths)}/{baseline_count if snapshot_selected else 'not selected'} in TestResults/Rendered/; PNG save {capture_seconds:.3f}s",
     ]
+    if missing_rendered:
+        lines.append(
+            "Missing rendered images: "
+            + ", ".join(missing_rendered)
+            + "; inspect the test/build failure and xcresult. No image was fabricated."
+        )
     if preparation:
         lines.append(
             f"Nix-fixed source preparation: {'reused' if preparation['reused'] else 'copied'} "

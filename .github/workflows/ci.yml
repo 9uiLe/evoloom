@@ -110,21 +110,26 @@ jobs:
           fi
           echo "status=$value" >> "$GITHUB_OUTPUT"
       - name: Install fixed Nix version
+        id: nix
         uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11
       - name: Check exact Nix and Apple environment
+        id: doctor
         run: |
           nix --version
           nix develop -c just doctor
       - name: Prepare locked Swift dependency
+        id: prepare
         if: needs.detect.outputs.prepare == 'true'
         run: nix develop -c just prepare-deps
       - name: Run combined iOS tests
+        id: test_ios
         if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot == 'true'
         run: nix develop -c just test-ios
       - name: Run unit tests
         if: needs.detect.outputs.unit == 'true' && needs.detect.outputs.snapshot != 'true'
         run: nix develop -c just test-unit
       - name: Compare iOS snapshots
+        id: test_snapshot
         if: needs.detect.outputs.snapshot == 'true' && needs.detect.outputs.unit != 'true'
         run: nix develop -c just test-snapshot
       - name: Verify copied source Package
@@ -134,7 +139,29 @@ jobs:
         if: success() || failure()
         env:
           EVOLOOM_XCODE_CACHE: ${{ steps.cache_state.outputs.status }}
+          EVOLOOM_SNAPSHOT_SELECTED: ${{ needs.detect.outputs.snapshot }}
         run: nix develop -c python3 tools/ci_report.py
+      - name: Describe image availability
+        if: always()
+        env:
+          SNAPSHOT_SELECTED: ${{ needs.detect.outputs.snapshot }}
+          NIX_OUTCOME: ${{ steps.nix.outcome }}
+          DOCTOR_OUTCOME: ${{ steps.doctor.outcome }}
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          COMBINED_OUTCOME: ${{ steps.test_ios.outcome }}
+          SNAPSHOT_OUTCOME: ${{ steps.test_snapshot.outcome }}
+        run: |
+          mkdir -p TestResults
+          shopt -s nullglob
+          images=(TestResults/Rendered/*.png)
+          if [[ "$SNAPSHOT_SELECTED" != true ]]; then
+            message='Images not requested by change selection.'
+          elif ((${#images[@]} == 0)); then
+            message="Images not generated; Nix=${NIX_OUTCOME}, doctor=${DOCTOR_OUTCOME}, preparation=${PREPARE_OUTCOME}, combined test=${COMBINED_OUTCOME}, snapshot test=${SNAPSHOT_OUTCOME}. Inspect the first failed step."
+          else
+            message="Actual render images available: ${#images[@]} in TestResults/Rendered/. See ci-report.json for missing cases."
+          fi
+          echo "$message" | tee TestResults/image-status.txt >> "$GITHUB_STEP_SUMMARY"
       - name: Save trial Xcode cache
         if: success() && github.event_name == 'workflow_dispatch' && inputs.use_xcode_cache && steps.visual_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25

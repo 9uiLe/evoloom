@@ -18,7 +18,7 @@ mark_full() {
 
 mark_path() {
     case "$1" in
-        README.md | DESIGN.md | AGENTS.md | CONTRIBUTING.md | LICENSE | NOTICE | docs/*.md) ;;
+        README.md | DESIGN.md | AGENTS.md | CONTRIBUTING.md | LICENSE | NOTICE | docs/*.md | .github/pull_request_template.md) ;;
         Sources/* | Package.swift | flake.nix | flake.lock | justfile | .github/workflows/*)
             mark_full
             ;;
@@ -50,6 +50,10 @@ mark_path() {
             copy=true
             ;;
         tools/test_*.py)
+            quality=true
+            cli=true
+            ;;
+        tools/pr_images.py)
             quality=true
             cli=true
             ;;

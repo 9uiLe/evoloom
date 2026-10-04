@@ -1,4 +1,5 @@
 @testable import Evoloom
+@testable import EvoloomReviewFixtures
 import SnapshotTesting
 import SwiftUI
 import UIKit
@@ -116,11 +117,24 @@ final class ComponentSnapshots: XCTestCase {
         snapshot(collection(.error), name: "collection-error", height: 780, scheme: .light, inset: false)
     }
 
+    func testReviewScreens() {
+        snapshot(ReviewComponentsView(page: .controls), name: "review-components-controls-light", height: 700, scheme: .light, inset: false)
+        snapshot(ReviewComponentsView(page: .controls), name: "review-components-controls-dark", height: 700, scheme: .dark, inset: false)
+        snapshot(ReviewComponentsView(page: .feedback), name: "review-components-feedback-light", height: 600, scheme: .light, inset: false)
+        snapshot(ReviewComponentsView(page: .feedback), name: "review-components-feedback-dark", height: 600, scheme: .dark, inset: false)
+        snapshot(ReviewSettingsView(), name: "review-settings-light", height: 780, scheme: .light, inset: false)
+        snapshot(ReviewSettingsView(), name: "review-settings-dark", height: 780, scheme: .dark, inset: false)
+        snapshot(ReviewSettingsView(showError: true), name: "review-settings-error", height: 780, scheme: .light, inset: false)
+        snapshot(ReviewDetailView(), name: "review-detail-light", height: 660, scheme: .light, inset: false)
+        snapshot(ReviewDetailView(), name: "review-detail-dark", height: 660, scheme: .dark, inset: false)
+        snapshot(
+            ReviewDetailView(longJapanese: true), name: "review-detail-ja-long", width: 320,
+            height: 900, scheme: .light, locale: "ja_JP", inset: false
+        )
+    }
+
     private func collection(_ state: CollectionState) -> some View {
-        NavigationStack {
-            CollectionContent(state: .constant(state))
-                .toolbar(.hidden, for: .navigationBar)
-        }
+        ExampleCollectionView(initialState: state)
     }
 
     private func customizedTokens() -> IOSDesignTokens {
@@ -227,6 +241,20 @@ private struct PixelImage {
 
 private func exactImageDiffing(_ imageDiffing: Diffing<UIImage>, root: URL, name: String) -> Diffing<UIImage> {
     Diffing<UIImage>(toData: imageDiffing.toData, fromData: imageDiffing.fromData) { expected, actual in
+        let saveStarted = ProcessInfo.processInfo.systemUptime
+        let rendered = root.appendingPathComponent("TestResults/Rendered")
+        do {
+            try FileManager.default.createDirectory(at: rendered, withIntermediateDirectories: true)
+            guard let data = actual.pngData() else { throw CocoaError(.fileWriteUnknown) }
+            try data.write(to: rendered.appendingPathComponent("components.\(name).png"))
+            let seconds = ProcessInfo.processInfo.systemUptime - saveStarted
+            try String(seconds).write(
+                to: rendered.appendingPathComponent("components.\(name).seconds"),
+                atomically: true, encoding: .utf8
+            )
+        } catch {
+            return ("Could not save rendered image for \(name): \(error)", [])
+        }
         guard let old = pixels(expected), let new = pixels(actual) else {
             return ("Image pixels could not be read", [])
         }

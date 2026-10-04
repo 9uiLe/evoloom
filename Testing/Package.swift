@@ -9,10 +9,15 @@ let package = Package(
         .package(name: "SnapshotTestingLocal", path: "../.prepared/SnapshotTesting"),
     ],
     targets: [
+        .target(
+            name: "EvoloomReviewFixtures",
+            dependencies: [.product(name: "Evoloom", package: "Evoloom")]
+        ),
         .testTarget(
             name: "EvoloomSnapshotTests",
             dependencies: [
                 .product(name: "Evoloom", package: "Evoloom"),
+                "EvoloomReviewFixtures",
                 .product(name: "SnapshotTesting", package: "SnapshotTestingLocal"),
             ]
         ),

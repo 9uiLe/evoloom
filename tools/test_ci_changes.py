@@ -28,6 +28,7 @@ class CIChangesTests(unittest.TestCase):
     def test_changed_path_matrix(self):
         cases = {
             "docs/TESTING.md": set(),
+            ".github/pull_request_template.md": set(),
             "Sources/Evoloom/Components/IOSButton.swift": set(FLAGS),
             "Testing/Tests/EvoloomSnapshotTests/DesignTokensTests.swift": {
                 "run_checks",
@@ -51,6 +52,13 @@ class CIChangesTests(unittest.TestCase):
                 "ios",
                 "snapshot",
             },
+            "Testing/Sources/EvoloomReviewFixtures/ReviewScreens.swift": {
+                "run_checks",
+                "quality",
+                "prepare",
+                "ios",
+                "snapshot",
+            },
             "Testing/Tests/EvoloomSnapshotTests/__Snapshots__/example.png": {
                 "run_checks",
                 "prepare",
@@ -59,6 +67,7 @@ class CIChangesTests(unittest.TestCase):
             },
             "tools/registry.json": {"run_checks", "quality", "cli", "ios", "copy"},
             "tools/test_cli.py": {"run_checks", "quality", "cli"},
+            "tools/pr_images.py": {"run_checks", "quality", "cli"},
             "Package.swift": set(FLAGS),
             "flake.lock": set(FLAGS),
             ".github/workflows/ci.yml": set(FLAGS),
