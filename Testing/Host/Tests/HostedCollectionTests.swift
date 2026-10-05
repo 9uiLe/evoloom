@@ -10,7 +10,8 @@ final class HostedCollectionTests: XCTestCase {
         capture(.normal, scheme: .light, name: "collection-light")
     }
 
-    func testCollectionDark() {
+    func testZCollectionDark() {
+        // Run after the light cases so native chrome is not captured during a dark-to-light change.
         capture(.normal, scheme: .dark, name: "collection-dark")
     }
 
