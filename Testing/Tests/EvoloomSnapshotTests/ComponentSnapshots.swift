@@ -123,8 +123,25 @@ final class ComponentSnapshots: XCTestCase {
         snapshot(ReviewDetailView(), name: "review-detail-light", height: 660, scheme: .light, inset: false)
         snapshot(ReviewDetailView(), name: "review-detail-dark", height: 660, scheme: .dark, inset: false)
         snapshot(
+            ReviewDetailView(), name: "review-detail-large-text", height: 1050,
+            scheme: .light, category: .accessibilityMedium, inset: false
+        )
+        snapshot(
             ReviewDetailView(longJapanese: true), name: "review-detail-ja-long", width: 320,
             height: 900, scheme: .light, locale: "ja_JP", inset: false
+        )
+    }
+
+    func testButtonFlow() {
+        snapshot(ReviewButtonFlowView(), name: "button-flow-ready-light", height: 650, scheme: .light, inset: false)
+        snapshot(ReviewButtonFlowView(initialPhase: .running), name: "button-flow-running-light", height: 650, scheme: .light, inset: false)
+        snapshot(ReviewButtonFlowView(initialPhase: .completed), name: "button-flow-completed-light", height: 650, scheme: .light, inset: false)
+        snapshot(ReviewButtonFlowView(initialPhase: .failed), name: "button-flow-failed-light", height: 650, scheme: .light, inset: false)
+        snapshot(ReviewButtonFlowView(initialPhase: .running), name: "button-flow-running-dark", height: 650, scheme: .dark, inset: false)
+        snapshot(ReviewButtonFlowView(initialPhase: .failed), name: "button-flow-failed-dark", height: 650, scheme: .dark, inset: false)
+        snapshot(
+            ReviewButtonFlowView(initialPhase: .failed, longJapanese: true), name: "button-flow-failed-large-ja", width: 320,
+            height: 900, scheme: .light, category: .accessibilityMedium, locale: "ja_JP", inset: false
         )
     }
 

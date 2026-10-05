@@ -88,7 +88,8 @@ product. Existing files are protected unless `--overwrite` is explicit. See
 
 Open `Testing/Package.swift` in Xcode, select the fixed iPhone 18 Pro
 destination, and open `Testing/Sources/EvoloomReviewFixtures/` for the
-component pages, Settings Form, collection List, detail/edit screen and
+component pages, Settings Form, collection List, detail/edit screen, simulated
+Button state transitions and
 their named `#Preview` entries. These fixtures are in the development Package,
 not the consumer library. `just test-ios` compiles them and compares their
 fixed real-render images; opening Canvas is a separate manual check.
@@ -98,10 +99,13 @@ project definition is JSON; `just prepare-host` generates its ignored Xcode
 project through Nix-pinned XcodeGen. This is separate from Xcode's native
 `project.xcproj` JSON format, which the pinned Xcode 27.0 could not generate.
 See [visual review and PR images](docs/VISUAL_REVIEW.md).
-For Simulator taps, editing, Toggle and Form scrolling, run
-`nix develop -c just verify-settings-interaction` and read the
-[operation review guide](docs/SIM_USE_REVIEW.md). The Nix shell supplies
-sim-use; this optional operation check is separate from normal snapshot CI.
+For Simulator taps, editing, Toggle and scrolling, run
+`nix develop -c just verify-settings-interaction`,
+`nix develop -c just verify-detail-interaction` or
+`nix develop -c just verify-button-transition`. Read the
+[Settings operation guide](docs/SIM_USE_REVIEW.md) and
+[Detail/Button review](docs/DETAIL_BUTTON_REVIEW.md). The Nix shell supplies
+sim-use; these optional operation checks are separate from normal snapshot CI.
 
 ## Documents
 
@@ -110,6 +114,7 @@ sim-use; this optional operation check is separate from normal snapshot CI.
 [Testing](docs/TESTING.md) · [CI timing](docs/CI_PERFORMANCE.md) ·
 [Visual review](docs/VISUAL_REVIEW.md) ·
 [Settings operation review](docs/SIM_USE_REVIEW.md) ·
+[Detail/Button review](docs/DETAIL_BUTTON_REVIEW.md) ·
 [AI review prompt](docs/AI_REVIEW_PROMPT.md)
 · [Validation record](docs/VALIDATION.md)
 

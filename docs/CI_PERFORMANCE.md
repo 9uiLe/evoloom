@@ -2,14 +2,22 @@
 
 ## Current validation path
 
-The root Package is a dependency-free library. `Testing/` is the development
-Package with one XCTest target for six unit methods and eight image methods.
-Those eight methods compare 18 committed PNGs. A full CI run starts a Linux
-static job and an ARM64 macOS iOS job after a lightweight change detector. The
-iOS job runs one combined XCTest session and builds all copied source as a
-separate iOS library Package. It does not start a copy test runner. A required
-`validation` job rejects any failed or canceled selected job. Manual
-`workflow_dispatch` always selects the full suite.
+The root Package is a dependency-free library. `Testing/` contains one
+development XCTest target with six unit methods and ten fixed-image methods.
+Those ten methods compare 33 PNGs; the app-host target adds five collection
+methods and five PNGs. The current manifest therefore lists 38 images, while
+the two XCTest sessions execute 21 methods in total. These are separate counts:
+one method can compare several images. The app-host capture exits before its
+five exact RGBA comparisons run in `tools/compare_host_images.py`.
+
+A full CI run starts a Linux static job and an ARM64 macOS iOS job after a
+lightweight change detector. The iOS job runs the Package and app-host XCTest
+sessions serially on the same fixed Simulator, then builds all copied source
+as a separate iOS library Package. It does not start a copy test runner. A
+required `validation` job rejects any failed or canceled selected job. Manual
+`workflow_dispatch` always selects the full suite and can additionally run
+Settings, Detail or Button sim-use operation checks with the already built
+host. Normal PR CI does not run those interaction scenarios.
 
 For daily local feedback, run `nix develop -c just check-fast`. Before a
 change is complete, run `nix develop -c just prepare-deps check` (or
@@ -19,7 +27,9 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 ## Evidence and comparison
 
-Step durations below come from GitHub Jobs API timestamps. Wall time includes
+The measurements below are historical runs of earlier test matrices and
+host arrangements; they are not measurements of the current 38-image path.
+Step durations come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
 uses one old, four uncached combined-configuration, one cache miss/hit pair,
 one source-change cache trial, and two Simulator preboot trials on the same

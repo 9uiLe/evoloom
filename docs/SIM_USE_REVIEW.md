@@ -6,6 +6,14 @@ iPhone 18 Pro selected by `just doctor`; it is not an Evoloom runtime or copied
 component dependency. The host still uses `ReviewSettingsView` from the shared
 fixture target. Save's fixture action is empty: a tap cannot prove persistence.
 
+Current status: the manual [PR #2 Cloud run on 2026-10-05](https://github.com/9uiLe/evoloom/actions/runs/37232909641)
+completed all four Settings scenarios, including an accessibility-medium Form
+scroll with the software keyboard visible and Save reached after Escape. The
+local keyboard failure below is a dated investigation, not the current
+validation status. This run predates the Detail/Button changes and does not
+validate them. Ordinary PR CI performs snapshots and Package checks; it does
+not perform these sim-use operations.
+
 ## Reproduce
 
 ```sh
@@ -83,7 +91,7 @@ width, then checks the dark error/disabled presentation. `outlined` edits the
 detail screen's default outlined Title input. These are screen operation
 checks; they do not claim VoiceOver reading quality.
 
-## Local observation on 2026-10-05 JST
+## Historical PR #2 investigation (2026-10-05 JST)
 
 The local Nix package is sim-use 0.14.0. Its signed universal binary is from
 the [official v0.14.0 release](https://github.com/lycorp-jp/sim-use/releases/tag/v0.14.0),
@@ -144,10 +152,10 @@ relaunching the app, restarting the target Simulator, and temporarily setting
 the legacy Simulator `ConnectHardwareKeyboard=false` preference did not
 restore it. A temporary simulator language change to English also did not
 restore it; both temporary preferences were reverted. This is an observed host
-state, not a diagnosed Evoloom or sim-use defect. On a host where the software
-keyboard appears, rerun `just verify-settings-interaction` and review its
-fresh PNG and UI evidence before closing that gap. Do not use the earlier
-normal-size keyboard screenshot to claim the large-text combination passed.
+state, not a diagnosed Evoloom or sim-use defect. The later Cloud run below
+closed the large-text keyboard gap for that environment. The local failure
+remains relevant when reproducing the operation on a different host; rerun the
+command there and review fresh PNG and UI evidence.
 
 The [2026-10-05 Cloud operation run](https://github.com/9uiLe/evoloom/actions/runs/37226649166)
 captured the accessibility-medium Email field with the **software keyboard

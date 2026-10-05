@@ -27,6 +27,15 @@ EXTRA_CASES = {
     "review-settings-error": "Settings · validation error",
     "review-settings-narrow-ja": "Settings · narrow Japanese",
     "review-settings-large-text": "Settings · large text",
+    "review-detail-ja-long": "Detail · 320 pt Japanese",
+    "review-detail-large-text": "Detail · accessibility medium",
+    "button-flow-ready-light": "Button · ready light",
+    "button-flow-running-light": "Button · running light",
+    "button-flow-completed-light": "Button · completed light",
+    "button-flow-failed-light": "Button · failed light",
+    "button-flow-running-dark": "Button · running dark",
+    "button-flow-failed-dark": "Button · failed dark",
+    "button-flow-failed-large-ja": "Button · failed 320 pt Japanese accessibility medium",
 }
 
 
@@ -67,7 +76,7 @@ def markdown(sha, ci_url=None, root=None, extra_cases=()):
         "These are **committed baseline PNGs**, not images downloaded from this CI run.",
         f"Image commit: `{sha}`. Capture: Xcode 27.0 (27A266a), iOS 27.0 Simulator (24A434),",
         "iPhone 18 Pro, arm64; component/settings/detail: 390 pt fixed host; list: 402 × 874 pt scene-backed app host;",
-        "3× scale, en_US, UTC, standard Dynamic Type.",
+        "3× scale, en_US, UTC, standard Dynamic Type for paired images; extra cases identify their exceptions.",
     ]
     if ci_url:
         lines.append(f"PR CI run for this image commit as head: {ci_url}")
@@ -117,7 +126,7 @@ def main():
         action="append",
         choices=sorted(EXTRA_CASES),
         default=[],
-        help="Also link a named settings state after verifying its blob in the commit",
+        help="Also link a named state after verifying its blob in the commit",
     )
     args = parser.parse_args()
     sha = (

@@ -144,13 +144,12 @@ class Review:
         if appearance == "dark":
             args.append("--dark")
         self.command(*args)
-        title = (
-            "設定"
-            if "Japanese" in screen
-            else "Settings"
-            if screen.startswith("settings")
-            else "Title"
-        )
+        if screen.startswith("settings"):
+            title = "設定" if "Japanese" in screen else "Settings"
+        elif screen.startswith("detail"):
+            title = "タイトル" if "Japanese" in screen else "Title"
+        else:
+            title = "ボタンの状態" if "Japanese" in screen else "Button states"
         return self.await_ui(
             f"{screen}-{appearance}-initial",
             lambda data: any(item.get("label") == title for item in data["entries"]),
@@ -412,7 +411,7 @@ def record_environment(directory: Path, device: str) -> None:
                 "runtime": "iOS 27.0 (24A434)",
                 "device_name": "iPhone 18 Pro",
                 "scene_points": "402 x 874; app window safe area is managed by iOS",
-                "fixture_locale": "ja_JP for settingsJapanese routes; otherwise system locale",
+                "fixture_locale": "Japanese fixture routes use Japanese copy; otherwise English copy. Simulator locale is recorded separately.",
             },
             indent=2,
         )
