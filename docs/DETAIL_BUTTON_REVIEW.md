@@ -16,6 +16,7 @@ nix develop -c just doctor
 nix develop -c just prepare-deps
 nix develop -c just run-host detail normal light
 nix develop -c just run-host detailJapanese normal dark
+nix develop -c just run-host detailLongNotes normal light
 nix develop -c just run-host buttonFlow normal light
 nix develop -c just verify-detail-interaction
 nix develop -c just verify-button-transition
@@ -45,6 +46,12 @@ The scripts follow observe → act → verify on the exact UDID returned by
 newline, an editor-internal swipe distinct from an outer ScrollView swipe,
 software keyboard visibility, and a reachable Save action at
 accessibility-medium size. It also observes long Japanese and dark appearance.
+The editor-scroll check launches `detailLongNotes` with fixed overflowing
+content. This avoids making a timed accessibility input tool type hundreds of
+characters. Before and after PNGs show the Notes text moving inside its
+outline while the Title, Notes frame, hint and Save stay in place; the script
+also checks the editor's accessibility frame. The normal route separately
+checks typed Notes, a newline and a changed Title.
 Button requires ready → processing → failure → retry → processing → completed,
 checks the native Button's disabled state and the unchanged run count after
 physical taps during processing and external disable, then observes dark and

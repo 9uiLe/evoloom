@@ -6,6 +6,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from PIL import Image, ImageChops
 from sim_use_review import Review, record_environment
 from tasks import HOST_APP, ROOT, doctor, prepare_simulator, run_host
 
@@ -28,6 +29,26 @@ def tap_text_area(review: Review, label: str) -> None:
 def require_keyboard(review: Review, visible: bool) -> None:
     if not review.keyboard(visible):
         raise AssertionError(f"Expected software keyboard visible={visible}")
+
+
+def require_editor_content_moved(review: Review, frame: dict, screen: dict) -> None:
+    before_path = review.directory / "detail-editor-before-internal-scroll.png"
+    after_path = review.directory / "detail-editor-internal-scroll.png"
+    with Image.open(before_path) as before_image, Image.open(after_path) as after_image:
+        if before_image.size != after_image.size:
+            raise AssertionError("Editor screenshots have different dimensions")
+        scale = before_image.width / screen["width"]
+        bounds = (
+            round((frame["x"] + 2) * scale),
+            round((frame["y"] + 2) * scale),
+            round((frame["x"] + frame["width"] - 2) * scale),
+            round((frame["y"] + frame["height"] - 2) * scale),
+        )
+        before = before_image.convert("RGB").crop(bounds)
+        after = after_image.convert("RGB").crop(bounds)
+        changed = ImageChops.difference(before, after).convert("L").histogram()
+    if sum(changed[21:]) < 1_000:
+        raise AssertionError("Editor swipe did not visibly move its text")
 
 
 def large_detail(review: Review) -> None:
@@ -154,6 +175,7 @@ def detail(review: Review) -> None:
             "Editor swipe moved the outer ScrollView instead of editor content"
         )
     review.screenshot("editor-internal-scroll")
+    require_editor_content_moved(review, editor, before_inner["screen"])
 
     reached = review.ui("save-reached")
     save = review.entry(reached, "Button", "Save project")["frame"]
