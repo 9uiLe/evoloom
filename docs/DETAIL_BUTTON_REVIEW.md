@@ -259,6 +259,9 @@ The shared session now records `environment.json` before the first UI request.
 On a UI command timeout, it retains partial stdout/stderr and runs bounded,
 read-only diagnostics for the target UDID: `launchctl list`, sim-use daemon
 status and its available log tail, app state, and a `simctl` display capture.
+When the per-UDID pidfile and process command both identify this exact pinned
+daemon, a bounded two-second process sample is saved. A missing or blocked
+sample does not replace the original UI failure.
 Only a successful PNG capture is kept. These checks distinguish a running app,
 daemon connection, and visible scene when the failure recurs; they do not
 turn a timed-out operation into a pass. The exact UI acquisition limit remains

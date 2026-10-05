@@ -146,6 +146,33 @@ class SessionTests(unittest.TestCase):
             (self.session.directory / "ui-timeout-diagnostic-error.txt").read_text(),
         )
 
+    def test_samples_only_matching_fixed_device_daemon(self):
+        daemon_directory = self.session.directory / "daemon"
+        daemon_directory.mkdir()
+        (daemon_directory / "fixed-device.pid").write_text("4321\n")
+        calls = []
+
+        def command(*args, **kwargs):
+            calls.append((args, kwargs))
+            if args[0] == "ps":
+                return "/nix/store/pinned/bin/sim-use daemon start --udid fixed-device"
+            return "sampled"
+
+        self.session.command = command
+        self.session.capture_daemon_sample(daemon_directory)
+        self.assertEqual(calls[-1][0][:2], ("sample", "4321"))
+        self.assertEqual(calls[-1][1]["timeout"], 15)
+
+        calls.clear()
+
+        def other_device(*args, **kwargs):
+            calls.append((args, kwargs))
+            return "sim-use daemon start --udid other-device"
+
+        self.session.command = other_device
+        self.session.capture_daemon_sample(daemon_directory)
+        self.assertEqual([args[0] for args, _kwargs in calls], ["ps"])
+
     def test_failed_display_capture_does_not_leave_png(self):
         def command(*args, **_kwargs):
             if args[:3] == ("xcrun", "simctl", "io"):

@@ -83,6 +83,7 @@ class SimUseSession:
         # Fixed sim-use v0.14.0 keeps its per-UDID daemon log here even when
         # daemon status cannot answer while the UI request is still blocked.
         daemon_log_path = Path(f"/tmp/sim-use-{os.getuid()}/{self.device}.log")
+        self.capture_daemon_sample(daemon_log_path.parent)
         checks = (
             ("xcrun", "simctl", "spawn", self.device, "launchctl", "list"),
             ("sim-use", "daemon", "status", "--json"),
@@ -147,6 +148,29 @@ class SimUseSession:
                 if not valid_png:
                     screenshot.unlink()
         except OSError:
+            pass
+
+    def capture_daemon_sample(self, daemon_directory: Path) -> None:
+        """Sample only the pinned tool's daemon for this exact UDID, if alive."""
+        try:
+            pid = int((daemon_directory / f"{self.device}.pid").read_text().strip())
+            if pid < 2:
+                return
+            command = self.command(
+                "ps", "-ww", "-p", str(pid), "-o", "command=", timeout=5
+            )
+            if f"sim-use daemon start --udid {self.device}" not in command:
+                return
+            self.command(
+                "sample",
+                str(pid),
+                "2",
+                "10",
+                "-file",
+                str(self.directory / "sim-use-daemon.sample.txt"),
+                timeout=15,
+            )
+        except (OSError, RuntimeError, ValueError):
             pass
 
     def write_event(
