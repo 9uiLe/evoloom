@@ -102,6 +102,50 @@ verify input, focus, keyboard, double submission, VoiceOver or saved data.
 The integrating product owns contextual reading order and final VoiceOver
 validation.
 
+## Recorded operation evidence
+
+The checked-in [sim-use screen captures](images/pr3-sim-use/) are actual
+Simulator display PNGs, separate from the 38 committed snapshot baselines and
+the PNGs rendered by each image-test run. Each linked artifact also contains
+the per-command `actions.jsonl`, observed UI JSON, environment and any
+`failure.txt` for that run.
+
+- [Button operation run](https://github.com/9uiLe/evoloom/actions/runs/37245984165)
+  at code `5c5b471769139a22150f9d5ab304d5bda99fedd9`: the Button step
+  succeeded in 1m53s. The run as a whole failed in the separate Detail step;
+  its [artifact](https://github.com/9uiLe/evoloom/actions/runs/37245984165/artifacts/11319617048)
+  contains the Button actions and captures. The Button fixture code has not
+  changed since this run.
+- [Detail operation run](https://github.com/9uiLe/evoloom/actions/runs/37255651511)
+  at code `eec5a99cf59613a0ef9f780bea8285f5e477af58`: the Detail step
+  succeeded in 7m30s, including Title and multiline Notes edits, visible
+  software keyboard at accessibility-medium size, outer ScrollView reachability,
+  and a TextEditor-internal swipe. The outer editor frame remained
+  `x=20, y=490, 362×110 pt`; the before/after PNGs show its text moving.
+  The run as a whole failed because the unrelated `collection-empty` hosted
+  baseline differed only in native search and toolbar materials. Its
+  [artifact](https://github.com/9uiLe/evoloom/actions/runs/37255651511/artifacts/11322414638)
+  preserves both the operation images and the strict snapshot diff. The later
+  pixel-change assertion also accepts these exact before/after operation PNGs
+  and rejects two identical PNGs when invoked locally through the Nix shell.
+
+Both runs used Xcode 27.0 (27A266a), iPhoneSimulator SDK 27.0 (24A430),
+iOS 27.0 (24A434), arm64 iPhone 18 Pro, 402×874 pt app scene, en-US simulator
+language and Nix-pinned sim-use 0.14.0. Their fixed UDID was
+`4F17718A-544A-4115-888E-27ABF543A529`. Japanese fixture routes use
+Japanese copy; all other route strings are English. The operation PNGs are
+linked to their capture code above; the later commit that stores those PNGs
+only changes their repository location. A Cloud step success inside an overall
+failed run is stated as such and is not described as a passing full CI run.
+
+A later [Button manual run](https://github.com/9uiLe/evoloom/actions/runs/37257019496)
+passed its Package and hosted image tests but timed out after 30s in the first
+`simctl ui … appearance light` call, before the host app was launched. The
+shared launch helper now allows that Apple command 60s; it still records an
+error and stops on timeout, without retrying the operation or changing the
+Button fixture. This is a cold Simulator command bound, not a measured change
+to the Button action's response time.
+
 The pre-change detail baselines are in commit
 [`25f923f`](https://github.com/9uiLe/evoloom/tree/25f923fca2ba947c91ebc968378921107c8c8ce3).
 The PR records the replacement baseline commit and operation run separately,

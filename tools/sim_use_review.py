@@ -131,7 +131,9 @@ class Review:
         )
 
     def launch(self, screen: str, appearance: str = "light") -> dict:
-        self.command("xcrun", "simctl", "ui", self.device, "appearance", appearance)
+        self.command(
+            "xcrun", "simctl", "ui", self.device, "appearance", appearance, timeout=60
+        )
         args = [
             "xcrun",
             "simctl",

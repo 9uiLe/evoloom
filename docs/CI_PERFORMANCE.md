@@ -27,6 +27,16 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 ## Evidence and comparison
 
+The [2026-10-05 PR run of the 38-image path](https://github.com/9uiLe/evoloom/actions/runs/37257495357)
+finished in 8m27s from creation to completion. Its Linux static job took
+49s, iOS job 8m05s, and the four job durations summed to 9m05s of runner
+time. `ci-report.json` records 16 passing Package methods, five passing app
+host methods, 38/38 actual PNGs and five exact hosted RGBA matches. Its PR
+head was `33345ad6147b13ff4c0d25058588b2f9c6f05821`; Actions tested
+synthetic merge checkout `295365df51a7d1b021fdc8c6cb61b8f4eaea314b`.
+This is one observation under the current case count, not a stable throughput
+estimate. The earlier table below retains its original commits and matrices.
+
 The measurements below are historical runs of earlier test matrices and
 host arrangements; they are not measurements of the current 38-image path.
 Step durations come from GitHub Jobs API timestamps. Wall time includes
