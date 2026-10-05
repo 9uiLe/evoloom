@@ -3,7 +3,7 @@ import SwiftUI
 /// Development-only routes for the host app; this target is outside the Evoloom product.
 public enum ReviewFixtureScreen: String {
     case collection, controls, feedback, settings, settingsError, settingsJapanese, settingsJapaneseError
-    case detail, detailJapanese, buttonFlow, buttonFlowJapanese
+    case detail, detailJapanese, detailLongNotes, buttonFlow, buttonFlowJapanese
 }
 
 public struct ReviewFixtureView: View {
@@ -38,6 +38,8 @@ public struct ReviewFixtureView: View {
         case .detailJapanese:
             ReviewDetailView(longJapanese: true)
                 .environment(\.locale, Locale(identifier: "ja_JP"))
+        case .detailLongNotes:
+            ReviewDetailView(longNotes: true)
         case .buttonFlow:
             ReviewButtonFlowView()
         case .buttonFlowJapanese:

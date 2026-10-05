@@ -647,6 +647,7 @@ def run_host():
         "settingsJapaneseError",
         "detail",
         "detailJapanese",
+        "detailLongNotes",
         "buttonFlow",
         "buttonFlowJapanese",
     }:

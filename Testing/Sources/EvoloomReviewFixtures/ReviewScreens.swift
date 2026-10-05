@@ -6,6 +6,7 @@ enum ReviewCopy {
     static let project = "Field notes"
     static let description = "A shared place for research and release decisions."
     static let longJapanese = "調査結果と次のリリースに向けた確認事項を、チーム全員が同じ文脈で読めるようにまとめます。"
+    static let longNotes = (1 ... 12).map { "Review note \($0): capture the finding and agree on the next action." }.joined(separator: "\n")
 }
 
 enum ReviewComponentPage {
@@ -138,11 +139,13 @@ struct ReviewDetailView: View {
     @State private var notes = "Capture findings, then agree on the next action."
     let longJapanese: Bool
 
-    init(longJapanese: Bool = false) {
+    init(longJapanese: Bool = false, longNotes: Bool = false) {
         self.longJapanese = longJapanese
         if longJapanese {
             _title = State(initialValue: "調査ノート")
             _notes = State(initialValue: ReviewCopy.longJapanese)
+        } else if longNotes {
+            _notes = State(initialValue: ReviewCopy.longNotes)
         }
     }
 

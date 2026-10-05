@@ -131,24 +131,18 @@ def detail(review: Review) -> None:
         raise AssertionError("Notes did not change after multiline editing")
     review.screenshot("notes-edited")
 
-    # Make the editor content longer than its own viewport, then swipe inside it.
-    for _ in range(5):
-        review.sim("type", " More notes." * 3)
-    before_inner = review.await_ui(
-        "before-editor-scroll",
-        lambda data: (
-            len(review.entry(data, "TextArea", "Notes").get("value", ""))
-            > len(original_notes) + 180
-        ),
-    )
+    # Fixed long content tests the editor's own scroll without slow bulk typing.
+    before_inner = review.launch("detailLongNotes")
+    if len(review.entry(before_inner, "TextArea", "Notes")["value"]) <= 500:
+        raise AssertionError("Long Notes fixture did not load")
     review.screenshot("editor-before-internal-scroll")
     editor = review.entry(before_inner, "TextArea", "Notes")["frame"]
     review.sim(
         "swipe",
         "--from",
-        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + 20)}",
-        "--to",
         f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + editor['height'] - 20)}",
+        "--to",
+        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + 20)}",
         "--coordinate-space",
         "ui",
     )
@@ -161,8 +155,6 @@ def detail(review: Review) -> None:
         )
     review.screenshot("editor-internal-scroll")
 
-    review.sim("ios", "key", "41")
-    require_keyboard(review, False)
     reached = review.ui("save-reached")
     save = review.entry(reached, "Button", "Save project")["frame"]
     if save["y"] + save["height"] > reached["screen"]["height"] - 34:
