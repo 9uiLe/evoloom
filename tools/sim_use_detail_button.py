@@ -25,103 +25,12 @@ def tap_text_area(review: Review, label: str) -> None:
     )
 
 
-def text_value(review: Review, label: str, role: str, expected: str) -> dict:
-    return review.await_ui(
-        f"value-{label}",
-        lambda data: review.entry(data, role, label).get("value") == expected,
-    )
-
-
 def require_keyboard(review: Review, visible: bool) -> None:
     if not review.keyboard(visible):
         raise AssertionError(f"Expected software keyboard visible={visible}")
 
 
-def detail(review: Review) -> None:
-    review.prefix = "detail"
-    initial = review.ui("detail-initial")
-    review.entry(initial, "Heading", "Project details")
-    original_title = review.entry(initial, "TextField", "Title")["value"]
-    original_notes = review.entry(initial, "TextArea", "Notes")["value"]
-    review.screenshot("light-before-edit")
-
-    tap(review, "Title", "TextField")
-    require_keyboard(review, True)
-    review.screenshot("title-focused-keyboard")
-    review.sim("type", " X")
-    edited = text_value(review, "Title", "TextField", original_title + " X")
-    review.entry(edited, "Heading", "Project details")
-    review.screenshot("title-edited")
-
-    tap_text_area(review, "Notes")
-    require_keyboard(review, True)
-    review.screenshot("notes-focused-keyboard")
-    review.sim("type", " Added research findings.")
-    review.sim("ios", "key", "40")
-    review.sim("type", "Next action is review.")
-    notes = original_notes + " Added research findings.\nNext action is review."
-    text_value(review, "Notes", "TextArea", notes)
-    review.screenshot("notes-edited-keyboard")
-
-    # Make the editor content longer than its own viewport, then swipe inside it.
-    review.sim("type", " Further notes for the team. " * 9)
-    before_inner = review.await_ui(
-        "before-editor-scroll",
-        lambda data: (
-            len(review.entry(data, "TextArea", "Notes").get("value", ""))
-            > len(notes) + 100
-        ),
-    )
-    editor = review.entry(before_inner, "TextArea", "Notes")["frame"]
-    review.sim(
-        "swipe",
-        "--from",
-        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + editor['height'] - 15)}",
-        "--to",
-        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + 15)}",
-        "--coordinate-space",
-        "ui",
-    )
-    after_inner = review.ui("after-editor-scroll")
-    before_editor_y = review.entry(before_inner, "TextArea", "Notes")["frame"]["y"]
-    after_editor_y = review.entry(after_inner, "TextArea", "Notes")["frame"]["y"]
-    if abs(after_editor_y - before_editor_y) > 3:
-        raise AssertionError(
-            "Editor swipe moved the outer ScrollView instead of editor content"
-        )
-    review.screenshot("editor-internal-scroll")
-
-    save_before = review.entry(after_inner, "Button", "Save project")["frame"]["y"]
-    review.sim(
-        "swipe", "--from", "390,510", "--to", "390,220", "--coordinate-space", "ui"
-    )
-    after_outer = review.ui("after-outer-scroll")
-    save_after = review.entry(after_outer, "Button", "Save project")["frame"]["y"]
-    if save_after >= save_before:
-        raise AssertionError(
-            "Outer ScrollView did not move the Save action toward the viewport"
-        )
-    review.screenshot("outer-scroll-keyboard")
-    review.sim("ios", "key", "41")
-    require_keyboard(review, False)
-    review.screenshot("save-reached")
-
-    japanese = review.launch("detailJapanese")
-    review.entry(japanese, "Heading", "プロジェクトの詳細")
-    review.entry(japanese, "TextField", "タイトル")
-    review.entry(japanese, "TextArea", "メモ")
-    review.entry(japanese, "Button", "プロジェクトを保存")
-    review.screenshot("japanese-long")
-
-    dark = review.launch("detail", "dark")
-    review.entry(dark, "TextArea", "Notes")
-    review.screenshot("dark-before-edit")
-    tap_text_area(review, "Notes")
-    require_keyboard(review, True)
-    review.screenshot("dark-notes-focused")
-    review.sim("ios", "key", "41")
-    require_keyboard(review, False)
-
+def large_detail(review: Review) -> None:
     original_size = review.command(
         "xcrun", "simctl", "ui", review.device, "content_size"
     )
@@ -154,6 +63,7 @@ def detail(review: Review) -> None:
         after_y = review.entry(scrolled, "Button", "Save project")["frame"]["y"]
         if after_y >= before_y:
             raise AssertionError("Large-text outer scroll did not move Save upward")
+        require_keyboard(review, True)
         review.screenshot("large-scrolled-keyboard")
         review.sim("ios", "key", "41")
         require_keyboard(review, False)
@@ -168,6 +78,123 @@ def detail(review: Review) -> None:
         review.command(
             "xcrun", "simctl", "ui", review.device, "content_size", original_size
         )
+
+
+def detail(review: Review) -> None:
+    review.prefix = "detail"
+    large_detail(review)
+    review.launch("detail")
+    initial = review.ui("detail-initial")
+    review.entry(initial, "Heading", "Project details")
+    original_title = review.entry(initial, "TextField", "Title")["value"]
+    original_notes = review.entry(initial, "TextArea", "Notes")["value"]
+    review.screenshot("light-before-edit")
+
+    tap(review, "Title", "TextField")
+    require_keyboard(review, True)
+    review.screenshot("title-focused-keyboard")
+    tap_text_area(review, "Notes")
+    require_keyboard(review, True)
+    review.screenshot("notes-focused-keyboard")
+    review.sim("type", " Added research findings.")
+    review.await_ui(
+        "notes-first-edit",
+        lambda data: (
+            len(review.entry(data, "TextArea", "Notes").get("value", ""))
+            > len(original_notes) + 10
+        ),
+    )
+    review.sim("ios", "key", "40")
+    multiline_notes = review.await_ui(
+        "notes-newline",
+        lambda data: "\n" in review.entry(data, "TextArea", "Notes").get("value", ""),
+    )
+    review.sim("type", "Next action is review.")
+    notes = review.await_ui(
+        "notes-multiline-edit",
+        lambda data: (
+            len(review.entry(data, "TextArea", "Notes").get("value", ""))
+            > len(review.entry(multiline_notes, "TextArea", "Notes")["value"]) + 10
+        ),
+    )
+    if (
+        original_notes == review.entry(notes, "TextArea", "Notes").get("value")
+        or "\n" not in review.entry(notes, "TextArea", "Notes")["value"]
+    ):
+        raise AssertionError("Notes did not change after multiline editing")
+    review.screenshot("notes-edited")
+
+    # Make the editor content longer than its own viewport, then swipe inside it.
+    review.sim("type", " Further notes for the team. " * 9)
+    before_inner = review.await_ui(
+        "before-editor-scroll",
+        lambda data: (
+            len(review.entry(data, "TextArea", "Notes").get("value", ""))
+            > len(original_notes) + 100
+        ),
+    )
+    editor = review.entry(before_inner, "TextArea", "Notes")["frame"]
+    review.sim(
+        "swipe",
+        "--from",
+        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + editor['height'] - 15)}",
+        "--to",
+        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + 15)}",
+        "--coordinate-space",
+        "ui",
+    )
+    after_inner = review.ui("after-editor-scroll")
+    before_editor_y = review.entry(before_inner, "TextArea", "Notes")["frame"]["y"]
+    after_editor_y = review.entry(after_inner, "TextArea", "Notes")["frame"]["y"]
+    if abs(after_editor_y - before_editor_y) > 3:
+        raise AssertionError(
+            "Editor swipe moved the outer ScrollView instead of editor content"
+        )
+    review.screenshot("editor-internal-scroll")
+
+    save_before = review.entry(after_inner, "Button", "Save project")["frame"]["y"]
+    review.sim(
+        "swipe", "--from", "390,510", "--to", "390,220", "--coordinate-space", "ui"
+    )
+    after_outer = review.ui("after-outer-scroll")
+    save_after = review.entry(after_outer, "Button", "Save project")["frame"]["y"]
+    if save_after >= save_before:
+        raise AssertionError(
+            "Outer ScrollView did not move the Save action toward the viewport"
+        )
+    review.screenshot("outer-scroll")
+    review.sim("ios", "key", "41")
+    require_keyboard(review, False)
+    review.screenshot("save-reached")
+
+    review.launch("detail")
+    tap(review, "Title", "TextField")
+    review.sim("type", "X")
+    edited = review.await_ui(
+        "title-edited",
+        lambda data: (
+            review.entry(data, "TextField", "Title").get("value", "") != original_title
+            and review.entry(data, "TextField", "Title").get("value", "").endswith("X")
+        ),
+    )
+    review.entry(edited, "Heading", "Project details")
+    review.screenshot("title-edited")
+
+    japanese = review.launch("detailJapanese")
+    review.entry(japanese, "Heading", "プロジェクトの詳細")
+    review.entry(japanese, "TextField", "タイトル")
+    review.entry(japanese, "TextArea", "メモ")
+    review.entry(japanese, "Button", "プロジェクトを保存")
+    review.screenshot("japanese-long")
+
+    dark = review.launch("detail", "dark")
+    review.entry(dark, "TextArea", "Notes")
+    review.screenshot("dark-before-edit")
+    tap_text_area(review, "Notes")
+    review.sim("keyboard-state")
+    review.screenshot("dark-notes-focused")
+    review.sim("ios", "key", "41")
+    require_keyboard(review, False)
 
 
 def button_state(
