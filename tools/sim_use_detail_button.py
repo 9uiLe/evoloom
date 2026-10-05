@@ -132,22 +132,23 @@ def detail(review: Review) -> None:
     review.screenshot("notes-edited")
 
     # Make the editor content longer than its own viewport, then swipe inside it.
-    for _ in range(2):
+    for _ in range(5):
         review.sim("type", " More notes." * 3)
     before_inner = review.await_ui(
         "before-editor-scroll",
         lambda data: (
             len(review.entry(data, "TextArea", "Notes").get("value", ""))
-            > len(original_notes) + 100
+            > len(original_notes) + 180
         ),
     )
+    review.screenshot("editor-before-internal-scroll")
     editor = review.entry(before_inner, "TextArea", "Notes")["frame"]
     review.sim(
         "swipe",
         "--from",
-        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + editor['height'] - 15)}",
+        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + 20)}",
         "--to",
-        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + 15)}",
+        f"{round(editor['x'] + editor['width'] / 2)},{round(editor['y'] + editor['height'] - 20)}",
         "--coordinate-space",
         "ui",
     )
