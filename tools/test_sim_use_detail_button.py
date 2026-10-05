@@ -4,7 +4,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sim_use_detail_button import reach_save, save_reachable
+from sim_use_detail_button import (
+    dismiss_keyboard_if_visible,
+    reach_save,
+    save_reachable,
+)
 from sim_use_review import APP_ID
 
 
@@ -115,6 +119,30 @@ class SaveReachabilityTests(unittest.TestCase):
         review = FakeReview(self.directory)
         with self.assertRaisesRegex(AssertionError, "disabled"):
             reach_save(review, screen_with_save(VISIBLE, disabled=True), "disabled")
+
+    def test_keyboard_dismissal_only_sends_escape_when_visible(self):
+        class KeyboardReview:
+            def __init__(self, visible):
+                self.visible = visible
+                self.calls = []
+
+            def sim(self, *args):
+                self.calls.append(args)
+                return {"visible": self.visible}
+
+            def keyboard(self, visible):
+                self.calls.append(("confirm", visible))
+                return True
+
+        hidden = KeyboardReview(False)
+        dismiss_keyboard_if_visible(hidden)
+        self.assertEqual(hidden.calls, [("keyboard-state",)])
+        visible = KeyboardReview(True)
+        dismiss_keyboard_if_visible(visible)
+        self.assertEqual(
+            visible.calls,
+            [("keyboard-state",), ("ios", "key", "41"), ("confirm", False)],
+        )
 
 
 if __name__ == "__main__":

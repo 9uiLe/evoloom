@@ -197,6 +197,15 @@ and [Save reached screen](images/pr3-reach-diagnostic/cloud-large-save-reached.p
 are actual sim-use PNGs from capture code `a79b604`; the run as a whole failed
 later and is not presented as a successful full operation check.
 
+The next [Cloud detail run](https://github.com/9uiLe/evoloom/actions/runs/37267827979)
+passed the large-text Save check and TextEditor-internal scroll, then timed out
+in a final `keyboard-state` command on the dark route. Its preceding
+`keyboard-state` had already reported `visible: false`, so sending Escape and
+checking again was unnecessary. The script now sends Escape only when the
+software keyboard is visible, and a small test checks both branches. A tool
+timeout remains a failure; the script does not retry it or claim the failed
+run succeeded. PR #3 links the subsequent full operation result separately.
+
 A later [Button manual run](https://github.com/9uiLe/evoloom/actions/runs/37257019496)
 passed its Package and hosted image tests but timed out after 30s in the first
 `simctl ui … appearance light` call, before the host app was launched. The

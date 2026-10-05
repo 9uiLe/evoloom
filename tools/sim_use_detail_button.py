@@ -35,6 +35,12 @@ def require_keyboard(review: Review, visible: bool) -> None:
         raise AssertionError(f"Expected software keyboard visible={visible}")
 
 
+def dismiss_keyboard_if_visible(review: Review) -> None:
+    if review.sim("keyboard-state")["visible"]:
+        review.sim("ios", "key", "41")
+        require_keyboard(review, False)
+
+
 def save_reachable(review: Review, data: dict, observation: str) -> bool:
     matches = [
         item
@@ -163,9 +169,7 @@ def large_detail(review: Review) -> None:
             outer_scroll(review, before)
             review.ui("large-after-outer-scroll")
             review.screenshot("large-scrolled-keyboard")
-        if review.sim("keyboard-state")["visible"]:
-            review.sim("ios", "key", "41")
-        require_keyboard(review, False)
+        dismiss_keyboard_if_visible(review)
         reach_save(review, review.ui("large-after-keyboard-dismissal"), "large-save")
         review.screenshot("large-save-reached")
     finally:
@@ -272,10 +276,8 @@ def detail(review: Review) -> None:
     review.entry(dark, "TextArea", "Notes")
     review.screenshot("dark-before-edit")
     tap_text_area(review, "Notes")
-    review.sim("keyboard-state")
     review.screenshot("dark-notes-focused")
-    review.sim("ios", "key", "41")
-    require_keyboard(review, False)
+    dismiss_keyboard_if_visible(review)
 
 
 def button_state(
