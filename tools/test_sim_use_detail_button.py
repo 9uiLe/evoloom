@@ -9,7 +9,7 @@ from sim_use_detail_button import (
     reach_save,
     save_reachable,
 )
-from sim_use_review import APP_ID
+from sim_use_session import APP_ID
 
 
 def screen_with_save(frame=None, disabled=False):
