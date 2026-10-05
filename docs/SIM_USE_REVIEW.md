@@ -13,6 +13,19 @@ readiness, and the host preparation boundary. They cannot prove native
 keyboard, scrolling, hit testing, or Button state transitions. The manual
 Simulator commands below exercise those operations and save UI JSON and actual
 captures. The strict image suite checks fixed rendering separately.
+Before the first UI request, both entry points record the Nix sim-use binary,
+version, and fixed UDID. A timed-out UI request retains partial stdout/stderr
+and bounded target-device diagnostics, including a display PNG only when the
+Simulator capture succeeds. The failed request still fails the scenario; see
+the [initial UI investigation](DETAIL_BUTTON_REVIEW.md#initial-ui-acquisition-investigation).
+The diagnostic attempts a short process sample only after the per-UDID pidfile
+and process command identify the pinned daemon for that device.
+If a diagnostic step itself fails, `ui-timeout-diagnostic-error.txt` preserves
+that failure without replacing the original UI timeout.
+If a `sim-use screenshot` command times out after a verified UI state, the
+shared session records the timeout and tries a bounded `simctl io screenshot`
+of the same fixed device. A PNG is kept only when actually captured and
+validated; its `*.capture.json` sidecar identifies that capture path.
 
 The product remains the root Swift Package. `Testing/Host/` is the existing
 development-only app. `sim-use` observes and operates that app on the exact

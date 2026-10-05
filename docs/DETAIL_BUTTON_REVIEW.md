@@ -185,13 +185,22 @@ log shows a software keyboard over large Notes, an outer swipe, keyboard
 dismissal, and a visible enabled Save hit target. Later, after launching the
 long-Notes route, sim-use briefly returned an AX tree with entries but a
 `0 × 0` screen; the old helper accepted that tree and image-crop calculation
-failed by dividing by zero. The shared `Review.ui` observation now uses an
-eight-second polling deadline for nonzero screen dimensions (each sim-use UI
+failed by dividing by zero. The shared `SimUseSession.ui` observation now uses an
+eight-second polling deadline for nonzero screen dimensions after the first
+zero-viewport response (each sim-use UI
 call also has its existing 45-second command timeout), saves each interim UI
 JSON, and fails explicitly if the viewport never becomes ready. This is a
 readiness correction for both detail and settings operation scripts, not a
 change to the product view. The follow-up Cloud operation and its outcome are
 linked from PR #3.
+In a later Settings run on [head `fac5aae`](https://github.com/9uiLe/evoloom/actions/runs/37297502852),
+the normal-route launch succeeded and the first UI command returned a `0×0`
+viewport after 11.647s. The old deadline had already expired before it could
+observe a second UI response. The bounded viewport wait now starts at that
+observed `0×0` response. A zero viewport that persists through the window
+still fails, and a timed-out UI command is never retried. This fixes the
+wait's measured starting point; it does not establish why the earlier 45s UI
+command stopped.
 The run's [keyboard-on screen](images/pr3-reach-diagnostic/cloud-large-notes-keyboard.png)
 and [Save reached screen](images/pr3-reach-diagnostic/cloud-large-save-reached.png)
 are actual sim-use PNGs from capture code `a79b604`; the run as a whole failed
@@ -213,6 +222,62 @@ shared launch helper now allows that Apple command 60s; it still records an
 error and stops on timeout, without retrying the operation or changing the
 Button fixture. This is a cold Simulator command bound, not a measured change
 to the Button action's response time.
+
+## Initial UI acquisition investigation
+
+[Manual run 37269393765](https://github.com/9uiLe/evoloom/actions/runs/37269393765)
+used head and checkout `f12dc89b07c54157bdbde2567703e7137e46d3bf`.
+Artifact `11328575936` shows 39 rendered images and all five hosted RGBA
+comparisons passing. Its `actions.jsonl` records successful `bootstatus`
+(71.459s), install (26.418s), appearance selection (11.173s), and launch
+(4.575s, PID 16174) on fixed UDID
+`4F17718A-544A-4115-888E-27ABF543A529`. The first
+`sim-use ui --device <UDID> --json` then timed out after 46.718s under its
+45s subprocess limit. The artifact has `failure.txt`, but no operation UI
+JSON, operation PNG, or `environment.json`; the latter was written only after
+the first successful observation. The old timeout record replaced partial UI
+stdout with a placeholder and did not retain stderr from `TimeoutExpired`.
+These records establish the boundary of the failure, not which simulator or
+sim-use service stopped responding.
+
+On the local fixed iPhone 18 Pro (`10849834-229F-4AB1-A1B3-88BBEB25B5CF`),
+the Nix sim-use 0.14.0 binary at
+`/nix/store/gd53ci7grqnfgd2wpxn4jn85nggj22m1-sim-use-0.14.0/bin/sim-use`
+returned the first UI in 1.762s after successful bootstatus, install and
+launch. It had the target app package but a `0×0` viewport; the next UI had
+`402×874` and the expected elements. With the daemon restarted for only this
+UDID, the first UI returned in 1.677s, again with `0×0`; the fixed version's
+performance log measured 213ms for tree-fetch XPC and 805ms for its
+empty-shell remote-content retry. An in-process diagnostic call after launch
+returned SpringBoard as foreground in about 2s even though `simctl launch`
+returned an app PID. These are observations of transient scene readiness,
+not reproductions of the Cloud timeout. The existing nonzero-viewport and
+expected-app polling remain necessary; this evidence does not justify raising
+the timeout or blindly rerunning a timed-out UI request.
+
+The shared session now records `environment.json` before the first UI request.
+On a UI command timeout, it retains partial stdout/stderr and runs bounded,
+read-only diagnostics for the target UDID: `launchctl list`, sim-use daemon
+status and its available log tail, app state, and a `simctl` display capture.
+When the per-UDID pidfile and process command both identify this exact pinned
+daemon, a bounded two-second process sample is saved. A missing or blocked
+sample does not replace the original UI failure.
+Only a successful PNG capture is kept. These checks distinguish a running app,
+daemon connection, and visible scene when the failure recurs; they do not
+turn a timed-out operation into a pass. The exact UI acquisition limit remains
+45s and no other simulator or shared process is stopped. `collection-empty`
+may still have an unrelated material-rendering pixel difference; strict
+comparison and mismatch artifacts remain in force.
+
+On [run 37306385888](https://github.com/9uiLe/evoloom/actions/runs/37306385888),
+Detail editing, Notes internal scroll, and Save reachability were observed,
+then a `sim-use screenshot` call timed out before writing `detail-save-reached.png`.
+The shared capture helper now preserves that timeout event and uses a bounded
+`simctl io screenshot` for the same fixed UDID only in this case. The image is
+kept only after a real command success and PNG signature check; a
+`*.capture.json` sidecar identifies the fallback. If both capture paths fail,
+the operation fails and no placeholder image is written. This changes
+evidence capture, not the UI state expected by the Detail scenario.
 
 The pre-change detail baselines are in commit
 [`25f923f`](https://github.com/9uiLe/evoloom/tree/25f923fca2ba947c91ebc968378921107c8c8ce3).

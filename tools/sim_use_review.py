@@ -72,7 +72,7 @@ class SettingsReview(SimUseSession):
         )
 
     def normal_form(self) -> None:
-        normal = self.launch("settings")
+        normal = self.launch("settings", "Settings")
         self.screenshot("normal-light")
         self.entry(normal, "TextField", "Display name")
         self.assert_save(normal, disabled=False)
@@ -88,7 +88,7 @@ class SettingsReview(SimUseSession):
         self.toggle("1")
 
     def error_form(self) -> None:
-        error = self.launch("settingsError")
+        error = self.launch("settingsError", "Settings")
         self.entry(error, "StaticText", ERROR_EN)
         self.assert_save(error, disabled=True)
         workspace = self.entry(error, "TextField", "Workspace")
@@ -144,7 +144,7 @@ class SettingsReview(SimUseSession):
                 != "accessibility-medium"
             ):
                 raise AssertionError("Simulator did not adopt accessibility-medium")
-            initial = self.launch("settings")
+            initial = self.launch("settings", "Settings")
             self.entry(initial, "TextField", "Email")
             self.screenshot("large-initial")
             focused = self.tap_field("Email")
@@ -191,7 +191,7 @@ class SettingsReview(SimUseSession):
             )
 
     def japanese_and_dark(self) -> None:
-        japanese = self.launch("settingsJapaneseError")
+        japanese = self.launch("settingsJapaneseError", "設定")
         self.entry(japanese, "TextField", "チーム全員に表示する名前")
         self.entry(
             japanese,
@@ -199,7 +199,7 @@ class SettingsReview(SimUseSession):
             "保存する前に、有効なメールアドレスを入力してください。",
         )
         self.screenshot("japanese-error")
-        dark = self.launch("settingsError", "dark")
+        dark = self.launch("settingsError", "Settings", "dark")
         self.entry(dark, "TextField", "Workspace")
         self.assert_save(dark, disabled=True)
         self.screenshot("dark-error")
@@ -207,7 +207,7 @@ class SettingsReview(SimUseSession):
         self.screenshot("dark-error-focused")
 
     def outlined(self) -> None:
-        detail = self.launch("detail")
+        detail = self.launch("detail", "Title")
         field = self.entry(detail, "TextField", "Title")
         before = field["value"]
         self.screenshot("outlined-initial")
@@ -246,16 +246,17 @@ def main() -> None:
     try:
         if args.reuse_built_host:
             install_existing_host(review)
-            review.launch("settings")
+            record_environment(directory, device)
+            review.launch("settings", "Settings")
         else:
             run_host()
+            record_environment(directory, device)
         review.await_ui(
             "host-ready",
             lambda data: any(
                 item.get("label") == "Settings" for item in data["entries"]
             ),
         )
-        record_environment(directory, device)
         scenarios = {
             "large": review.large_text,
             "normal": review.normal_form,

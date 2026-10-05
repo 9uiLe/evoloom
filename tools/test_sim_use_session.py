@@ -7,7 +7,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from sim_use_session import SimUseSession, install_existing_host
+from sim_use_session import (
+    PNG_SIGNATURE,
+    CommandTimeout,
+    SimUseSession,
+    install_existing_host,
+)
 
 
 class SessionTests(unittest.TestCase):
@@ -61,14 +66,163 @@ class SessionTests(unittest.TestCase):
         )
 
     def test_command_timeout_records_failure_without_success_observation(self):
-        error = subprocess.TimeoutExpired(("sim-use", "ui"), 45)
+        error = subprocess.TimeoutExpired(
+            ("sim-use", "ui"), 45, output=b"partial", stderr=b"AX stalled"
+        )
         with (
             patch("sim_use_session.subprocess.run", side_effect=error),
+            patch("sim_use_session.apple_env", return_value={}),
             self.assertRaisesRegex(RuntimeError, "Timed out"),
         ):
             self.session.command("sim-use", "ui", timeout=45)
-        self.assertEqual(self.events()[0]["status"], "timeout")
+        self.assertEqual(
+            (
+                self.events()[0]["status"],
+                self.events()[0]["stdout"],
+                self.events()[0]["stderr"],
+            ),
+            ("timeout", "partial", "AX stalled"),
+        )
         self.assertEqual(list(self.session.directory.glob("*.ui.json")), [])
+        self.assertFalse((self.session.directory / "ui-timeout-display.png").exists())
+
+    def test_ui_timeout_preserves_daemon_and_display_evidence(self):
+        daemon_log = self.session.directory / "upstream.log"
+        daemon_log.write_text("daemon accepted UI request\n")
+
+        def run(args, **_kwargs):
+            if args[:2] == ("sim-use", "ui"):
+                raise subprocess.TimeoutExpired(args, 45, output=b"", stderr=b"waiting")
+            if args[:3] == ("sim-use", "daemon", "status"):
+                output = json.dumps(
+                    {
+                        "data": {
+                            "daemons": [
+                                {"deviceId": "fixed-device", "logPath": str(daemon_log)}
+                            ]
+                        }
+                    }
+                )
+            elif args[:3] == ("xcrun", "simctl", "io"):
+                Path(args[-1]).write_bytes(PNG_SIGNATURE + b"captured")
+                output = "Screenshot saved"
+            else:
+                output = "running"
+            return subprocess.CompletedProcess(args, 0, output, "")
+
+        with (
+            patch("sim_use_session.subprocess.run", side_effect=run),
+            patch("sim_use_session.apple_env", return_value={}),
+            self.assertRaisesRegex(RuntimeError, "Timed out"),
+        ):
+            self.session.command("sim-use", "ui", timeout=45)
+        self.assertIn(
+            "daemon accepted UI request",
+            (self.session.directory / "sim-use-daemon-tail.log").read_text(),
+        )
+        self.assertTrue((self.session.directory / "ui-timeout-display.png").exists())
+        self.assertEqual(self.events()[0]["status"], "timeout")
+        self.assertTrue(
+            any(
+                event["argv"][:3] == ["xcrun", "simctl", "spawn"]
+                for event in self.events()
+            )
+        )
+
+    def test_diagnostic_error_does_not_replace_ui_timeout(self):
+        error = subprocess.TimeoutExpired(("sim-use", "ui"), 45)
+        with (
+            patch("sim_use_session.subprocess.run", side_effect=error),
+            patch.object(
+                self.session,
+                "capture_ui_timeout",
+                side_effect=ValueError("diagnostic failed"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "Timed out"),
+        ):
+            self.session.command("sim-use", "ui", timeout=45)
+        self.assertIn(
+            "diagnostic failed",
+            (self.session.directory / "ui-timeout-diagnostic-error.txt").read_text(),
+        )
+
+    def test_samples_only_matching_fixed_device_daemon(self):
+        daemon_directory = self.session.directory / "daemon"
+        daemon_directory.mkdir()
+        (daemon_directory / "fixed-device.pid").write_text("4321\n")
+        calls = []
+
+        def command(*args, **kwargs):
+            calls.append((args, kwargs))
+            if args[0] == "ps":
+                return "/nix/store/pinned/bin/sim-use daemon start --udid fixed-device"
+            return "sampled"
+
+        self.session.command = command
+        self.session.capture_daemon_sample(daemon_directory)
+        self.assertEqual(calls[-1][0][:2], ("sample", "4321"))
+        self.assertEqual(calls[-1][1]["timeout"], 15)
+
+        calls.clear()
+
+        def other_device(*args, **kwargs):
+            calls.append((args, kwargs))
+            return "sim-use daemon start --udid other-device"
+
+        self.session.command = other_device
+        self.session.capture_daemon_sample(daemon_directory)
+        self.assertEqual([args[0] for args, _kwargs in calls], ["ps"])
+
+    def test_failed_display_capture_does_not_leave_png(self):
+        def command(*args, **_kwargs):
+            if args[:3] == ("xcrun", "simctl", "io"):
+                Path(args[-1]).write_bytes(PNG_SIGNATURE + b"incomplete")
+                raise RuntimeError("Capture failed")
+            if args[:3] == ("sim-use", "daemon", "status"):
+                return '{"data": {"daemons": []}}'
+            return ""
+
+        self.session.command = command
+        self.session.capture_ui_timeout()
+        self.assertFalse((self.session.directory / "ui-timeout-display.png").exists())
+
+    def test_screenshot_timeout_uses_real_fixed_device_capture(self):
+        image = self.session.directory / "setup-state.png"
+
+        def timeout(*_args):
+            raise CommandTimeout("timed out")
+
+        self.session.sim = timeout
+
+        def capture(*args, **kwargs):
+            self.assertEqual(args[:4], ("xcrun", "simctl", "io", "fixed-device"))
+            self.assertEqual(kwargs["timeout"], 30)
+            image.write_bytes(PNG_SIGNATURE + b"captured")
+
+        self.session.command = capture
+        self.session.screenshot("state")
+        self.assertTrue(image.exists())
+        self.assertEqual(
+            json.loads(image.with_suffix(".capture.json").read_text())["source"],
+            "simctl fallback",
+        )
+
+    def test_failed_screenshot_fallback_leaves_no_png(self):
+        image = self.session.directory / "setup-state.png"
+
+        def timeout(*_args):
+            raise CommandTimeout("timed out")
+
+        self.session.sim = timeout
+
+        def capture(*_args, **_kwargs):
+            image.write_bytes(b"partial")
+            raise RuntimeError("capture failed")
+
+        self.session.command = capture
+        with self.assertRaisesRegex(RuntimeError, "capture failed"):
+            self.session.screenshot("state")
+        self.assertFalse(image.exists())
 
     @patch("sim_use_session.HOST_APP")
     @patch("sim_use_session.prepare_simulator")
