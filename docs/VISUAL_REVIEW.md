@@ -33,7 +33,13 @@ were both 1206 × 2622 px, and their body pixels and layout matched. The
 [failed actual](images/pr3-empty-diagnostic/failed-actual.png) and
 [pixel diff](images/pr3-empty-diagnostic/failed-diff.png) are retained here;
 the [expected baseline](../Testing/Host/Tests/__Snapshots__/HostedCollectionTests/components.collection-empty.png)
-was not changed. The
+was not changed. A Nix-pinned Pillow comparison counted 58,456 changed pixels:
+53,879 in the search material and 4,577 around the toolbar button, with a
+maximum channel difference of two levels and none in the list body. The
+[sim-use app display](images/pr3-empty-diagnostic/sim-use-display.png) at
+code `a79b604a4227a747d911392fa533df6814ea3283` shows the same native
+controls visibly present; it includes status-bar glyphs and is not a
+pixel-for-pixel reference for the hosted drawHierarchy PNG. The
 [successful run 37260115873](https://github.com/9uiLe/evoloom/actions/runs/37260115873)
 matched all 39 images under the same pinned Apple environment. These are
 different code/merge checkouts, so they do not alone identify the cause.
@@ -56,6 +62,8 @@ full five-case runs matched, and after root restoration one full run matched.
 These few successes are not a stability rate. The strict comparison and
 failure evidence remain in place. See PR #3 for later Cloud runs and any
 remaining uncertainty.
+One additional targeted run after an explicit Simulator shutdown and boot
+matched in 54.65 s, including boot and test setup.
 
 | Screen | Image cases | Purpose |
 | --- | --- | --- |

@@ -165,6 +165,20 @@ overflow, keyboard obstruction and disabled states. The previous Cloud
 operation evidence predates this correction; use the latest manual run linked
 from PR #3 for its execution result.
 
+On the local pinned simulator, sim-use confirmed both accepted reachability
+paths on the same review fixture: normal-size Save was initially visible and
+hit-tested as the Button; at accessibility-medium size it started below the
+screen and became visible after one outer swipe. See the actual Simulator
+[normal](images/pr3-reach-diagnostic/normal-initially-reachable.png),
+[large before](images/pr3-reach-diagnostic/large-before-scroll.png), and
+[large after](images/pr3-reach-diagnostic/large-after-scroll.png) captures.
+The local full detail scenario stopped earlier because tapping Notes did not
+make `sim-use keyboard-state` report a software keyboard. Thus these local
+captures do not validate keyboard-on reachability; the explicit Cloud detail
+run is recorded separately in PR #3. All three PNGs were captured against
+code `a79b604a4227a747d911392fa533df6814ea3283`; their later storage
+commit is not a separate operation run.
+
 A later [Button manual run](https://github.com/9uiLe/evoloom/actions/runs/37257019496)
 passed its Package and hosted image tests but timed out after 30s in the first
 `simctl ui … appearance light` call, before the host app was launched. The
