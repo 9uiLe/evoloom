@@ -66,6 +66,7 @@ class SessionTests(unittest.TestCase):
         )
         with (
             patch("sim_use_session.subprocess.run", side_effect=error),
+            patch("sim_use_session.apple_env", return_value={}),
             self.assertRaisesRegex(RuntimeError, "Timed out"),
         ):
             self.session.command("sim-use", "ui", timeout=45)
@@ -106,6 +107,7 @@ class SessionTests(unittest.TestCase):
 
         with (
             patch("sim_use_session.subprocess.run", side_effect=run),
+            patch("sim_use_session.apple_env", return_value={}),
             self.assertRaisesRegex(RuntimeError, "Timed out"),
         ):
             self.session.command("sim-use", "ui", timeout=45)
@@ -120,6 +122,23 @@ class SessionTests(unittest.TestCase):
                 event["argv"][:3] == ["xcrun", "simctl", "spawn"]
                 for event in self.events()
             )
+        )
+
+    def test_diagnostic_error_does_not_replace_ui_timeout(self):
+        error = subprocess.TimeoutExpired(("sim-use", "ui"), 45)
+        with (
+            patch("sim_use_session.subprocess.run", side_effect=error),
+            patch.object(
+                self.session,
+                "capture_ui_timeout",
+                side_effect=ValueError("diagnostic failed"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "Timed out"),
+        ):
+            self.session.command("sim-use", "ui", timeout=45)
+        self.assertIn(
+            "diagnostic failed",
+            (self.session.directory / "ui-timeout-diagnostic-error.txt").read_text(),
         )
 
     def test_failed_display_capture_does_not_leave_png(self):

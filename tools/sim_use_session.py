@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import time
+import traceback
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -44,7 +45,15 @@ class SimUseSession:
                 self._text(error.stderr),
             )
             if args[:2] == ("sim-use", "ui"):
-                self.capture_ui_timeout()
+                try:
+                    self.capture_ui_timeout()
+                except (KeyError, OSError, RuntimeError, TypeError, ValueError):
+                    try:
+                        (self.directory / "ui-timeout-diagnostic-error.txt").write_text(
+                            traceback.format_exc()
+                        )
+                    except OSError:
+                        pass
             raise RuntimeError(f"Timed out: {args}") from error
         self.write_event(
             args,
