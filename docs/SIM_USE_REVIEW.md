@@ -1,5 +1,19 @@
 # Settings Form interaction review
 
+`tools/sim_use_session.py` owns fixed-UDID command execution, timeouts, UI
+observations, command evidence, host launch, and installation of an existing
+host build. `tools/sim_use_review.py` keeps Settings labels, fixture values,
+and Settings scenarios in `SettingsReview`. Detail and Button scenarios in
+`tools/sim_use_detail_button.py` use the shared session directly. A change to
+sim-use transport or evidence belongs in the shared session; a changed screen
+expectation belongs in its scenario.
+
+Python tests check fixed-device routing, command failure evidence, viewport
+readiness, and the host preparation boundary. They cannot prove native
+keyboard, scrolling, hit testing, or Button state transitions. The manual
+Simulator commands below exercise those operations and save UI JSON and actual
+captures. The strict image suite checks fixed rendering separately.
+
 The product remains the root Swift Package. `Testing/Host/` is the existing
 development-only app. `sim-use` observes and operates that app on the exact
 iPhone 18 Pro selected by `just doctor`; it is not an Evoloom runtime or copied

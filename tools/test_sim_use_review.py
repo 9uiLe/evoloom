@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sim_use_review import Review
+from sim_use_session import SimUseSession
 
 
-class FakeReview(Review):
+class FakeReview(SimUseSession):
     def __init__(self, directory, screens):
         super().__init__("fixed-test-device", directory)
         self.screens = iter(screens)

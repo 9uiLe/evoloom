@@ -8,19 +8,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from PIL import Image, ImageChops
-from sim_use_review import APP_ID, Review, record_environment
-from tasks import HOST_APP, ROOT, doctor, prepare_simulator, run_host
+from sim_use_session import (
+    APP_ID,
+    SimUseSession,
+    install_existing_host,
+    record_environment,
+)
+from tasks import ROOT, doctor, run_host
 
 HOST_SAFE_AREA_TOP = 62
 HOST_SAFE_AREA_BOTTOM = 34
 
 
-def tap(review: Review, label: str, role: str = "Button") -> None:
+def tap(review: SimUseSession, label: str, role: str = "Button") -> None:
     review.entry(review.ui(f"before-tap-{label}"), role, label)
     review.sim("tap", "--label", label, "--element-type", role)
 
 
-def tap_text_area(review: Review, label: str) -> None:
+def tap_text_area(review: SimUseSession, label: str) -> None:
     # The AX frame includes blank editor space. Aim inside the first text line.
     frame = review.entry(review.ui(f"before-tap-{label}"), "TextArea", label)["frame"]
     review.sim(
@@ -30,18 +35,18 @@ def tap_text_area(review: Review, label: str) -> None:
     )
 
 
-def require_keyboard(review: Review, visible: bool) -> None:
+def require_keyboard(review: SimUseSession, visible: bool) -> None:
     if not review.keyboard(visible):
         raise AssertionError(f"Expected software keyboard visible={visible}")
 
 
-def dismiss_keyboard_if_visible(review: Review) -> None:
+def dismiss_keyboard_if_visible(review: SimUseSession) -> None:
     if review.sim("keyboard-state")["visible"]:
         review.sim("ios", "key", "41")
         require_keyboard(review, False)
 
 
-def save_reachable(review: Review, data: dict, observation: str) -> bool:
+def save_reachable(review: SimUseSession, data: dict, observation: str) -> bool:
     matches = [
         item
         for item in data["entries"]
@@ -87,7 +92,7 @@ def save_reachable(review: Review, data: dict, observation: str) -> bool:
     )
 
 
-def outer_scroll(review: Review, data: dict) -> None:
+def outer_scroll(review: SimUseSession, data: dict) -> None:
     editor = review.entry(data, "TextArea", "Notes")["frame"]
     screen = data["screen"]
     editor_right = editor["x"] + editor["width"]
@@ -107,7 +112,7 @@ def outer_scroll(review: Review, data: dict) -> None:
     )
 
 
-def reach_save(review: Review, initial: dict, observation: str) -> dict:
+def reach_save(review: SimUseSession, initial: dict, observation: str) -> dict:
     current = initial
     for attempt in range(3):
         if save_reachable(review, current, f"{observation}-{attempt}"):
@@ -120,7 +125,9 @@ def reach_save(review: Review, initial: dict, observation: str) -> dict:
     )
 
 
-def require_editor_content_moved(review: Review, frame: dict, screen: dict) -> None:
+def require_editor_content_moved(
+    review: SimUseSession, frame: dict, screen: dict
+) -> None:
     before_path = review.directory / "detail-editor-before-internal-scroll.png"
     after_path = review.directory / "detail-editor-internal-scroll.png"
     with Image.open(before_path) as before_image, Image.open(after_path) as after_image:
@@ -140,7 +147,7 @@ def require_editor_content_moved(review: Review, frame: dict, screen: dict) -> N
         raise AssertionError("Editor swipe did not visibly move its text")
 
 
-def large_detail(review: Review) -> None:
+def large_detail(review: SimUseSession) -> None:
     original_size = review.command(
         "xcrun", "simctl", "ui", review.device, "content_size"
     )
@@ -178,7 +185,7 @@ def large_detail(review: Review) -> None:
         )
 
 
-def detail(review: Review) -> None:
+def detail(review: SimUseSession) -> None:
     review.prefix = "detail"
     large_detail(review)
     review.launch("detail")
@@ -281,7 +288,7 @@ def detail(review: Review) -> None:
 
 
 def button_state(
-    review: Review, status: str, count: int, action: str, disabled: bool
+    review: SimUseSession, status: str, count: int, action: str, disabled: bool
 ) -> dict:
     data = review.await_ui(
         f"button-{status}-{count}",
@@ -301,7 +308,9 @@ def button_state(
     return data
 
 
-def tap_disabled_button(review: Review, data: dict, label: str, count: int) -> None:
+def tap_disabled_button(
+    review: SimUseSession, data: dict, label: str, count: int
+) -> None:
     frame = review.entry(data, "Button", label)["frame"]
     review.sim(
         "tap",
@@ -312,7 +321,7 @@ def tap_disabled_button(review: Review, data: dict, label: str, count: int) -> N
     review.entry(unchanged, "StaticText", f"Runs started: {count}")
 
 
-def button_flow(review: Review) -> None:
+def button_flow(review: SimUseSession) -> None:
     review.prefix = "button"
     review.ui("button-initial")
     ready = button_state(review, "Ready", 0, "Run review", False)
@@ -405,7 +414,7 @@ def main() -> None:
     directory = args.output or ROOT / "TestResults/SimUse" / datetime.now(UTC).strftime(
         f"%Y%m%dT%H%M%SZ-{args.scenario}"
     )
-    review = Review(device, directory)
+    review = SimUseSession(device, directory)
     os.environ.update(
         EVOLOOM_SCREEN="detail" if args.scenario == "detail" else "buttonFlow",
         EVOLOOM_STATE="normal",
@@ -414,15 +423,7 @@ def main() -> None:
     started = time.monotonic()
     try:
         if args.reuse_built_host:
-            prepare_simulator()
-            review.command("xcrun", "simctl", "bootstatus", device, "-b", timeout=120)
-            if not HOST_APP.is_dir():
-                raise RuntimeError(
-                    f"Built host missing at {HOST_APP}; run just build-host first"
-                )
-            review.command(
-                "xcrun", "simctl", "install", device, str(HOST_APP), timeout=120
-            )
+            install_existing_host(review)
         else:
             run_host()
         review.launch("detail" if args.scenario == "detail" else "buttonFlow")
