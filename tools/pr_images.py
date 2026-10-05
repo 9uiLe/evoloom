@@ -34,6 +34,7 @@ EXTRA_CASES = {
     "button-flow-completed-light": "Button · completed light",
     "button-flow-failed-light": "Button · failed light",
     "button-flow-running-dark": "Button · running dark",
+    "button-flow-running-large-ja": "Button · running 320 pt Japanese accessibility medium",
     "button-flow-failed-dark": "Button · failed dark",
     "button-flow-failed-large-ja": "Button · failed 320 pt Japanese accessibility medium",
 }
