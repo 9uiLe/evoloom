@@ -18,8 +18,6 @@ version, and fixed UDID. A timed-out UI request retains partial stdout/stderr
 and bounded target-device diagnostics, including a display PNG only when the
 Simulator capture succeeds. The failed request still fails the scenario; see
 the [initial UI investigation](DETAIL_BUTTON_REVIEW.md#initial-ui-acquisition-investigation).
-The environment also records the fixed tool's in-process transport mode;
-this development-only mode avoids reusing a sim-use daemon across commands.
 If a diagnostic step itself fails, `ui-timeout-diagnostic-error.txt` preserves
 that failure without replacing the original UI timeout.
 

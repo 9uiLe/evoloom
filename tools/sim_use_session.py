@@ -27,13 +27,6 @@ class SimUseSession:
 
     def command(self, *args: str, timeout: int = 30) -> str:
         started = time.monotonic()
-        env = None
-        if args[0] == "xcrun":
-            env = apple_env()
-        elif args[0] == "sim-use":
-            # The pinned tool documents this one-call mode. Detail Cloud runs
-            # observed different verbs stalling behind the reused daemon.
-            env = {**os.environ, "SIM_USE_NO_DAEMON": "1"}
         try:
             result = subprocess.run(
                 args,
@@ -41,7 +34,7 @@ class SimUseSession:
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                env=env,
+                env=apple_env() if args[0] == "xcrun" else None,
             )
         except subprocess.TimeoutExpired as error:
             self.write_event(
@@ -305,7 +298,6 @@ def record_environment(directory: Path, device: str) -> None:
                     ["sim-use", "--version"], text=True, timeout=15
                 ).strip(),
                 "sim_use_binary": shutil.which("sim-use"),
-                "sim_use_transport": "in-process (SIM_USE_NO_DAEMON=1)",
                 "content_size": subprocess.check_output(
                     ["xcrun", "simctl", "ui", device, "content_size"],
                     text=True,
