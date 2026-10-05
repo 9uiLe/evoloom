@@ -24,7 +24,38 @@ For Canvas, open `Testing/Package.swift`, select iPhone 18 Pro and a named `#Pre
 
 Scene-backed list cases use an iPhone 18 Pro window at 402 × 874 pt, 3× (1206 × 2622 px), real safe area, system fonts, `en_US`, UTC, standard Dynamic Type and explicit light/dark appearance. The snapshot captures app content without status bar glyphs. The fixed-size cases use a `UIHostingController`, 390 or 320 pt width, specified height, 3×, zero test safe area and explicit locale, Dynamic Type and appearance. Both modes require macOS 27.0 build 26A428, Xcode 27.0 build 27A266a, SDK 27.0 build 24A430, iOS 27.0 runtime build 24A434 and arm64. `just doctor` rejects a mismatch.
 
-Some Cloud runs differ from the `collection-empty` baseline only in the native search and toolbar materials; the other four hosted images match. Moving the dark test after the light cases [passed once](https://github.com/9uiLe/evoloom/actions/runs/37257495357) but [failed in a subsequent run](https://github.com/9uiLe/evoloom/actions/runs/37258518089) with the same test order, so that trial did not establish a cause or a fix. The original test order was restored. Exact comparison remains active, and failures keep the expected, actual and diff images for diagnosis.
+Some Cloud runs differ from the `collection-empty` baseline only in the native
+search and toolbar materials; the other four hosted images match. In the
+[failed run 37258518089](https://github.com/9uiLe/evoloom/actions/runs/37258518089),
+the hosted XCTest captured all five images successfully, then the external
+RGBA comparison failed only `collection-empty`. The expected and actual PNGs
+were both 1206 × 2622 px, and their body pixels and layout matched. The
+[failed actual](images/pr3-empty-diagnostic/failed-actual.png) and
+[pixel diff](images/pr3-empty-diagnostic/failed-diff.png) are retained here;
+the [expected baseline](../Testing/Host/Tests/__Snapshots__/HostedCollectionTests/components.collection-empty.png)
+was not changed. The
+[successful run 37260115873](https://github.com/9uiLe/evoloom/actions/runs/37260115873)
+matched all 39 images under the same pinned Apple environment. These are
+different code/merge checkouts, so they do not alone identify the cause.
+Moving the dark test after the light cases
+[passed once](https://github.com/9uiLe/evoloom/actions/runs/37257495357)
+but failed in the later run, so order alone was not a fix.
+
+The capture code previously left `window.overrideUserInterfaceStyle` set for
+the next test. The pinned SnapshotTesting `drawHierarchyInKeyWindow` strategy
+also clears the key window's root controller when it disposes its temporary
+host. The app now restores both original window properties after every
+capture, and the test requires a foreground scene and key window. A JSON
+sidecar beside each rendered PNG records capture order, requested and prior
+appearance, actual window/host traits, scene activity, scale, dimensions and
+safe area. This corrects an observed lifecycle leak and leaves evidence for
+the next mismatch; it does not prove that the leak caused every one-level
+native material pixel variation. Local pre-change targeted runs (empty alone
+twice, dark then empty once) all matched; after appearance restoration three
+full five-case runs matched, and after root restoration one full run matched.
+These few successes are not a stability rate. The strict comparison and
+failure evidence remain in place. See PR #3 for later Cloud runs and any
+remaining uncertainty.
 
 | Screen | Image cases | Purpose |
 | --- | --- | --- |

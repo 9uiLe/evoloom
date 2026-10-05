@@ -1,14 +1,18 @@
 """Exercise detail editing and simulated button transitions in the review host."""
 
 import argparse
+import json
 import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 from PIL import Image, ImageChops
-from sim_use_review import Review, record_environment
+from sim_use_review import APP_ID, Review, record_environment
 from tasks import HOST_APP, ROOT, doctor, prepare_simulator, run_host
+
+HOST_SAFE_AREA_TOP = 62
+HOST_SAFE_AREA_BOTTOM = 34
 
 
 def tap(review: Review, label: str, role: str = "Button") -> None:
@@ -29,6 +33,85 @@ def tap_text_area(review: Review, label: str) -> None:
 def require_keyboard(review: Review, visible: bool) -> None:
     if not review.keyboard(visible):
         raise AssertionError(f"Expected software keyboard visible={visible}")
+
+
+def save_reachable(review: Review, data: dict, observation: str) -> bool:
+    matches = [
+        item
+        for item in data["entries"]
+        if item["role"] == "Button" and item.get("label") == "Save project"
+    ]
+    if not matches:
+        return False
+    if len(matches) != 1:
+        raise AssertionError(f"Expected one Save project Button, found {len(matches)}")
+    button = matches[0]
+    if "disabled" in button["states"]:
+        raise AssertionError("Save project is disabled")
+    frame, screen = button["frame"], data["screen"]
+    if frame["width"] < 44 or frame["height"] < 44:
+        raise AssertionError(f"Save project has an undersized operation area: {frame}")
+    # Measured from the key window on the pinned 402 × 874 pt iPhone 18 Pro.
+    if (screen["width"], screen["height"]) != (402, 874):
+        raise AssertionError(f"Unexpected review scene size: {screen}")
+    if not (
+        frame["x"] >= screen["x"]
+        and frame["y"] >= screen["y"] + HOST_SAFE_AREA_TOP
+        and frame["x"] + frame["width"] <= screen["x"] + screen["width"]
+        and frame["y"] + frame["height"]
+        <= screen["y"] + screen["height"] - HOST_SAFE_AREA_BOTTOM
+    ):
+        return False
+    center = (
+        round(frame["x"] + frame["width"] / 2),
+        round(frame["y"] + frame["height"] / 2),
+    )
+    try:
+        hit = review.sim("ui", "--point", f"{center[0]},{center[1]}")
+    except RuntimeError as error:
+        if "No translation object returned for simulator" in str(error):
+            return False
+        raise
+    (review.directory / f"{review.prefix}-{observation}-hit.ui.json").write_text(
+        json.dumps(hit, ensure_ascii=False, indent=2) + "\n"
+    )
+    return hit.get("appPackage") == APP_ID and any(
+        item["role"] == "Button" and item.get("label") == "Save project"
+        for item in hit["entries"]
+    )
+
+
+def outer_scroll(review: Review, data: dict) -> None:
+    editor = review.entry(data, "TextArea", "Notes")["frame"]
+    screen = data["screen"]
+    editor_right = editor["x"] + editor["width"]
+    screen_right = screen["x"] + screen["width"]
+    if editor_right >= screen_right:
+        raise AssertionError("No outer ScrollView gesture lane beside Notes")
+    lane = round((editor_right + screen_right) / 2)
+    # The fixed 402 × 874 pt scene previously used 390,500 → 390,220.
+    review.sim(
+        "swipe",
+        "--from",
+        f"{lane},{round(screen['height'] * 0.57)}",
+        "--to",
+        f"{lane},{round(screen['height'] * 0.25)}",
+        "--coordinate-space",
+        "ui",
+    )
+
+
+def reach_save(review: Review, initial: dict, observation: str) -> dict:
+    current = initial
+    for attempt in range(3):
+        if save_reachable(review, current, f"{observation}-{attempt}"):
+            return current
+        if attempt < 2:
+            outer_scroll(review, current)
+            current = review.ui(f"{observation}-after-outer-scroll-{attempt + 1}")
+    raise AssertionError(
+        "Save project remained outside the screen or obscured after two outer swipes"
+    )
 
 
 def require_editor_content_moved(review: Review, frame: dict, screen: dict) -> None:
@@ -76,31 +159,14 @@ def large_detail(review: Review) -> None:
         require_keyboard(review, True)
         review.screenshot("large-notes-keyboard")
         before = review.ui("large-before-outer-scroll")
-        if any(
-            item["role"] == "Button" and item.get("label") == "Save project"
-            for item in before["entries"]
-        ):
-            raise AssertionError("Large-text Save unexpectedly appears before scroll")
-        review.sim(
-            "swipe", "--from", "390,500", "--to", "390,220", "--coordinate-space", "ui"
-        )
-        review.await_ui(
-            "large-after-outer-scroll",
-            lambda data: any(
-                item["role"] == "Button" and item.get("label") == "Save project"
-                for item in data["entries"]
-            ),
-        )
-        require_keyboard(review, True)
-        review.screenshot("large-scrolled-keyboard")
-        review.sim("ios", "key", "41")
+        if not save_reachable(review, before, "large-with-keyboard"):
+            outer_scroll(review, before)
+            review.ui("large-after-outer-scroll")
+            review.screenshot("large-scrolled-keyboard")
+        if review.sim("keyboard-state")["visible"]:
+            review.sim("ios", "key", "41")
         require_keyboard(review, False)
-        reached = review.ui("large-save-reached")
-        save = review.entry(reached, "Button", "Save project")["frame"]
-        if save["y"] + save["height"] > reached["screen"]["height"] - 34:
-            raise AssertionError(
-                "Large-text Save action is not reachable after dismissal"
-            )
+        reach_save(review, review.ui("large-after-keyboard-dismissal"), "large-save")
         review.screenshot("large-save-reached")
     finally:
         review.command(
@@ -114,6 +180,8 @@ def detail(review: Review) -> None:
     review.launch("detail")
     initial = review.ui("detail-initial")
     review.entry(initial, "Heading", "Project details")
+    reach_save(review, initial, "initial-save")
+    review.screenshot("light-save-reached")
     original_title = review.entry(initial, "TextField", "Title")["value"]
     original_notes = review.entry(initial, "TextArea", "Notes")["value"]
     review.screenshot("light-before-edit")
@@ -177,10 +245,7 @@ def detail(review: Review) -> None:
     review.screenshot("editor-internal-scroll")
     require_editor_content_moved(review, editor, before_inner["screen"])
 
-    reached = review.ui("save-reached")
-    save = review.entry(reached, "Button", "Save project")["frame"]
-    if save["y"] + save["height"] > reached["screen"]["height"] - 34:
-        raise AssertionError("Save action is not visible after keyboard dismissal")
+    reach_save(review, review.ui("save-reached"), "save-after-editor-scroll")
     review.screenshot("save-reached")
 
     review.launch("detail")

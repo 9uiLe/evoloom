@@ -46,6 +46,16 @@ The scripts follow observe → act → verify on the exact UDID returned by
 newline, an editor-internal swipe distinct from an outer ScrollView swipe,
 software keyboard visibility, and a reachable Save action at
 accessibility-medium size. It also observes long Japanese and dark appearance.
+Save reachability accepts either an initially visible action or one reached
+after an outer ScrollView swipe and, when needed, native keyboard dismissal.
+The script checks the full Button frame against the measured 402 × 874 pt
+scene and its 62 pt top / 34 pt bottom safe areas, verifies a minimum 44 pt
+operation area and enabled state, then asks sim-use which element is at the
+Button's center. The keyboard-on observation and final reachable screenshot
+are separate. An accessibility-tree entry outside the viewport is not counted
+as reachable. At most two outer swipes are attempted; an obscured, disabled or
+still offscreen action fails. This checks access to the fixture's empty Save
+action, not persistence or a successful save.
 The editor-scroll check launches `detailLongNotes` with fixed overflowing
 content. This avoids making a timed accessibility input tool type hundreds of
 characters. Before and after PNGs show the Notes text moving inside its
@@ -144,6 +154,16 @@ PNGs passed the later cropped-image assertion when checked locally; its
 [artifact](https://github.com/9uiLe/evoloom/actions/runs/37255651511/artifacts/11322414638)
 retains the strict diff. The checked-in Detail operation PNGs are from the
 subsequent successful run above.
+
+The earlier large-text script incorrectly failed as soon as `Save project`
+appeared in the pre-scroll accessibility tree. AX presence alone did not show
+whether its frame was on screen or unobscured; an initially reachable Button
+is also a valid layout. The updated script removes that precondition and
+records the screen/frame/point-hit observations. Its small Python regression
+tests cover initially reachable, reached after scrolling, top/left/right
+overflow, keyboard obstruction and disabled states. The previous Cloud
+operation evidence predates this correction; use the latest manual run linked
+from PR #3 for its execution result.
 
 A later [Button manual run](https://github.com/9uiLe/evoloom/actions/runs/37257019496)
 passed its Package and hosted image tests but timed out after 30s in the first
