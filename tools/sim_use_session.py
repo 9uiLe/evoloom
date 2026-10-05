@@ -15,6 +15,10 @@ APP_ID = "dev.evoloom.reviewhost"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
+class CommandTimeout(RuntimeError):
+    """A bounded command ended before returning a result."""
+
+
 class SimUseSession:
     def __init__(self, device: str, directory: Path):
         self.device = device
@@ -54,7 +58,7 @@ class SimUseSession:
                         )
                     except OSError:
                         pass
-            raise RuntimeError(f"Timed out: {args}") from error
+            raise CommandTimeout(f"Timed out: {args}") from error
         self.write_event(
             args,
             time.monotonic() - started,
@@ -231,9 +235,49 @@ class SimUseSession:
         return False
 
     def screenshot(self, name: str) -> None:
-        self.sim(
-            "screenshot", "--output", str(self.directory / f"{self.prefix}-{name}.png")
-        )
+        image = self.directory / f"{self.prefix}-{name}.png"
+        try:
+            self.sim("screenshot", "--output", str(image))
+        except CommandTimeout:
+            # sim-use's streaming screenshot runs in-process even with its
+            # daemon enabled. Recover evidence through Apple's fixed device.
+            image.unlink(missing_ok=True)
+            try:
+                self.command(
+                    "xcrun",
+                    "simctl",
+                    "io",
+                    self.device,
+                    "screenshot",
+                    str(image),
+                    timeout=30,
+                )
+                self.require_png(image)
+            except (OSError, RuntimeError):
+                image.unlink(missing_ok=True)
+                raise
+            image.with_suffix(".capture.json").write_text(
+                json.dumps(
+                    {
+                        "source": "simctl fallback",
+                        "reason": "sim-use screenshot timeout",
+                    }
+                )
+                + "\n"
+            )
+            return
+        self.require_png(image)
+
+    @staticmethod
+    def require_png(image: Path) -> None:
+        try:
+            with image.open("rb") as source:
+                valid = source.read(8) == PNG_SIGNATURE
+        except OSError:
+            valid = False
+        if not valid:
+            image.unlink(missing_ok=True)
+            raise RuntimeError(f"Screenshot missing or invalid PNG: {image}")
 
     def launch(
         self, screen: str, expected_label: str, appearance: str = "light"

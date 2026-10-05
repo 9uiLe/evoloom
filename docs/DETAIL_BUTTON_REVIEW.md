@@ -266,6 +266,16 @@ turn a timed-out operation into a pass. The exact UI acquisition limit remains
 may still have an unrelated material-rendering pixel difference; strict
 comparison and mismatch artifacts remain in force.
 
+On [run 37306385888](https://github.com/9uiLe/evoloom/actions/runs/37306385888),
+Detail editing, Notes internal scroll, and Save reachability were observed,
+then a `sim-use screenshot` call timed out before writing `detail-save-reached.png`.
+The shared capture helper now preserves that timeout event and uses a bounded
+`simctl io screenshot` for the same fixed UDID only in this case. The image is
+kept only after a real command success and PNG signature check; a
+`*.capture.json` sidecar identifies the fallback. If both capture paths fail,
+the operation fails and no placeholder image is written. This changes
+evidence capture, not the UI state expected by the Detail scenario.
+
 The pre-change detail baselines are in commit
 [`25f923f`](https://github.com/9uiLe/evoloom/tree/25f923fca2ba947c91ebc968378921107c8c8ce3).
 The PR records the replacement baseline commit and operation run separately,

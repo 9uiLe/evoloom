@@ -7,7 +7,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from sim_use_session import PNG_SIGNATURE, SimUseSession, install_existing_host
+from sim_use_session import (
+    PNG_SIGNATURE,
+    CommandTimeout,
+    SimUseSession,
+    install_existing_host,
+)
 
 
 class SessionTests(unittest.TestCase):
@@ -153,6 +158,44 @@ class SessionTests(unittest.TestCase):
         self.session.command = command
         self.session.capture_ui_timeout()
         self.assertFalse((self.session.directory / "ui-timeout-display.png").exists())
+
+    def test_screenshot_timeout_uses_real_fixed_device_capture(self):
+        image = self.session.directory / "setup-state.png"
+
+        def timeout(*_args):
+            raise CommandTimeout("timed out")
+
+        self.session.sim = timeout
+
+        def capture(*args, **kwargs):
+            self.assertEqual(args[:4], ("xcrun", "simctl", "io", "fixed-device"))
+            self.assertEqual(kwargs["timeout"], 30)
+            image.write_bytes(PNG_SIGNATURE + b"captured")
+
+        self.session.command = capture
+        self.session.screenshot("state")
+        self.assertTrue(image.exists())
+        self.assertEqual(
+            json.loads(image.with_suffix(".capture.json").read_text())["source"],
+            "simctl fallback",
+        )
+
+    def test_failed_screenshot_fallback_leaves_no_png(self):
+        image = self.session.directory / "setup-state.png"
+
+        def timeout(*_args):
+            raise CommandTimeout("timed out")
+
+        self.session.sim = timeout
+
+        def capture(*_args, **_kwargs):
+            image.write_bytes(b"partial")
+            raise RuntimeError("capture failed")
+
+        self.session.command = capture
+        with self.assertRaisesRegex(RuntimeError, "capture failed"):
+            self.session.screenshot("state")
+        self.assertFalse(image.exists())
 
     @patch("sim_use_session.HOST_APP")
     @patch("sim_use_session.prepare_simulator")
