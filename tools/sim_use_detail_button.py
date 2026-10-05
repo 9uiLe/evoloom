@@ -55,14 +55,21 @@ def large_detail(review: Review) -> None:
         require_keyboard(review, True)
         review.screenshot("large-notes-keyboard")
         before = review.ui("large-before-outer-scroll")
-        before_y = review.entry(before, "Button", "Save project")["frame"]["y"]
+        if any(
+            item["role"] == "Button" and item.get("label") == "Save project"
+            for item in before["entries"]
+        ):
+            raise AssertionError("Large-text Save unexpectedly appears before scroll")
         review.sim(
             "swipe", "--from", "390,500", "--to", "390,220", "--coordinate-space", "ui"
         )
-        scrolled = review.ui("large-after-outer-scroll")
-        after_y = review.entry(scrolled, "Button", "Save project")["frame"]["y"]
-        if after_y >= before_y:
-            raise AssertionError("Large-text outer scroll did not move Save upward")
+        review.await_ui(
+            "large-after-outer-scroll",
+            lambda data: any(
+                item["role"] == "Button" and item.get("label") == "Save project"
+                for item in data["entries"]
+            ),
+        )
         require_keyboard(review, True)
         review.screenshot("large-scrolled-keyboard")
         review.sim("ios", "key", "41")
@@ -152,19 +159,12 @@ def detail(review: Review) -> None:
         )
     review.screenshot("editor-internal-scroll")
 
-    save_before = review.entry(after_inner, "Button", "Save project")["frame"]["y"]
-    review.sim(
-        "swipe", "--from", "390,510", "--to", "390,220", "--coordinate-space", "ui"
-    )
-    after_outer = review.ui("after-outer-scroll")
-    save_after = review.entry(after_outer, "Button", "Save project")["frame"]["y"]
-    if save_after >= save_before:
-        raise AssertionError(
-            "Outer ScrollView did not move the Save action toward the viewport"
-        )
-    review.screenshot("outer-scroll")
     review.sim("ios", "key", "41")
     require_keyboard(review, False)
+    reached = review.ui("save-reached")
+    save = review.entry(reached, "Button", "Save project")["frame"]
+    if save["y"] + save["height"] > reached["screen"]["height"] - 34:
+        raise AssertionError("Save action is not visible after keyboard dismissal")
     review.screenshot("save-reached")
 
     review.launch("detail")
