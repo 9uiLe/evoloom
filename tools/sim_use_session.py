@@ -181,7 +181,7 @@ class SimUseSession:
         return result["data"]
 
     def ui(self, name: str, seconds: float = 8) -> dict:
-        deadline = time.monotonic() + seconds
+        deadline = None
         while True:
             data = self.sim("ui")
             self.ui_sequence += 1
@@ -191,7 +191,12 @@ class SimUseSession:
             screen = data.get("screen", {})
             if screen.get("width", 0) > 0 and screen.get("height", 0) > 0:
                 return data
-            if time.monotonic() >= deadline:
+            now = time.monotonic()
+            if deadline is None:
+                # Start the viewport wait when a zero viewport is observed.
+                # A slow first command must not consume the entire wait.
+                deadline = now + seconds
+            if now >= deadline:
                 raise AssertionError(f"Simulator viewport did not become ready: {name}")
             time.sleep(0.25)
 

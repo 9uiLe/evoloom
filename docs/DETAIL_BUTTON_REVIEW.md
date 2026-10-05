@@ -185,13 +185,22 @@ log shows a software keyboard over large Notes, an outer swipe, keyboard
 dismissal, and a visible enabled Save hit target. Later, after launching the
 long-Notes route, sim-use briefly returned an AX tree with entries but a
 `0 × 0` screen; the old helper accepted that tree and image-crop calculation
-failed by dividing by zero. The shared `Review.ui` observation now uses an
-eight-second polling deadline for nonzero screen dimensions (each sim-use UI
+failed by dividing by zero. The shared `SimUseSession.ui` observation now uses an
+eight-second polling deadline for nonzero screen dimensions after the first
+zero-viewport response (each sim-use UI
 call also has its existing 45-second command timeout), saves each interim UI
 JSON, and fails explicitly if the viewport never becomes ready. This is a
 readiness correction for both detail and settings operation scripts, not a
 change to the product view. The follow-up Cloud operation and its outcome are
 linked from PR #3.
+In a later Settings run on [head `fac5aae`](https://github.com/9uiLe/evoloom/actions/runs/37297502852),
+the normal-route launch succeeded and the first UI command returned a `0×0`
+viewport after 11.647s. The old deadline had already expired before it could
+observe a second UI response. The bounded viewport wait now starts at that
+observed `0×0` response. A zero viewport that persists through the window
+still fails, and a timed-out UI command is never retried. This fixes the
+wait's measured starting point; it does not establish why the earlier 45s UI
+command stopped.
 The run's [keyboard-on screen](images/pr3-reach-diagnostic/cloud-large-notes-keyboard.png)
 and [Save reached screen](images/pr3-reach-diagnostic/cloud-large-save-reached.png)
 are actual sim-use PNGs from capture code `a79b604`; the run as a whole failed
