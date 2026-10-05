@@ -87,13 +87,20 @@ class Review:
             raise RuntimeError(f"sim-use rejected {args}: {result}")
         return result["data"]
 
-    def ui(self, name: str) -> dict:
-        data = self.sim("ui")
-        self.ui_sequence += 1
-        (
-            self.directory / f"{self.prefix}-{name}-{self.ui_sequence:03}.ui.json"
-        ).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-        return data
+    def ui(self, name: str, seconds: float = 8) -> dict:
+        deadline = time.monotonic() + seconds
+        while True:
+            data = self.sim("ui")
+            self.ui_sequence += 1
+            (
+                self.directory / f"{self.prefix}-{name}-{self.ui_sequence:03}.ui.json"
+            ).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+            screen = data.get("screen", {})
+            if screen.get("width", 0) > 0 and screen.get("height", 0) > 0:
+                return data
+            if time.monotonic() >= deadline:
+                raise AssertionError(f"Simulator viewport did not become ready: {name}")
+            time.sleep(0.25)
 
     def await_ui(self, name: str, predicate, seconds: float = 12) -> dict:
         deadline = time.monotonic() + seconds

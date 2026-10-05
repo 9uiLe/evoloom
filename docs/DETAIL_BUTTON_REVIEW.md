@@ -179,6 +179,22 @@ run is recorded separately in PR #3. All three PNGs were captured against
 code `a79b604a4227a747d911392fa533df6814ea3283`; their later storage
 commit is not a separate operation run.
 
+The first corrected [Cloud detail run](https://github.com/9uiLe/evoloom/actions/runs/37266129931)
+captured all five host images and matched the strict comparison. Its sim-use
+log shows a software keyboard over large Notes, an outer swipe, keyboard
+dismissal, and a visible enabled Save hit target. Later, after launching the
+long-Notes route, sim-use briefly returned an AX tree with entries but a
+`0 × 0` screen; the old helper accepted that tree and image-crop calculation
+failed by dividing by zero. The shared `Review.ui` observation now waits at
+most eight seconds for nonzero screen dimensions, saving each interim UI JSON
+and failing explicitly if the viewport never becomes ready. This is a
+readiness correction for both detail and settings operation scripts, not a
+change to the product view. The full Cloud operation must be rerun after it.
+The run's [keyboard-on screen](images/pr3-reach-diagnostic/cloud-large-notes-keyboard.png)
+and [Save reached screen](images/pr3-reach-diagnostic/cloud-large-save-reached.png)
+are actual sim-use PNGs from capture code `a79b604`; the run as a whole failed
+later and is not presented as a successful full operation check.
+
 A later [Button manual run](https://github.com/9uiLe/evoloom/actions/runs/37257019496)
 passed its Package and hosted image tests but timed out after 30s in the first
 `simctl ui … appearance light` call, before the host app was launched. The
