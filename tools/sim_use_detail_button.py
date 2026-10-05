@@ -15,6 +15,16 @@ def tap(review: Review, label: str, role: str = "Button") -> None:
     review.sim("tap", "--label", label, "--element-type", role)
 
 
+def tap_text_area(review: Review, label: str) -> None:
+    # The AX frame includes blank editor space. Aim inside the first text line.
+    frame = review.entry(review.ui(f"before-tap-{label}"), "TextArea", label)["frame"]
+    review.sim(
+        "tap",
+        "--point",
+        f"{round(frame['x'] + 40)},{round(frame['y'] + 20)}",
+    )
+
+
 def text_value(review: Review, label: str, role: str, expected: str) -> dict:
     return review.await_ui(
         f"value-{label}",
@@ -37,13 +47,15 @@ def detail(review: Review) -> None:
 
     tap(review, "Title", "TextField")
     require_keyboard(review, True)
+    review.screenshot("title-focused-keyboard")
     review.sim("type", " X")
     edited = text_value(review, "Title", "TextField", original_title + " X")
     review.entry(edited, "Heading", "Project details")
-    review.screenshot("title-edited-keyboard")
+    review.screenshot("title-edited")
 
-    tap(review, "Notes", "TextArea")
+    tap_text_area(review, "Notes")
     require_keyboard(review, True)
+    review.screenshot("notes-focused-keyboard")
     review.sim("type", " Added research findings.")
     review.sim("ios", "key", "40")
     review.sim("type", "Next action is review.")
@@ -104,7 +116,7 @@ def detail(review: Review) -> None:
     dark = review.launch("detail", "dark")
     review.entry(dark, "TextArea", "Notes")
     review.screenshot("dark-before-edit")
-    tap(review, "Notes", "TextArea")
+    tap_text_area(review, "Notes")
     require_keyboard(review, True)
     review.screenshot("dark-notes-focused")
     review.sim("ios", "key", "41")
@@ -130,7 +142,7 @@ def detail(review: Review) -> None:
         large = review.launch("detail")
         review.entry(large, "TextArea", "Notes")
         review.screenshot("large-before-edit")
-        tap(review, "Notes", "TextArea")
+        tap_text_area(review, "Notes")
         require_keyboard(review, True)
         review.screenshot("large-notes-keyboard")
         before = review.ui("large-before-outer-scroll")
