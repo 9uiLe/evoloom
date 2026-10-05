@@ -185,9 +185,10 @@ log shows a software keyboard over large Notes, an outer swipe, keyboard
 dismissal, and a visible enabled Save hit target. Later, after launching the
 long-Notes route, sim-use briefly returned an AX tree with entries but a
 `0 × 0` screen; the old helper accepted that tree and image-crop calculation
-failed by dividing by zero. The shared `Review.ui` observation now waits at
-most eight seconds for nonzero screen dimensions, saving each interim UI JSON
-and failing explicitly if the viewport never becomes ready. This is a
+failed by dividing by zero. The shared `Review.ui` observation now uses an
+eight-second polling deadline for nonzero screen dimensions (each sim-use UI
+call also has its existing 45-second command timeout), saves each interim UI
+JSON, and fails explicitly if the viewport never becomes ready. This is a
 readiness correction for both detail and settings operation scripts, not a
 change to the product view. The full Cloud operation must be rerun after it.
 The run's [keyboard-on screen](images/pr3-reach-diagnostic/cloud-large-notes-keyboard.png)
