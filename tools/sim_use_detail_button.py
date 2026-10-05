@@ -132,7 +132,7 @@ def detail(review: Review) -> None:
     review.screenshot("notes-edited")
 
     # Make the editor content longer than its own viewport, then swipe inside it.
-    review.sim("type", " Further notes for the team. " * 9)
+    review.sim("type", " More notes." * 8)
     before_inner = review.await_ui(
         "before-editor-scroll",
         lambda data: (
