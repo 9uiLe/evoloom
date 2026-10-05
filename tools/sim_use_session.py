@@ -1,6 +1,7 @@
 """Shared pinned-Simulator command, observation and evidence session."""
 
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -10,6 +11,7 @@ from pathlib import Path
 from tasks import HOST_APP, apple_env, prepare_simulator
 
 APP_ID = "dev.evoloom.reviewhost"
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 class SimUseSession:
@@ -34,7 +36,15 @@ class SimUseSession:
                 env=apple_env() if args[0] == "xcrun" else None,
             )
         except subprocess.TimeoutExpired as error:
-            self.write_event(args, time.monotonic() - started, "timeout", str(error))
+            self.write_event(
+                args,
+                time.monotonic() - started,
+                "timeout",
+                self._text(error.stdout),
+                self._text(error.stderr),
+            )
+            if args[:2] == ("sim-use", "ui"):
+                self.capture_ui_timeout()
             raise RuntimeError(f"Timed out: {args}") from error
         self.write_event(
             args,
@@ -48,6 +58,83 @@ class SimUseSession:
                 f"Command failed ({result.returncode}): {args}\n{result.stderr}\n{result.stdout}"
             )
         return result.stdout.strip()
+
+    @staticmethod
+    def _text(value: str | bytes | None) -> str:
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value or ""
+
+    def capture_ui_timeout(self) -> None:
+        """Keep independent process, daemon, and display evidence after AX stalls."""
+        # Fixed sim-use v0.14.0 keeps its per-UDID daemon log here even when
+        # daemon status cannot answer while the UI request is still blocked.
+        daemon_log_path = Path(f"/tmp/sim-use-{os.getuid()}/{self.device}.log")
+        checks = (
+            ("xcrun", "simctl", "spawn", self.device, "launchctl", "list"),
+            ("sim-use", "daemon", "status", "--json"),
+            (
+                "sim-use",
+                "app-state",
+                "--device",
+                self.device,
+                "--bundle-id",
+                APP_ID,
+                "--json",
+            ),
+        )
+        for args in checks:
+            try:
+                output = self.command(*args, timeout=10)
+            except (OSError, RuntimeError):
+                continue
+            if args[1:3] == ("daemon", "status"):
+                try:
+                    daemons = json.loads(output)["data"]["daemons"]
+                    target = next(
+                        (
+                            item
+                            for item in daemons
+                            if item.get("deviceId") == self.device
+                        ),
+                        None,
+                    )
+                    if target and target.get("logPath"):
+                        daemon_log_path = Path(target["logPath"])
+                except (KeyError, TypeError, ValueError, OSError):
+                    pass
+        try:
+            if daemon_log_path.is_file():
+                with daemon_log_path.open("rb") as source:
+                    source.seek(0, 2)
+                    source.seek(max(0, source.tell() - 65536))
+                    tail = source.read()
+                (self.directory / "sim-use-daemon-tail.log").write_bytes(tail)
+        except OSError:
+            pass
+        screenshot = self.directory / "ui-timeout-display.png"
+        screenshot_succeeded = False
+        try:
+            self.command(
+                "xcrun",
+                "simctl",
+                "io",
+                self.device,
+                "screenshot",
+                str(screenshot),
+                timeout=15,
+            )
+            screenshot_succeeded = True
+        except (OSError, RuntimeError):
+            pass
+        try:
+            if screenshot.exists():
+                with screenshot.open("rb") as image:
+                    valid_png = screenshot_succeeded and image.read(8) == PNG_SIGNATURE
+                if not valid_png:
+                    screenshot.unlink()
+        except OSError:
+            pass
 
     def write_event(
         self,
@@ -63,7 +150,7 @@ class SimUseSession:
             "seconds": round(elapsed, 3),
             "status": status,
             "stdout": output
-            if args[:2] != ("sim-use", "ui")
+            if args[:2] != ("sim-use", "ui") or status != 0
             else "Saved separately as *.ui.json",
             "stderr": error,
         }
@@ -134,7 +221,9 @@ class SimUseSession:
             "screenshot", "--output", str(self.directory / f"{self.prefix}-{name}.png")
         )
 
-    def launch(self, screen: str, appearance: str = "light") -> dict:
+    def launch(
+        self, screen: str, expected_label: str, appearance: str = "light"
+    ) -> dict:
         self.command(
             "xcrun", "simctl", "ui", self.device, "appearance", appearance, timeout=60
         )
@@ -150,15 +239,11 @@ class SimUseSession:
         if appearance == "dark":
             args.append("--dark")
         self.command(*args)
-        if screen.startswith("settings"):
-            title = "設定" if "Japanese" in screen else "Settings"
-        elif screen.startswith("detail"):
-            title = "タイトル" if "Japanese" in screen else "Title"
-        else:
-            title = "ボタンの状態" if "Japanese" in screen else "Button states"
         return self.await_ui(
             f"{screen}-{appearance}-initial",
-            lambda data: any(item.get("label") == title for item in data["entries"]),
+            lambda data: any(
+                item.get("label") == expected_label for item in data["entries"]
+            ),
         )
 
 
@@ -185,22 +270,24 @@ def record_environment(directory: Path, device: str) -> None:
             {
                 "device": device,
                 "head": subprocess.check_output(
-                    ["git", "rev-parse", "HEAD"], text=True
+                    ["git", "rev-parse", "HEAD"], text=True, timeout=10
                 ).strip(),
                 "working_tree_dirty": bool(
                     subprocess.check_output(
-                        ["git", "status", "--porcelain"], text=True
+                        ["git", "status", "--porcelain"], text=True, timeout=10
                     ).strip()
                 ),
                 "xcode": subprocess.check_output(
-                    ["xcodebuild", "-version"], text=True
+                    ["xcodebuild", "-version"], text=True, timeout=30
                 ).strip(),
                 "sim_use": subprocess.check_output(
-                    ["sim-use", "--version"], text=True
+                    ["sim-use", "--version"], text=True, timeout=15
                 ).strip(),
                 "sim_use_binary": shutil.which("sim-use"),
                 "content_size": subprocess.check_output(
-                    ["xcrun", "simctl", "ui", device, "content_size"], text=True
+                    ["xcrun", "simctl", "ui", device, "content_size"],
+                    text=True,
+                    timeout=60,
                 ).strip(),
                 "simulator_languages": languages.stdout.strip()
                 if languages.returncode == 0

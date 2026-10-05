@@ -165,7 +165,7 @@ def large_detail(review: SimUseSession) -> None:
             != "accessibility-medium"
         ):
             raise AssertionError("Simulator did not adopt accessibility-medium")
-        large = review.launch("detail")
+        large = review.launch("detail", "Title")
         review.entry(large, "TextArea", "Notes")
         review.screenshot("large-before-edit")
         tap_text_area(review, "Notes")
@@ -188,7 +188,7 @@ def large_detail(review: SimUseSession) -> None:
 def detail(review: SimUseSession) -> None:
     review.prefix = "detail"
     large_detail(review)
-    review.launch("detail")
+    review.launch("detail", "Title")
     initial = review.ui("detail-initial")
     review.entry(initial, "Heading", "Project details")
     reach_save(review, initial, "initial-save")
@@ -232,7 +232,7 @@ def detail(review: SimUseSession) -> None:
     review.screenshot("notes-edited")
 
     # Fixed long content tests the editor's own scroll without slow bulk typing.
-    before_inner = review.launch("detailLongNotes")
+    before_inner = review.launch("detailLongNotes", "Title")
     if len(review.entry(before_inner, "TextArea", "Notes")["value"]) <= 500:
         raise AssertionError("Long Notes fixture did not load")
     review.screenshot("editor-before-internal-scroll")
@@ -259,7 +259,7 @@ def detail(review: SimUseSession) -> None:
     reach_save(review, review.ui("save-reached"), "save-after-editor-scroll")
     review.screenshot("save-reached")
 
-    review.launch("detail")
+    review.launch("detail", "Title")
     tap(review, "Title", "TextField")
     review.sim("type", "X")
     edited = review.await_ui(
@@ -272,14 +272,14 @@ def detail(review: SimUseSession) -> None:
     review.entry(edited, "Heading", "Project details")
     review.screenshot("title-edited")
 
-    japanese = review.launch("detailJapanese")
+    japanese = review.launch("detailJapanese", "タイトル")
     review.entry(japanese, "Heading", "プロジェクトの詳細")
     review.entry(japanese, "TextField", "タイトル")
     review.entry(japanese, "TextArea", "メモ")
     review.entry(japanese, "Button", "プロジェクトを保存")
     review.screenshot("japanese-long")
 
-    dark = review.launch("detail", "dark")
+    dark = review.launch("detail", "Title", "dark")
     review.entry(dark, "TextArea", "Notes")
     review.screenshot("dark-before-edit")
     tap_text_area(review, "Notes")
@@ -363,7 +363,7 @@ def button_flow(review: SimUseSession) -> None:
     tap_disabled_button(review, disabled, "Run again", 2)
     review.screenshot("externally-disabled")
 
-    review.launch("buttonFlow", "dark")
+    review.launch("buttonFlow", "Button states", "dark")
     button_state(review, "Ready", 0, "Run review", False)
     tap(review, "Run review")
     button_state(review, "Processing", 1, "Run review", True)
@@ -384,7 +384,7 @@ def button_flow(review: SimUseSession) -> None:
             "content_size",
             "accessibility-medium",
         )
-        japanese = review.launch("buttonFlowJapanese")
+        japanese = review.launch("buttonFlowJapanese", "ボタンの状態")
         review.entry(japanese, "Button", "確認を実行する")
         review.screenshot("japanese-large-ready")
         tap(review, "確認を実行する")
@@ -426,8 +426,11 @@ def main() -> None:
             install_existing_host(review)
         else:
             run_host()
-        review.launch("detail" if args.scenario == "detail" else "buttonFlow")
         record_environment(directory, device)
+        if args.scenario == "detail":
+            review.launch("detail", "Title")
+        else:
+            review.launch("buttonFlow", "Button states")
         if args.scenario == "detail":
             detail(review)
         else:
