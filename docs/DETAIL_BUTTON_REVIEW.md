@@ -266,6 +266,18 @@ turn a timed-out operation into a pass. The exact UI acquisition limit remains
 may still have an unrelated material-rendering pixel difference; strict
 comparison and mismatch artifacts remain in force.
 
+On final-code head `1e7fecc`, [Detail run 37300147316](https://github.com/9uiLe/evoloom/actions/runs/37300147316)
+stalled on a later UI read after an internal Notes swipe. The per-UDID daemon
+log ends after dispatching that UI request, without a response; a real
+`simctl` diagnostic PNG shows the app still displayed. A second
+[Detail run 37302623334](https://github.com/9uiLe/evoloom/actions/runs/37302623334)
+stalled on a Notes tap after earlier UI reads had succeeded. These are
+different verbs on the same persistent daemon path, so the development-only
+session now uses the fixed version's documented `SIM_USE_NO_DAEMON=1` mode for
+each sim-use command. This is a targeted transport experiment, not proof that
+the original first-UI stall was caused by the daemon. Command timeouts still
+fail and retain evidence. The environment file records the chosen transport.
+
 The pre-change detail baselines are in commit
 [`25f923f`](https://github.com/9uiLe/evoloom/tree/25f923fca2ba947c91ebc968378921107c8c8ce3).
 The PR records the replacement baseline commit and operation run separately,

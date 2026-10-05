@@ -45,6 +45,12 @@ class SessionTests(unittest.TestCase):
             timeout=30,
         )
 
+    def test_sim_use_commands_use_pinned_tool_without_reused_daemon(self):
+        result = subprocess.CompletedProcess(("sim-use", "ui"), 0, "ready", "")
+        with patch("sim_use_session.subprocess.run", return_value=result) as run:
+            self.assertEqual(self.session.command("sim-use", "ui"), "ready")
+        self.assertEqual(run.call_args.kwargs["env"]["SIM_USE_NO_DAEMON"], "1")
+
     def test_command_failure_records_status_and_output(self):
         result = subprocess.CompletedProcess(
             ("sim-use", "tap"), 7, "partial", "failure"
