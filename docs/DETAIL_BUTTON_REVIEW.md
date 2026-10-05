@@ -190,7 +190,8 @@ eight-second polling deadline for nonzero screen dimensions (each sim-use UI
 call also has its existing 45-second command timeout), saves each interim UI
 JSON, and fails explicitly if the viewport never becomes ready. This is a
 readiness correction for both detail and settings operation scripts, not a
-change to the product view. The full Cloud operation must be rerun after it.
+change to the product view. The follow-up Cloud operation and its outcome are
+linked from PR #3.
 The run's [keyboard-on screen](images/pr3-reach-diagnostic/cloud-large-notes-keyboard.png)
 and [Save reached screen](images/pr3-reach-diagnostic/cloud-large-save-reached.png)
 are actual sim-use PNGs from capture code `a79b604`; the run as a whole failed
