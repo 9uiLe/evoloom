@@ -6,17 +6,22 @@ for the complete local suite (`check-full` is an alias).
 
 The root Package contains only the library product, so ordinary SwiftPM use
 needs no prepared test dependency. The development Package under `Testing/`
-places unit and image tests in one test target and `just test-ios` runs all
-15 methods in one XCTest session. Unit tests cover token contrast, Bindings
+places unit and fixed-image tests in one test target and `just test-ios` runs
+its 16 methods (six unit and ten image methods) in one Package XCTest session.
+The development app runs five hosted capture methods in a second session.
+One image method can compare multiple PNGs. Unit tests cover token contrast, Bindings
 and the Button action gate. Python tests cover registry closure, copy imports,
 cycles, dry-run, conflict protection, unsafe paths and CI selection.
 
-An additional `nix develop -c just verify-settings-interaction` command uses
-Nix-pinned sim-use on the development host for actual taps, input, Toggle and
-Form scrolling. It is intentionally separate from the default CI matrix;
-`workflow_dispatch` with `verify_settings_interaction=true` runs it once in
-the existing iOS job and uploads PNG and UI evidence even when it fails.
-See [operation review](SIM_USE_REVIEW.md) for exact assertions and limits.
+Nix-pinned sim-use commands exercise real operations in the same development
+host: `just verify-settings-interaction` for Form input and Toggle,
+`just verify-detail-interaction` for outlined editing and scrolling, and
+`just verify-button-transition` for action state changes. They are separate
+from default CI. Manual `workflow_dispatch` flags `verify_settings_interaction`,
+`verify_detail_interaction` and `verify_button_transition` select the checks
+in the existing iOS job and upload PNG, UI and command evidence. See the
+[Settings operation review](SIM_USE_REVIEW.md) and
+[Detail/Button review](DETAIL_BUTTON_REVIEW.md) for assertions and limits.
 `verify-copy-install`
 creates a temporary Package containing every copied component and builds its
 library for the iOS Simulator without a separate test runner. The former copy
@@ -75,13 +80,13 @@ changing normal push checks. Cache hit or miss never skips compilation or
 tests. Manual `build_diagnostics` prints Xcode's build timing summary and
 compile commands so an incremental source-change run can be inspected. The CI
 Job Summary and `TestResults/ci-report.json` record the checkout,
-selected scope, cache state, action time, test count, 30 baselines and actual
+selected scope, cache state, action time, test count, 39 baselines and actual
 render count. Image-save duration is measured in the Package comparison
 callback or hosted capture test, depending on the case.
 See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
 
 The `EvoloomSnapshotTests` target in `Testing/Package.swift` depends on the
-development-only `EvoloomReviewFixtures` target and stores 25 baselines under
+development-only `EvoloomReviewFixtures` target and stores 33 baselines under
 `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/`. Five collection cases use
 `Testing/Host/Tests/HostedCollectionTests.swift` and its baseline directory.
 The development app provides a scene/key window for native search and toolbar
@@ -91,7 +96,7 @@ They set 390 or 320 pt width, fixed height, scale 3, zero test safe area,
 system fonts, light/dark appearance, explicit content size, `en_US` or
 `ja_JP` locale and UTC timezone. Fixtures use constant data and a static
 skeleton, with no network, random identifiers, clocks or animation. Exact
-pixel comparison uses normalized RGBA bytes with no tolerance. The 25
+pixel comparison uses normalized RGBA bytes with no tolerance. The 33
 Package images still compare inside XCTest with `SnapshotImageDiffing.swift`;
 its callback saves actual images on success and expected/actual/diff on
 mismatch. The five app-hosted tests use SnapshotTesting to capture the real
@@ -121,6 +126,8 @@ The API follows the fixed [SnapshotTesting source](https://github.com/pointfreec
 | `review-components-controls-*`, `review-components-feedback-*` | Two readable component pages in light/dark, covering labels, error, switch, disabled/loading, Card, Badge, Alert, Empty and Skeleton. |
 | `review-settings-*` | Native Settings Form in light/dark, invalid-email/disabled-Save, 320 pt long Japanese and accessibility-medium text. The Form-specific input appearance does not change the ungrouped Input baseline. |
 | `review-detail-*` | Detail/edit in light/dark and long Japanese notes at 320 pt. |
+| `review-detail-large-text` | Outlined Title and TextArea at accessibility-medium text size. |
+| `button-flow-*` | One deterministic fixture at ready, running, completed and failed; representative dark and large Japanese states. Operation transitions are checked separately with sim-use. |
 | `locale-ja`, `locale-en` | Japanese and English content. |
 
 To record, run `nix develop -c just record-snapshots`. This is a deliberate
@@ -128,7 +135,7 @@ write operation; it places a short-lived marker under `.prepared` for the
 Package test's record mode, then removes it. The hosted test always saves
 actuals; only the recording command copies those five images to baselines.
 The recorder checks that SnapshotTesting acknowledged the Package writes and
-that all 30 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
+that all 39 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and `host-record.xcresult`; commit the PNGs and
 `tools/snapshots.json` together. Then run `nix develop -c just test-snapshot`.

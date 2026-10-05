@@ -87,13 +87,20 @@ class Review:
             raise RuntimeError(f"sim-use rejected {args}: {result}")
         return result["data"]
 
-    def ui(self, name: str) -> dict:
-        data = self.sim("ui")
-        self.ui_sequence += 1
-        (
-            self.directory / f"{self.prefix}-{name}-{self.ui_sequence:03}.ui.json"
-        ).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-        return data
+    def ui(self, name: str, seconds: float = 8) -> dict:
+        deadline = time.monotonic() + seconds
+        while True:
+            data = self.sim("ui")
+            self.ui_sequence += 1
+            (
+                self.directory / f"{self.prefix}-{name}-{self.ui_sequence:03}.ui.json"
+            ).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+            screen = data.get("screen", {})
+            if screen.get("width", 0) > 0 and screen.get("height", 0) > 0:
+                return data
+            if time.monotonic() >= deadline:
+                raise AssertionError(f"Simulator viewport did not become ready: {name}")
+            time.sleep(0.25)
 
     def await_ui(self, name: str, predicate, seconds: float = 12) -> dict:
         deadline = time.monotonic() + seconds
@@ -131,7 +138,9 @@ class Review:
         )
 
     def launch(self, screen: str, appearance: str = "light") -> dict:
-        self.command("xcrun", "simctl", "ui", self.device, "appearance", appearance)
+        self.command(
+            "xcrun", "simctl", "ui", self.device, "appearance", appearance, timeout=60
+        )
         args = [
             "xcrun",
             "simctl",
@@ -144,13 +153,12 @@ class Review:
         if appearance == "dark":
             args.append("--dark")
         self.command(*args)
-        title = (
-            "設定"
-            if "Japanese" in screen
-            else "Settings"
-            if screen.startswith("settings")
-            else "Title"
-        )
+        if screen.startswith("settings"):
+            title = "設定" if "Japanese" in screen else "Settings"
+        elif screen.startswith("detail"):
+            title = "タイトル" if "Japanese" in screen else "Title"
+        else:
+            title = "ボタンの状態" if "Japanese" in screen else "Button states"
         return self.await_ui(
             f"{screen}-{appearance}-initial",
             lambda data: any(item.get("label") == title for item in data["entries"]),
@@ -412,7 +420,7 @@ def record_environment(directory: Path, device: str) -> None:
                 "runtime": "iOS 27.0 (24A434)",
                 "device_name": "iPhone 18 Pro",
                 "scene_points": "402 x 874; app window safe area is managed by iOS",
-                "fixture_locale": "ja_JP for settingsJapanese routes; otherwise system locale",
+                "fixture_locale": "Japanese fixture routes use Japanese copy; otherwise English copy. Simulator locale is recorded separately.",
             },
             indent=2,
         )

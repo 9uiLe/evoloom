@@ -52,9 +52,18 @@ SNAPSHOT_NAMES = {
     "review-detail-light",
     "review-detail-dark",
     "review-detail-ja-long",
+    "review-detail-large-text",
+    "button-flow-ready-light",
+    "button-flow-running-light",
+    "button-flow-completed-light",
+    "button-flow-failed-light",
+    "button-flow-running-dark",
+    "button-flow-running-large-ja",
+    "button-flow-failed-dark",
+    "button-flow-failed-large-ja",
 }
 UNIT_TEST_COUNT = 6
-SNAPSHOT_TEST_COUNT = 9
+SNAPSHOT_TEST_COUNT = 10
 HOSTED_SNAPSHOT_TEST_COUNT = 5
 HOST_PROJECT = ROOT / "Testing/Host/EvoloomReviewHost.xcodeproj"
 HOST_APP = (
@@ -638,6 +647,10 @@ def run_host():
         "settingsJapanese",
         "settingsJapaneseError",
         "detail",
+        "detailJapanese",
+        "detailLongNotes",
+        "buttonFlow",
+        "buttonFlowJapanese",
     }:
         raise RuntimeError(f"Unknown review screen: {screen}")
     if state not in {"normal", "empty", "loading", "error"}:

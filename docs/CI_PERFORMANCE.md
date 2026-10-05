@@ -2,14 +2,22 @@
 
 ## Current validation path
 
-The root Package is a dependency-free library. `Testing/` is the development
-Package with one XCTest target for six unit methods and eight image methods.
-Those eight methods compare 18 committed PNGs. A full CI run starts a Linux
-static job and an ARM64 macOS iOS job after a lightweight change detector. The
-iOS job runs one combined XCTest session and builds all copied source as a
-separate iOS library Package. It does not start a copy test runner. A required
-`validation` job rejects any failed or canceled selected job. Manual
-`workflow_dispatch` always selects the full suite.
+The root Package is a dependency-free library. `Testing/` contains one
+development XCTest target with six unit methods and ten fixed-image methods.
+Those ten methods compare 34 PNGs; the app-host target adds five collection
+methods and five PNGs. The current manifest therefore lists 39 images, while
+the two XCTest sessions execute 21 methods in total. These are separate counts:
+one method can compare several images. The app-host capture exits before its
+five exact RGBA comparisons run in `tools/compare_host_images.py`.
+
+A full CI run starts a Linux static job and an ARM64 macOS iOS job after a
+lightweight change detector. The iOS job runs the Package and app-host XCTest
+sessions serially on the same fixed Simulator, then builds all copied source
+as a separate iOS library Package. It does not start a copy test runner. A
+required `validation` job rejects any failed or canceled selected job. Manual
+`workflow_dispatch` always selects the full suite and can additionally run
+Settings, Detail or Button sim-use operation checks with the already built
+host. Normal PR CI does not run those interaction scenarios.
 
 For daily local feedback, run `nix develop -c just check-fast`. Before a
 change is complete, run `nix develop -c just prepare-deps check` (or
@@ -19,7 +27,19 @@ change is complete, run `nix develop -c just prepare-deps check` (or
 
 ## Evidence and comparison
 
-Step durations below come from GitHub Jobs API timestamps. Wall time includes
+The [2026-10-05 PR run of the 38-image path](https://github.com/9uiLe/evoloom/actions/runs/37257495357)
+finished in 8m27s from creation to completion. Its Linux static job took
+49s, iOS job 8m05s, and the four job durations summed to 9m05s of runner
+time. `ci-report.json` records 16 passing Package methods, five passing app
+host methods, 38/38 actual PNGs and five exact hosted RGBA matches. Its PR
+head was `33345ad6147b13ff4c0d25058588b2f9c6f05821`; Actions tested
+synthetic merge checkout `295365df51a7d1b021fdc8c6cb61b8f4eaea314b`.
+This is one observation under the current case count, not a stable throughput
+estimate. The earlier table below retains its original commits and matrices.
+
+The measurements below are historical runs of earlier test matrices and
+host arrangements; they are not measurements of the current 39-image path.
+Step durations come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
 uses one old, four uncached combined-configuration, one cache miss/hit pair,
 one source-change cache trial, and two Simulator preboot trials on the same

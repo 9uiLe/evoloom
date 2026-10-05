@@ -47,6 +47,12 @@ run-host screen="collection" state="normal" appearance="light":
 verify-settings-interaction:
     python3 tools/sim_use_review.py
 
+verify-detail-interaction:
+    python3 tools/sim_use_detail_button.py --scenario detail
+
+verify-button-transition:
+    python3 tools/sim_use_detail_button.py --scenario button
+
 test-unit:
     python3 tools/tasks.py test-unit
 

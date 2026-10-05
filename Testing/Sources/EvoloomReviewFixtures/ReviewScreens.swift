@@ -6,6 +6,7 @@ enum ReviewCopy {
     static let project = "Field notes"
     static let description = "A shared place for research and release decisions."
     static let longJapanese = "調査結果と次のリリースに向けた確認事項を、チーム全員が同じ文脈で読めるようにまとめます。"
+    static let longNotes = (1 ... 12).map { "Review note \($0): capture the finding and agree on the next action." }.joined(separator: "\n")
 }
 
 enum ReviewComponentPage {
@@ -136,11 +137,15 @@ struct ReviewDetailView: View {
     @Environment(\.iosDesignTokens) private var tokens
     @State private var title = ReviewCopy.project
     @State private var notes = "Capture findings, then agree on the next action."
+    let longJapanese: Bool
 
-    init(longJapanese: Bool = false) {
+    init(longJapanese: Bool = false, longNotes: Bool = false) {
+        self.longJapanese = longJapanese
         if longJapanese {
             _title = State(initialValue: "調査ノート")
             _notes = State(initialValue: ReviewCopy.longJapanese)
+        } else if longNotes {
+            _notes = State(initialValue: ReviewCopy.longNotes)
         }
     }
 
@@ -150,18 +155,26 @@ struct ReviewDetailView: View {
                 VStack(alignment: .leading, spacing: tokens.spacing.lg) {
                     IOSCard {
                         VStack(alignment: .leading, spacing: tokens.spacing.md) {
-                            IOSCardHeader("Project overview", detail: ReviewCopy.description)
-                            IOSSeparator()
-                            IOSBadge("In progress", symbol: "clock", variant: .secondary)
+                            IOSCardHeader(
+                                longJapanese ? "プロジェクトの概要" : "Project overview",
+                                detail: longJapanese ? "次のリリースに向けた調査と確認事項をまとめています。" : ReviewCopy.description
+                            )
+                            IOSBadge(longJapanese ? "進行中" : "In progress", symbol: "clock", variant: .secondary)
                         }
                     }
-                    IOSInput("Title", text: $title, hint: "Use a name your team recognizes.")
-                    IOSTextArea("Notes", text: $notes, hint: "Summarize the next step.")
-                    IOSButton("Save project") {}
+                    IOSInput(
+                        longJapanese ? "タイトル" : "Title", text: $title,
+                        hint: longJapanese ? "チーム内でわかる名前を付けてください。" : "Use a name your team recognizes."
+                    )
+                    IOSTextArea(
+                        longJapanese ? "メモ" : "Notes", text: $notes,
+                        hint: longJapanese ? "次に行うことをまとめてください。" : "Summarize the next step."
+                    )
+                    IOSButton(longJapanese ? "プロジェクトを保存" : "Save project") {}
                 }
                 .padding(tokens.spacing.md)
             }
-            .navigationTitle(title)
+            .navigationTitle(longJapanese ? "プロジェクトの詳細" : "Project details")
         }
     }
 }

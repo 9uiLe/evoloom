@@ -16,7 +16,7 @@ nix develop -c just run-host settings normal light
 nix develop -c just test-snapshot
 ```
 
-`run-host` builds, installs and launches the app on the exact simulator selected by `just doctor`. The first argument is `collection`, `controls`, `feedback`, `settings`, `settingsError`, `settingsJapanese`, `settingsJapaneseError` or `detail`; the second is a collection state (`normal`, `empty`, `loading`, `error`); the third is `light` or `dark`. Open Xcode 27's Device Hub to inspect the app. After its view appears, `xcrun simctl io <doctor-UDID> screenshot <path>.png` captures the entire display. An immediate screenshot after launch can capture a blank frame; wait for the view, without a fixed long sleep.
+`run-host` builds, installs and launches the app on the exact simulator selected by `just doctor`. The first argument is `collection`, `controls`, `feedback`, `settings`, `settingsError`, `settingsJapanese`, `settingsJapaneseError`, `detail`, `detailJapanese`, `detailLongNotes`, `buttonFlow` or `buttonFlowJapanese`; the second is a collection state (`normal`, `empty`, `loading`, `error`); the third is `light` or `dark`. `detailLongNotes` is a development-only route with fixed overflowing TextEditor content for internal scroll review. Open Xcode 27's Device Hub to inspect the app. After its view appears, `xcrun simctl io <doctor-UDID> screenshot <path>.png` captures the entire display. An immediate screenshot after launch can capture a blank frame; wait for the view, without a fixed long sleep.
 
 For Canvas, open `Testing/Package.swift`, select iPhone 18 Pro and a named `#Preview` in the fixture sources. Xcode 27.0 Canvas previously failed to resolve Evoloom on this machine. The app display and simulator tests are verified alternatives; Canvas has not been reverified after this change.
 
@@ -24,10 +24,52 @@ For Canvas, open `Testing/Package.swift`, select iPhone 18 Pro and a named `#Pre
 
 Scene-backed list cases use an iPhone 18 Pro window at 402 × 874 pt, 3× (1206 × 2622 px), real safe area, system fonts, `en_US`, UTC, standard Dynamic Type and explicit light/dark appearance. The snapshot captures app content without status bar glyphs. The fixed-size cases use a `UIHostingController`, 390 or 320 pt width, specified height, 3×, zero test safe area and explicit locale, Dynamic Type and appearance. Both modes require macOS 27.0 build 26A428, Xcode 27.0 build 27A266a, SDK 27.0 build 24A430, iOS 27.0 runtime build 24A434 and arm64. `just doctor` rejects a mismatch.
 
+Some Cloud runs differ from the `collection-empty` baseline only in the native
+search and toolbar materials; the other four hosted images match. In the
+[failed run 37258518089](https://github.com/9uiLe/evoloom/actions/runs/37258518089),
+the hosted XCTest captured all five images successfully, then the external
+RGBA comparison failed only `collection-empty`. The expected and actual PNGs
+were both 1206 × 2622 px, and their body pixels and layout matched. The
+[failed actual](images/pr3-empty-diagnostic/failed-actual.png) and
+[pixel diff](images/pr3-empty-diagnostic/failed-diff.png) are retained here;
+the [expected baseline](../Testing/Host/Tests/__Snapshots__/HostedCollectionTests/components.collection-empty.png)
+was not changed. A Nix-pinned Pillow comparison counted 58,456 changed pixels:
+53,879 in the search material and 4,577 around the toolbar button, with a
+maximum channel difference of two levels and none in the list body. The
+[sim-use app display](images/pr3-empty-diagnostic/sim-use-display.png) at
+code `a79b604a4227a747d911392fa533df6814ea3283` shows the same native
+controls visibly present; it includes status-bar glyphs and is not a
+pixel-for-pixel reference for the hosted drawHierarchy PNG. The
+[successful run 37260115873](https://github.com/9uiLe/evoloom/actions/runs/37260115873)
+matched all 39 images under the same pinned Apple environment. These are
+different code/merge checkouts, so they do not alone identify the cause.
+Moving the dark test after the light cases
+[passed once](https://github.com/9uiLe/evoloom/actions/runs/37257495357)
+but failed in the later run, so order alone was not a fix.
+
+The capture code previously left `window.overrideUserInterfaceStyle` set for
+the next test. The pinned SnapshotTesting `drawHierarchyInKeyWindow` strategy
+also clears the key window's root controller when it disposes its temporary
+host. The app now restores both original window properties after every
+capture, and the test requires a foreground scene and key window. A JSON
+sidecar beside each rendered PNG records capture order, requested and prior
+appearance, actual window/host traits, scene activity, scale, dimensions and
+safe area. This corrects an observed lifecycle leak and leaves evidence for
+the next mismatch; it does not prove that the leak caused every one-level
+native material pixel variation. Local pre-change targeted runs (empty alone
+twice, dark then empty once) all matched; after appearance restoration three
+full five-case runs matched, and after root restoration one full run matched.
+These few successes are not a stability rate. The strict comparison and
+failure evidence remain in place. See PR #3 for later Cloud runs and any
+remaining uncertainty.
+One additional targeted run after an explicit Simulator shutdown and boot
+matched in 54.65 s, including boot and test setup.
+
 | Screen | Image cases | Purpose |
 | --- | --- | --- |
 | Components | Controls and feedback, light/dark | Labels, input states, buttons, switches and feedback at readable page size. |
-| Settings and detail | Light/dark; error, narrow Japanese, large text and long Japanese cases | Native Form, editing, disabled state and wrapping. |
+| Settings and detail | Light/dark; error, narrow Japanese, large text and long Japanese cases | Native Form, outlined editing, disabled state and wrapping. |
+| Button transition | Ready/running/completed/failed in light, representative dark and large Japanese states | Stable visual states for the same fixture used by the operation review. |
 | Collection | Scene-backed normal light/dark, empty, loading, error | Native toolbar/search and fixed state content in an app environment. |
 | Collection narrow | 320 pt, accessibility medium, Increased Contrast | Density and wrapping only; fixed-host native chrome is unreliable. |
 
@@ -35,7 +77,7 @@ Preview and capture instantiate the same fixture views and data. Static images d
 
 ## Record and compare
 
-`nix develop -c just record-snapshots` deliberately updates both baseline groups and `tools/snapshots.json`. The hosted test captures five actual PNGs, and only this recording command copies them to the baseline directory. Review every changed PNG at full size, then run `nix develop -c just test-snapshot`. Comparison prechecks all 30 manifest paths and hashes before and after. The 25 Package images use the existing exact RGBA comparison inside XCTest. The five scene-backed images are captured inside the app test, then compared as decoded RGBA pixels by the Nix-pinned Pillow command **after that test process exits**. Missing or extra cases, invalid PNGs, dimensions and pixel changes fail the command. Normal comparison never rewrites a baseline. Five scene-backed baselines live under `Testing/Host/Tests/__Snapshots__/HostedCollectionTests/`; the other 25 live under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/`.
+`nix develop -c just record-snapshots` deliberately updates both baseline groups and `tools/snapshots.json`. The hosted test captures five actual PNGs, and only this recording command copies them to the baseline directory. Review every changed PNG at full size, then run `nix develop -c just test-snapshot`. Comparison prechecks all 39 manifest paths and hashes before and after. The 34 Package images use the existing exact RGBA comparison inside XCTest. The five scene-backed images are captured inside the app test, then compared as decoded RGBA pixels by the Nix-pinned Pillow command **after that test process exits**. Missing or extra cases, invalid PNGs, dimensions and pixel changes fail the command. Normal comparison never rewrites a baseline. Five scene-backed baselines live under `Testing/Host/Tests/__Snapshots__/HostedCollectionTests/`; the other 34 live under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/`.
 
 ## First Settings review
 
@@ -43,13 +85,25 @@ Before the adjustment, both the fixed-host PNG and the actual app display showed
 
 The changed baselines are `review-settings-light`, `review-settings-dark` and `review-settings-error`. `review-settings-narrow-ja` (320 pt, `ja_JP`) checks long labels and hints; `review-settings-large-text` (390 pt, accessibility medium) checks wrapping and action size. All use the fixed 3× host and zero test safe area. The iPhone 18 Pro app uses a real 402 × 874 pt scene and safe area, so its status bar and vertical placement differ from the fixed images. Compare the Form rows and states rather than expecting pixel identity. The component controls and detail baselines did not change because their inputs retain `.outlined`.
 
-The fixed large-text image includes the Save action, while the same 402 × 874 pt app display initially shows only its top edge; reaching it requires Form scrolling. [The sim-use operation review](SIM_USE_REVIEW.md) now verifies normal-size focus, editing, Toggle, error/disabled transitions, and large-text Save reachability in the real scene. The later large-text software-keyboard combination remains unverified because the keyboard stopped appearing on the local host; the operation command fails that condition rather than accepting a hardware-key input as equivalent. These captures do not verify VoiceOver or persistence.
+The fixed large-text image includes the Save action, while the same 402 × 874 pt app display initially shows only its top edge; reaching it requires Form scrolling. [The sim-use operation review](SIM_USE_REVIEW.md) verifies normal-size focus, editing, Toggle, error/disabled transitions, and large-text Save reachability in the real scene. On the local host, the large-text software-keyboard combination initially failed because the keyboard stopped appearing. The later [2026-10-05 Cloud operation run](https://github.com/9uiLe/evoloom/actions/runs/37232909641) completed that case with `keyboard-state` and screenshot evidence, then reached Save after a Form swipe and Escape. That is historical evidence for PR #2, not a validation of this change. These captures do not verify VoiceOver or persistence.
+
+## Detail and Button review
+
+The Detail fixture keeps its outlined fields. Its navigation heading is now
+stable while Title is edited, the overview Card no longer has a redundant
+separator, and the long-Japanese variant includes translated labels and hints.
+These are fixture-level layout and copy choices; no shared token or product
+component changed. The new Button fixture holds the same primary action width
+through ready, processing, completed and failed states. The eight Button PNGs
+are fixed starting states; actual transitions and disabled taps are checked
+with sim-use on the scene-backed app. See
+[the operation record and reproduction steps](DETAIL_BUTTON_REVIEW.md).
 
 Successful and mismatching comparisons save actual PNGs to `TestResults/Rendered/components.<case>.png`. Mismatches also save `TestResults/SnapshotDiffs/<case>/expected.png`, `actual.png` and `diff.png`. `TestResults/host-image-comparison.json` identifies each hosted case and its comparison status. `ci-report.json` separates the hosted Xcode capture outcome from the image comparison outcome. `ios.xcresult` and `host-ios.xcresult` (or `snapshot.xcresult` and `host-snapshot.xcresult`) retain the two sessions. `TestResults/Logs/` contains Xcode output even if a result bundle is incomplete. A pre-render build or environment failure makes no image; inspect the first failed step and CI's `image-status.txt`. The `ios-test-evidence` artifact uploads available actuals, diffs, logs, xcresults and both baseline directories after success or failure. A canceled GitHub job may stop before upload, so artifact availability is not guaranteed on cancellation.
 
 ## Put images in a PR
 
-State the issue, affected screen/state, change reason, capture conditions, before/after baseline images, findings and remaining questions. Generate SHA-pinned Markdown with `nix develop -c python3 tools/pr_images.py --sha <full-commit-SHA>`. Use `--extra-case review-settings-error` to include the validation state, and repeat the option for the narrow Japanese or large-text cases when relevant. It verifies every linked image blob in that exact commit, including hosted list paths and optional cases. Paste it into the PR and confirm the images render. Add `--ci-url` after successful comparison of the same PR head SHA. An Actions PR run may test a synthetic merge checkout; report its checkout SHA from `ci-report.json` separately. Inline PNGs are **committed baselines**, never actuals from that CI run. Actuals and diffs are in the artifact; artifact download URLs are not inline image URLs.
+State the issue, affected screen/state, change reason, capture conditions, before/after baseline images, findings and remaining questions. Generate SHA-pinned Markdown with `nix develop -c python3 tools/pr_images.py --sha <full-commit-SHA>`. Use `--extra-case review-detail-large-text` or `--extra-case button-flow-running-dark` for representative states; repeat the option for other named cases when relevant. It verifies every linked image blob in that exact commit, including hosted list paths and optional cases. Paste it into the PR and confirm the images render. Add `--ci-url` after successful comparison of the same PR head SHA. An Actions PR run may test a synthetic merge checkout; report its checkout SHA from `ci-report.json` separately. Inline PNGs are **committed baselines**, never actuals from that CI run. Actuals and diffs are in the artifact; artifact download URLs are not inline image URLs.
 
 Reviewers decide whether an appearance is desirable. Snapshot success only preserves it. The integrating product owns screen reading order, contextual labels, focus and VoiceOver validation.
 
