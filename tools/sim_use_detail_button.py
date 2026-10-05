@@ -98,11 +98,11 @@ def detail(review: Review) -> None:
     review.screenshot("light-before-edit")
 
     tap(review, "Title", "TextField")
-    require_keyboard(review, True)
-    review.screenshot("title-focused-keyboard")
+    review.sim("keyboard-state")
+    review.screenshot("title-focused")
     tap_text_area(review, "Notes")
-    require_keyboard(review, True)
-    review.screenshot("notes-focused-keyboard")
+    review.sim("keyboard-state")
+    review.screenshot("notes-focused")
     review.sim("type", " Added research findings.")
     review.await_ui(
         "notes-first-edit",
