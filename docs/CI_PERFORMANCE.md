@@ -4,8 +4,8 @@
 
 The root Package is a dependency-free library. `Testing/` contains one
 development XCTest target with six unit methods and ten fixed-image methods.
-Those ten methods compare 33 PNGs; the app-host target adds five collection
-methods and five PNGs. The current manifest therefore lists 38 images, while
+Those ten methods compare 34 PNGs; the app-host target adds five collection
+methods and five PNGs. The current manifest therefore lists 39 images, while
 the two XCTest sessions execute 21 methods in total. These are separate counts:
 one method can compare several images. The app-host capture exits before its
 five exact RGBA comparisons run in `tools/compare_host_images.py`.
@@ -38,7 +38,7 @@ This is one observation under the current case count, not a stable throughput
 estimate. The earlier table below retains its original commits and matrices.
 
 The measurements below are historical runs of earlier test matrices and
-host arrangements; they are not measurements of the current 38-image path.
+host arrangements; they are not measurements of the current 39-image path.
 Step durations come from GitHub Jobs API timestamps. Wall time includes
 queueing; runner usage sums job start-to-completion intervals. The comparison
 uses one old, four uncached combined-configuration, one cache miss/hit pair,

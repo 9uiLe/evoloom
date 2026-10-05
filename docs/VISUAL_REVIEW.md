@@ -24,7 +24,7 @@ For Canvas, open `Testing/Package.swift`, select iPhone 18 Pro and a named `#Pre
 
 Scene-backed list cases use an iPhone 18 Pro window at 402 × 874 pt, 3× (1206 × 2622 px), real safe area, system fonts, `en_US`, UTC, standard Dynamic Type and explicit light/dark appearance. The snapshot captures app content without status bar glyphs. The fixed-size cases use a `UIHostingController`, 390 or 320 pt width, specified height, 3×, zero test safe area and explicit locale, Dynamic Type and appearance. Both modes require macOS 27.0 build 26A428, Xcode 27.0 build 27A266a, SDK 27.0 build 24A430, iOS 27.0 runtime build 24A434 and arm64. `just doctor` rejects a mismatch.
 
-The hosted XCTest methods now capture the four light cases before switching the window to dark. Two Cloud runs of the previous order differed only in the native search and toolbar materials of `collection-empty`, the first light case after dark. Reordering removes that specific dark-to-light transition from the sequence without changing the screen, baseline, comparison tolerance or case count. The [first Cloud run with this order](https://github.com/9uiLe/evoloom/actions/runs/37257495357) matched all five hosted baselines. The exact cause of the earlier differing material rendering has not been established; keep any future mismatch and its diff artifact for review.
+Some Cloud runs differ from the `collection-empty` baseline only in the native search and toolbar materials; the other four hosted images match. Moving the dark test after the light cases [passed once](https://github.com/9uiLe/evoloom/actions/runs/37257495357) but [failed in a subsequent run](https://github.com/9uiLe/evoloom/actions/runs/37258518089) with the same test order, so that trial did not establish a cause or a fix. The original test order was restored. Exact comparison remains active, and failures keep the expected, actual and diff images for diagnosis.
 
 | Screen | Image cases | Purpose |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ Preview and capture instantiate the same fixture views and data. Static images d
 
 ## Record and compare
 
-`nix develop -c just record-snapshots` deliberately updates both baseline groups and `tools/snapshots.json`. The hosted test captures five actual PNGs, and only this recording command copies them to the baseline directory. Review every changed PNG at full size, then run `nix develop -c just test-snapshot`. Comparison prechecks all 38 manifest paths and hashes before and after. The 33 Package images use the existing exact RGBA comparison inside XCTest. The five scene-backed images are captured inside the app test, then compared as decoded RGBA pixels by the Nix-pinned Pillow command **after that test process exits**. Missing or extra cases, invalid PNGs, dimensions and pixel changes fail the command. Normal comparison never rewrites a baseline. Five scene-backed baselines live under `Testing/Host/Tests/__Snapshots__/HostedCollectionTests/`; the other 33 live under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/`.
+`nix develop -c just record-snapshots` deliberately updates both baseline groups and `tools/snapshots.json`. The hosted test captures five actual PNGs, and only this recording command copies them to the baseline directory. Review every changed PNG at full size, then run `nix develop -c just test-snapshot`. Comparison prechecks all 39 manifest paths and hashes before and after. The 34 Package images use the existing exact RGBA comparison inside XCTest. The five scene-backed images are captured inside the app test, then compared as decoded RGBA pixels by the Nix-pinned Pillow command **after that test process exits**. Missing or extra cases, invalid PNGs, dimensions and pixel changes fail the command. Normal comparison never rewrites a baseline. Five scene-backed baselines live under `Testing/Host/Tests/__Snapshots__/HostedCollectionTests/`; the other 34 live under `Testing/Tests/EvoloomSnapshotTests/__Snapshots__/ComponentSnapshots/`.
 
 ## First Settings review
 
@@ -55,7 +55,7 @@ stable while Title is edited, the overview Card no longer has a redundant
 separator, and the long-Japanese variant includes translated labels and hints.
 These are fixture-level layout and copy choices; no shared token or product
 component changed. The new Button fixture holds the same primary action width
-through ready, processing, completed and failed states. The seven Button PNGs
+through ready, processing, completed and failed states. The eight Button PNGs
 are fixed starting states; actual transitions and disabled taps are checked
 with sim-use on the scene-backed app. See
 [the operation record and reproduction steps](DETAIL_BUTTON_REVIEW.md).

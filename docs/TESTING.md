@@ -80,7 +80,7 @@ changing normal push checks. Cache hit or miss never skips compilation or
 tests. Manual `build_diagnostics` prints Xcode's build timing summary and
 compile commands so an incremental source-change run can be inspected. The CI
 Job Summary and `TestResults/ci-report.json` record the checkout,
-selected scope, cache state, action time, test count, 38 baselines and actual
+selected scope, cache state, action time, test count, 39 baselines and actual
 render count. Image-save duration is measured in the Package comparison
 callback or hosted capture test, depending on the case.
 See [timing and cache evidence](CI_PERFORMANCE.md) for comparisons and limits.
@@ -135,7 +135,7 @@ write operation; it places a short-lived marker under `.prepared` for the
 Package test's record mode, then removes it. The hosted test always saves
 actuals; only the recording command copies those five images to baselines.
 The recorder checks that SnapshotTesting acknowledged the Package writes and
-that all 38 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
+that all 39 expected PNGs exist across both baseline directories. Open every PNG at full size and inspect clipping,
 tap area, contrast and hierarchy, particularly dark, error, narrow and large
 text images. Review `TestResults/record.xcresult` and `host-record.xcresult`; commit the PNGs and
 `tools/snapshots.json` together. Then run `nix develop -c just test-snapshot`.

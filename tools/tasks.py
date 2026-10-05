@@ -58,6 +58,7 @@ SNAPSHOT_NAMES = {
     "button-flow-completed-light",
     "button-flow-failed-light",
     "button-flow-running-dark",
+    "button-flow-running-large-ja",
     "button-flow-failed-dark",
     "button-flow-failed-large-ja",
 }

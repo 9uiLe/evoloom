@@ -140,6 +140,10 @@ final class ComponentSnapshots: XCTestCase {
         snapshot(ReviewButtonFlowView(initialPhase: .running), name: "button-flow-running-dark", height: 650, scheme: .dark, inset: false)
         snapshot(ReviewButtonFlowView(initialPhase: .failed), name: "button-flow-failed-dark", height: 650, scheme: .dark, inset: false)
         snapshot(
+            ReviewButtonFlowView(initialPhase: .running, longJapanese: true), name: "button-flow-running-large-ja", width: 320,
+            height: 900, scheme: .light, category: .accessibilityMedium, locale: "ja_JP", inset: false
+        )
+        snapshot(
             ReviewButtonFlowView(initialPhase: .failed, longJapanese: true), name: "button-flow-failed-large-ja", width: 320,
             height: 900, scheme: .light, category: .accessibilityMedium, locale: "ja_JP", inset: false
         )

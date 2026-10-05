@@ -105,29 +105,27 @@ validation.
 ## Recorded operation evidence
 
 The checked-in [sim-use screen captures](images/pr3-sim-use/) are actual
-Simulator display PNGs, separate from the 38 committed snapshot baselines and
+Simulator display PNGs, separate from the 39 committed snapshot baselines and
 the PNGs rendered by each image-test run. Each linked artifact also contains
 the per-command `actions.jsonl`, observed UI JSON, environment and any
 `failure.txt` for that run.
 
-- [Button operation run](https://github.com/9uiLe/evoloom/actions/runs/37245984165)
-  at code `5c5b471769139a22150f9d5ab304d5bda99fedd9`: the Button step
-  succeeded in 1m53s. The run as a whole failed in the separate Detail step;
-  its [artifact](https://github.com/9uiLe/evoloom/actions/runs/37245984165/artifacts/11319617048)
-  contains the Button actions and captures. The Button fixture code has not
-  changed since this run.
-- [Detail operation run](https://github.com/9uiLe/evoloom/actions/runs/37255651511)
-  at code `eec5a99cf59613a0ef9f780bea8285f5e477af58`: the Detail step
-  succeeded in 7m30s, including Title and multiline Notes edits, visible
+- [Button operation run](https://github.com/9uiLe/evoloom/actions/runs/37258531007)
+  at code `904e70b2fa575c5566d21d436a4ad9dec4820ac3`: the full workflow
+  succeeded. Its Button step took 4m11s, including ready, processing,
+  failure, retry, completion, external disable, dark and large Japanese
+  observations. The [artifact](https://github.com/9uiLe/evoloom/actions/runs/37258531007/artifacts/11323334626)
+  contains its action counts, accessibility observations and actual captures.
+- [Detail operation run](https://github.com/9uiLe/evoloom/actions/runs/37257155593)
+  at code `932dce848bb68d18b39e67cc1f5dab155578c2b5`: the full workflow
+  succeeded. Its Detail step took 6m56s, including Title and multiline Notes edits, visible
   software keyboard at accessibility-medium size, outer ScrollView reachability,
   and a TextEditor-internal swipe. The outer editor frame remained
   `x=20, y=490, 362×110 pt`; the before/after PNGs show its text moving.
-  The run as a whole failed because the unrelated `collection-empty` hosted
-  baseline differed only in native search and toolbar materials. Its
-  [artifact](https://github.com/9uiLe/evoloom/actions/runs/37255651511/artifacts/11322414638)
-  preserves both the operation images and the strict snapshot diff. The later
-  pixel-change assertion also accepts these exact before/after operation PNGs
-  and rejects two identical PNGs when invoked locally through the Nix shell.
+  The script also checked that the cropped editor image changed while its AX
+  frame stayed fixed. Its
+  [artifact](https://github.com/9uiLe/evoloom/actions/runs/37257155593/artifacts/11324120881)
+  contains all 15 actual operation PNGs, UI observations and command records.
 
 Both runs used Xcode 27.0 (27A266a), iPhoneSimulator SDK 27.0 (24A430),
 iOS 27.0 (24A434), arm64 iPhone 18 Pro, 402×874 pt app scene, en-US simulator
@@ -135,8 +133,17 @@ language and Nix-pinned sim-use 0.14.0. Their fixed UDID was
 `4F17718A-544A-4115-888E-27ABF543A529`. Japanese fixture routes use
 Japanese copy; all other route strings are English. The operation PNGs are
 linked to their capture code above; the later commit that stores those PNGs
-only changes their repository location. A Cloud step success inside an overall
-failed run is stated as such and is not described as a passing full CI run.
+only changes their repository location. An earlier Button step succeeded
+inside a failed combined run; the checked-in Button images instead come from
+the later fully successful run above.
+
+In an earlier [Detail run](https://github.com/9uiLe/evoloom/actions/runs/37255651511),
+the Detail step succeeded but the full workflow failed on an unrelated
+`collection-empty` native chrome pixel mismatch. That run's before/after Notes
+PNGs passed the later cropped-image assertion when checked locally; its
+[artifact](https://github.com/9uiLe/evoloom/actions/runs/37255651511/artifacts/11322414638)
+retains the strict diff. The checked-in Detail operation PNGs are from the
+subsequent successful run above.
 
 A later [Button manual run](https://github.com/9uiLe/evoloom/actions/runs/37257019496)
 passed its Package and hosted image tests but timed out after 30s in the first
